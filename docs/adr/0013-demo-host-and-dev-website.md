@@ -30,5 +30,5 @@ The website is a Next.js server on Node.js ([ADR 0012](0012-dash-cloud-accounts.
 - A Cloudflare Access policy for `dev.dash.io` now applies to the website. If the app must not be public, add a policy for `demo.dash.io`. Cloudflare Access is not in this repository.
 - Sign-up and sign-in on `dev.dash.io` show an error message until the owner sets `DASH_CLOUD_MONGODB_URI`. The marketing pages work immediately.
 - The Worker name `dash-development` does not agree with the host `demo.dash.io`. A new name makes a new Worker that has no secrets, and the old Worker stays until someone deletes it. A later change can give the Worker a new name.
-- The demo user is not seeded on `demo.dash.io`. `DASH_SEED_DEMO` stays `false`.
+- `demo.dash.io` sets `DEMO_ENVIRONMENT` to `true`. Dash does not create a demo admin account.
 - CI does not build the two images. The deploy workflows build them after the merge.

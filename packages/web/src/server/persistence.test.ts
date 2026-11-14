@@ -1,5 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Collection } from "mongodb";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   EmailTakenError,
   authenticatePassword,
@@ -7,7 +6,6 @@ import {
   createSession,
   createUser,
   findUserById,
-  findUserByEmail,
   grantInitialAdmin,
   issueApiToken,
   listTokens,
@@ -21,7 +19,6 @@ import { SESSION_COOKIE } from "./http.ts";
 import { ensureSeeded, resetSeedForTests } from "./seed.ts";
 import { appendDashboardWidget, createDashboard, listDashboards, updateDashboard } from "./services/dashboards.ts";
 import { getSettings, InvalidEmailDomainError, updateSettings } from "./services/settings.ts";
-import { listDataSources } from "./services/data-sources.ts";
 import { destroyAppDatabase, useFreshAppDatabase } from "./test-db.ts";
 
 function sessionRequest(token: string): Request {
@@ -203,47 +200,6 @@ describe("app database", () => {
     expect((await findUserById(winner))?.role).toBe("admin");
     const loser = firstAdmin ? second.id : first.id;
     expect((await findUserById(loser))?.role).toBe("member");
-  });
-
-  it("seeds the demo admin once, with no sample source or dashboard", async () => {
-    process.env.DASH_SEED_DEMO = "true";
-    resetSeedForTests();
-    await Promise.all([ensureSeeded(), ensureSeeded()]);
-    expect(await countUsers()).toBe(1);
-    const admin = (await findUserByEmail("admin@dash.dev"))!;
-    expect(admin.role).toBe("admin");
-    const workspaceId = await ensurePersonalWorkspace(admin._id);
-    expect(await listDashboards(workspaceId)).toEqual([]);
-    expect(await listDataSources()).toEqual([]);
-    await ensureSeeded();
-    expect(await countUsers()).toBe(1);
-  });
-
-  it("resumes demo setup after a failed workspace write", async () => {
-    process.env.DASH_SEED_DEMO = "true";
-    const updateOne = Collection.prototype.updateOne;
-    const update = vi
-      .spyOn(Collection.prototype, "updateOne")
-      .mockImplementation(function (this: Collection, ...args) {
-        if (this.collectionName === "workspaces") {
-          return Promise.reject(new Error("Seed write failed"));
-        }
-        return updateOne.apply(this, args);
-      });
-    try {
-      await expect(ensureSeeded()).rejects.toThrow("Seed write failed");
-    } finally {
-      update.mockRestore();
-    }
-    expect(await countUsers()).toBe(1);
-    resetSeedForTests();
-    await Promise.all([ensureSeeded(), ensureSeeded()]);
-    const admin = (await findUserByEmail("admin@dash.dev"))!;
-    expect(admin.role).toBe("admin");
-    expect(await (await workspaces()).countDocuments({ _id: `personal:${admin._id}` })).toBe(1);
-    resetSeedForTests();
-    await ensureSeeded();
-    expect(await countUsers()).toBe(1);
   });
 
   it("retires built-in sample warehouse sources and the widgets that read them", async () => {

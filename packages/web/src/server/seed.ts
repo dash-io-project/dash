@@ -1,13 +1,5 @@
-import { EmailTakenError, countUsers, createUser, findUserByEmail, grantInitialAdmin } from "./auth.ts";
-import { ensurePersonalWorkspace } from "./services/workspaces.ts";
 import { dashboards, getDb, nowIso } from "./db.ts";
-import { getEnv } from "./env.ts";
-import { getSettings, updateSettings } from "./services/settings.ts";
-
-export const DEMO_LOGIN = {
-  email: "admin@dash.dev",
-  password: "dashadmin",
-} as const;
+import { getSettings } from "./services/settings.ts";
 
 /**
  * The built-in sample warehouse (`kind: "demo"`) is gone. Older app databases
@@ -43,43 +35,8 @@ export function resetSeedForTests(): void {
 }
 
 async function seedOnce(): Promise<void> {
-  const db = await getDb();
   await getSettings();
   await retireDemoSources();
-  if (!getEnv().seedDemo) return;
-  const progress = db.collection<{ _id: string; complete: boolean }>("settings");
-  let state = await progress.findOne({ _id: "demo-seed" });
-  if (!state) {
-    if ((await countUsers()) !== 0) return;
-    await progress.updateOne(
-      { _id: "demo-seed" },
-      { $setOnInsert: { complete: false } },
-      { upsert: true },
-    );
-    state = await progress.findOne({ _id: "demo-seed" });
-  }
-  if (state?.complete) return;
-
-  // Resume each step after a failed request or a server restart.
-  let admin = await findUserByEmail(DEMO_LOGIN.email);
-  if (!admin) {
-    try {
-      await createUser({
-        email: DEMO_LOGIN.email,
-        name: "Dash Admin",
-        password: DEMO_LOGIN.password,
-        role: "member",
-      });
-    } catch (error) {
-      if (!(error instanceof EmailTakenError)) throw error;
-    }
-    admin = await findUserByEmail(DEMO_LOGIN.email);
-  }
-  if (!admin) throw new Error("Demo account not found");
-  await grantInitialAdmin(admin._id);
-  await ensurePersonalWorkspace(admin._id);
-  await updateSettings({ name: "Dash", allowRegistration: true });
-  await progress.updateOne({ _id: "demo-seed" }, { $set: { complete: true } });
 }
 
 export function ensureSeeded(): Promise<void> {

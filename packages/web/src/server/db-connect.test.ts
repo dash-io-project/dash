@@ -53,7 +53,7 @@ describe("Atlas SCRAM connection", () => {
     const uri = `mongodb://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}/${database}`;
     process.env.MONGODB_URI = uri;
     process.env.DASH_SECRET = "unit-test-secret";
-    process.env.DASH_SEED_DEMO = "false";
+    delete process.env.DEMO_ENVIRONMENT;
     delete process.env.NODE_ENV;
     await closeDb();
     resetSeedForTests();

@@ -11,7 +11,7 @@ import { getDataSourceConfig, listDataSources } from "./data-sources.ts";
 import { createWorkspace } from "./workspaces.ts";
 
 /**
- * Development seeding: writes the Fernway sample company into the data
+ * Demo seeding: writes the Fernway sample company into the data
  * sources an admin configured, then adds dashboards on that data.
  *
  * The run happens in this process after the request returns. The state
@@ -102,14 +102,14 @@ export class DevSeedError extends Error {
 type SeedModule = typeof import("@dash/seed");
 let seedModule: Promise<SeedModule> | undefined;
 
-/** The generator and writers load only when a development run needs them. */
+/** The generator and writers load only when a demo run needs them. */
 function loadSeed(): Promise<SeedModule> {
   seedModule ??= import("@dash/seed");
   return seedModule;
 }
 
 export function devSeedEnabled(): boolean {
-  return getEnv().seedDevSources;
+  return getEnv().demoEnvironment;
 }
 
 async function stateCollection() {
@@ -300,6 +300,61 @@ function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+const NETWORK_CODES = new Set([
+  "ECONNREFUSED",
+  "ENOTFOUND",
+  "ETIMEDOUT",
+  "ECONNRESET",
+  "EAI_AGAIN",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "ECONNABORTED",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "UND_ERR_SOCKET",
+]);
+
+/** Postgres codes for a missing database or a connection that cannot start. */
+const POSTGRES_UNAVAILABLE = new Set(["3D000", "08000", "08001", "08003", "08006", "57P03"]);
+
+function causes(error: unknown): unknown[] {
+  const seen = new Set<unknown>();
+  const pending = [error];
+  const found: unknown[] = [];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (current === undefined || current === null || seen.has(current)) continue;
+    seen.add(current);
+    found.push(current);
+    if (typeof current !== "object") continue;
+    if ("cause" in current) pending.push(current.cause);
+    if ("errors" in current && Array.isArray(current.errors)) pending.push(...current.errors);
+  }
+  return found;
+}
+
+/**
+ * True when the engine or its database is not there. A missing schema or
+ * dataset is not this case: the writer creates those.
+ */
+function isDatabaseUnavailable(error: unknown): boolean {
+  for (const item of causes(error)) {
+    if (typeof item !== "object" || item === null) continue;
+    const code = "code" in item && typeof item.code === "string" ? item.code : "";
+    if (NETWORK_CODES.has(code) || POSTGRES_UNAVAILABLE.has(code)) return true;
+    const name = "name" in item && typeof item.name === "string" ? item.name : "";
+    if (name === "MongoServerSelectionError" || name === "MongoNetworkError" || name === "TimeoutError") return true;
+    const status = "status" in item && typeof item.status === "number" ? item.status : 0;
+    // A missing dataset is a normal 404. A missing project is not.
+    const text = item instanceof Error ? item.message : "";
+    if (name === "BigQueryHttpError" && status === 404 && /not found: project/i.test(text)) return true;
+    if (name === "BigQueryHttpError" && (status === 502 || status === 503)) return true;
+    if (item instanceof Error && /ECONNREFUSED|ENOTFOUND|ETIMEDOUT|getaddrinfo|timed out/i.test(text)) return true;
+  }
+  return false;
+}
+
+const UNAVAILABLE_STEP = "This database is not available.";
+
 function launch(runId: string, task: (signal: AbortSignal, update: Update) => Promise<void>): void {
   const controller = new AbortController();
   const update = updater(runId, () => controller.abort(new Error("Another seed run took over. This run stopped.")));
@@ -360,21 +415,38 @@ export async function startDevSeed(user: PublicUser, planId: string, size: SeedS
         if (!writer) throw new Error(`No seed writer for ${item.kind}`);
         writers.set(item.sourceId, writer);
       }
-      // Check every target before the first write.
+      // Check every target before the first write. A database that is not
+      // there is skipped. The other sources still receive data.
+      const unavailable = new Set<string>();
       const conflicts: string[] = [];
-      for (const item of plan.assignments) {
+      for (const [index, item] of plan.assignments.entries()) {
+        if (signal.aborted) throw signal.reason;
+        if (unavailable.has(item.sourceId)) {
+          await update({ [`steps.${index}.status`]: "skipped", [`steps.${index}.error`]: UNAVAILABLE_STEP });
+          continue;
+        }
         const domain = dataset.domains.find((entry) => entry.key === item.domain)!;
-        const state = await writers.get(item.sourceId)!.inspect(domain);
-        if (state.state === "foreign") conflicts.push(`${item.sourceName}: ${state.conflicts.join(", ")}`);
+        try {
+          const state = await writers.get(item.sourceId)!.inspect(domain);
+          if (state.state === "foreign") conflicts.push(`${item.sourceName}: ${state.conflicts.join(", ")}`);
+        } catch (error) {
+          if (signal.aborted || !isDatabaseUnavailable(error)) throw error;
+          unavailable.add(item.sourceId);
+          await update({ [`steps.${index}.status`]: "skipped", [`steps.${index}.error`]: UNAVAILABLE_STEP });
+        }
       }
       if (conflicts.length > 0) {
         throw new Error(`Nothing was written. These targets hold data that Dash did not create: ${conflicts.join("; ")}.`);
+      }
+      if (unavailable.size > 0 && unavailable.size === new Set(plan.assignments.map((item) => item.sourceId)).size) {
+        throw new Error("No data source database is available.");
       }
 
       const owned = [...claimed.owned];
       const done = new Set<SeedDomainKey>();
       for (const [index, item] of plan.assignments.entries()) {
         if (signal.aborted) throw signal.reason;
+        if (unavailable.has(item.sourceId)) continue;
         const domain = dataset.domains.find((entry) => entry.key === item.domain)!;
         const target = seed.seedTarget(configs.get(item.sourceId)!);
         await update({ [`steps.${index}.status`]: "running" });
@@ -400,6 +472,15 @@ export async function startDevSeed(user: PublicUser, planId: string, size: SeedS
           await update({ [`steps.${index}.status`]: "done", [`steps.${index}.rows`]: rows });
         } catch (error) {
           if (signal.aborted) throw error;
+          if (isDatabaseUnavailable(error)) {
+            unavailable.add(item.sourceId);
+            await update({ [`steps.${index}.status`]: "skipped", [`steps.${index}.error`]: UNAVAILABLE_STEP });
+            for (const [later, assignment] of plan.assignments.entries()) {
+              if (later <= index || assignment.sourceId !== item.sourceId) continue;
+              await update({ [`steps.${later}.status`]: "skipped", [`steps.${later}.error`]: UNAVAILABLE_STEP });
+            }
+            continue;
+          }
           await update({ [`steps.${index}.status`]: "failed", [`steps.${index}.error`]: message(error) });
         }
       }
@@ -433,7 +514,8 @@ export async function startDevSeed(user: PublicUser, planId: string, size: SeedS
         dashboardIds.push(created.id);
         await update({ dashboardIds });
       }
-      const failed = done.size < plan.assignments.length;
+      const attempted = plan.assignments.filter((item) => !unavailable.has(item.sourceId));
+      const failed = done.size < attempted.length;
       await update({
         status: failed ? "failed" : "succeeded",
         error: failed ? "Some domains failed. The dashboards show the domains that were written." : null,

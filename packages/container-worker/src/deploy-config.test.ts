@@ -33,7 +33,7 @@ describe("demo.dash.io deploy config", () => {
       observability?: unknown;
       durable_objects: { bindings: Array<{ name: string; class_name: string }> };
       exports: Record<string, { type: string; storage: string }>;
-      vars: { DASH_SEED_DEMO: string };
+      vars: { DEMO_ENVIRONMENT: string };
       secrets?: { required: string[] };
       compatibility_date: string;
     };
@@ -59,7 +59,7 @@ describe("demo.dash.io deploy config", () => {
       type: "durable-object",
       storage: "sqlite",
     });
-    expect(config.vars.DASH_SEED_DEMO).toBe("false");
+    expect(config.vars.DEMO_ENVIRONMENT).toBe("true");
     expect(config.secrets).toBeUndefined();
     expect(config.compatibility_date).toBe("2026-10-19");
   });
@@ -83,7 +83,7 @@ describe("demo.dash.io deploy config", () => {
     const dockerfile = readRepo("Dockerfile");
     expect(dockerfile).toContain("EXPOSE 3000");
     expect(dockerfile).toContain('CMD ["node", ".output/server/index.mjs"]');
-    expect(dockerfile).toContain("DASH_SEED_DEMO=false");
+    expect(dockerfile).toContain("DEMO_ENVIRONMENT=false");
     expect(dockerfile).toContain("pnpm --filter @dash/web build");
     expect(dockerfile).toContain("@sha256:");
   });

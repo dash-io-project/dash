@@ -58,8 +58,7 @@ function errorText(error: unknown, fallback: string): string {
 
 /**
  * Seeds the configured data sources with the Fernway sample company. The
- * server answers 404 unless DASH_SEED_DEV_SOURCES is on, so the panel shows
- * nothing in production.
+ * server answers 404 unless DEMO_ENVIRONMENT is true, so the panel stays hidden.
  */
 export function DevSeedPanel() {
   const queryClient = useQueryClient();
@@ -124,7 +123,7 @@ export function DevSeedPanel() {
       <div>
         <div className="flex items-center gap-2">
           <h2 id="dev-seed-title" className="text-lg font-semibold">Sample company data</h2>
-          <span className="rounded-full border border-amber-300/30 bg-amber-300/10 px-2 py-0.5 text-xs text-amber-200">Development</span>
+          <span className="rounded-full border border-amber-300/30 bg-amber-300/10 px-2 py-0.5 text-xs text-amber-200">Demo</span>
         </div>
         <p className="mt-2 text-sm text-mist">
           Fernway, Inc. is a fictional B2B SaaS company. Seeding writes 36 months of its data into your data sources
@@ -241,7 +240,9 @@ export function DevSeedPanel() {
                   <span className="text-paper">{step.label}</span>
                   <span className="text-mist"> → {step.namespace} in {step.sourceName}</span>
                   {step.rows > 0 ? <span className="text-mist"> · {step.rows.toLocaleString()} rows</span> : null}
-                  {step.error ? <span className="block text-rose-300">{step.error}</span> : null}
+                  {step.error ? (
+                    <span className={step.status === "skipped" ? "block text-mist" : "block text-rose-300"}>{step.error}</span>
+                  ) : null}
                 </span>
               </li>
             ))}

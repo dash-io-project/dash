@@ -91,12 +91,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). With `DASH_SEED_DEMO=true` (the default), the app seeds a demo admin and shows those credentials on the login page:
-
-| | |
-| --- | --- |
-| Email | `admin@dash.dev` |
-| Password | `dashadmin` |
+Open [http://localhost:3000](http://localhost:3000). The app starts with no users. Sign-in points at `/register`. The first account becomes the administrator.
 
 Set `MONGODB_URI` in `.env` or the environment before starting the app. `pnpm dev` reads the repo `.env`; a variable already set in the environment wins. The path is the database name (`/dash`). Dash creates that database the first time it connects. A username without `authSource` authenticates against `admin`, where Atlas stores SCRAM users, and that user needs the `readWrite` role on the database. Change `DASH_SECRET` before exposing the app.
 
@@ -127,7 +122,7 @@ See [ADR 0011](docs/adr/0011-public-website.md) and [ADR 0012](docs/adr/0012-das
 
 ## First account
 
-Set `DASH_SEED_DEMO=false` to start with no users. The login page does not show the demo admin in that mode.
+The app starts with no users. The login page does not show a demo account.
 
 There is no separate user-admin CLI. Accounts are created in the product:
 
@@ -136,7 +131,7 @@ There is no separate user-admin CLI. Accounts are created in the product:
 3. An administrator turns that setting off to keep the organization closed. Registration stays available while there are no users, so a fresh database can always create its first admin.
 4. With registration closed, an administrator adds people from **Team**: enter an email, pick **User** or **Admin**, and share the sign-up link. Dash does not send email. A link works once and expires after 7 days.
 
-`GET /api/auth/bootstrap` is public and reports whether the demo login should be shown, whether the organization still needs that first account, and whether registration is open.
+`GET /api/auth/bootstrap` is public. It reports whether the organization still needs that first account, and whether registration is open.
 
 ## Sample company data (development)
 
@@ -159,7 +154,7 @@ Each domain goes to the oldest source of the first kind on its list. A Postgres 
 To seed the local clusters:
 
 1. Start the clusters with `pnpm test:services:start`.
-2. In `.env`, set `MONGODB_URI=mongodb://dash:dash@127.0.0.1:27029/dash_app?authSource=admin` and `DASH_SEED_DEV_SOURCES=true`.
+2. In `.env`, set `MONGODB_URI=mongodb://dash:dash@127.0.0.1:27029/dash_app?authSource=admin` and `DEMO_ENVIRONMENT=true`.
 3. Run `pnpm dev` and sign in as an administrator.
 4. On **Data sources**, add these sources:
    - Postgres: `postgres://dash:dash@127.0.0.1:54329/fernway`
@@ -173,7 +168,8 @@ The run continues in the background. The panel shows each domain and its row cou
 
 Safety rules:
 
-- The feature is off unless `DASH_SEED_DEV_SOURCES=true`. Production (`NODE_ENV=production`) ignores the flag.
+- The feature is off unless `DEMO_ENVIRONMENT=true`. `demo.dash.io` sets this value. The flag works in production.
+- A seed run skips a data source when its database is not available. The run writes the other sources. BigQuery is one example.
 - Only an administrator with a browser session can start a run. API tokens and MCP cannot.
 - Dash writes only to `fernway_*` schemas and datasets, and to the MongoDB collections that its manifest records. Each target holds a `dash_seed_manifest` table or collection.
 - Dash refuses a target that exists without that manifest. It examines every target before the first write.
@@ -225,7 +221,7 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] Chart widgets (TanStack Charts)
 - [x] Sortable and filterable tables (TanStack Table)
 - [x] Data sources page (admin): add and remove sources (Postgres, MySQL, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift)
-- [x] Development seed: the Fernway sample company in Postgres, MongoDB, and BigQuery sources (`DASH_SEED_DEV_SOURCES`)
+- [x] Demo seed: the Fernway sample company in Postgres, MongoDB, and BigQuery sources (`DEMO_ENVIRONMENT`)
 - [ ] Real-time multi-user dashboard collaboration
 - [ ] Light theme
 
@@ -247,7 +243,7 @@ All routes except bootstrap, register, login, invitation preview and accept, hea
 | --- | --- | --- |
 | GET | `/healthz` | Public. Confirms the app MongoDB is connected |
 | GET | `/ping` | Public. Confirms the app MongoDB is connected |
-| GET | `/api/auth/bootstrap` | Public. Demo login, first-account setup, registration |
+| GET | `/api/auth/bootstrap` | Public. First-account setup and registration |
 | POST | `/api/auth/register` | The first user becomes admin. Registration is closed when users exist and the switch is off. When the domain list is not empty, the email domain must be on that list. |
 | POST | `/api/auth/invitation` | Public. Preview an invitation from its token |
 | POST | `/api/auth/invitation/accept` | Public. Create the invited account and set `dash_session`. Works while registration is off |
@@ -265,7 +261,7 @@ All routes except bootstrap, register, login, invitation preview and accept, hea
 | GET | `/api/data-sources/:id/schema` | |
 | POST | `/api/data-sources/:id/connect` | Connection test |
 | POST | `/api/data-sources/:id/query` | Structured query |
-| GET/POST/DELETE | `/api/dev-seed` | Development only. Answers 404 unless `DASH_SEED_DEV_SOURCES` is `true` outside production. Admin session only. GET returns the plan and the run state. POST starts a seed run, and DELETE starts a removal |
+| GET/POST/DELETE | `/api/dev-seed` | Answers 404 unless `DEMO_ENVIRONMENT` is `true`. Admin session only. GET returns the plan and the run state. POST starts a seed run, and DELETE starts a removal |
 | GET/POST | `/api/workspaces` | Session only. POST requires an organization admin |
 | PATCH | `/api/workspaces/:id` | Rename. Workspace manager session only |
 | GET/PUT | `/api/workspaces/:id/members` | Workspace manager session only. PUT sets viewer/editor access or removes access with a null role |

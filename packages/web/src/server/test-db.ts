@@ -17,7 +17,7 @@ export async function useFreshAppDatabase(): Promise<void> {
   await closeDb();
   resetSeedForTests();
   process.env.DASH_SECRET = "unit-test-secret";
-  process.env.DASH_SEED_DEMO = "false";
+  delete process.env.DEMO_ENVIRONMENT;
   delete process.env.DASH_DATABASE_PATH;
   process.env.MONGODB_URI = uniqueAppMongoUri();
 }

@@ -22,20 +22,20 @@ describe("containerEnv", () => {
     expect(env.DASH_DATABASE_PATH).toBeUndefined();
     expect(env.MONGODB_URI).toBe("mongodb://user:pass@db.example.net/dash");
     expect(env.DASH_SECRET).toBe("a-real-secret");
-    expect(env.DASH_SEED_DEMO).toBe("false");
+    expect(env.DEMO_ENVIRONMENT).toBe("false");
   });
 
-  it("enables the demo seed only when the Worker var is true", () => {
-    expect(containerEnv({ DASH_SECRET: "secret", DASH_SEED_DEMO: "true" }).DASH_SEED_DEMO).toBe(
+  it("enables the demo environment only when the Worker var is true", () => {
+    expect(containerEnv({ DASH_SECRET: "secret", DEMO_ENVIRONMENT: "true" }).DEMO_ENVIRONMENT).toBe(
       "true",
     );
-    expect(containerEnv({ DASH_SECRET: "secret", DASH_SEED_DEMO: " TRUE " }).DASH_SEED_DEMO).toBe(
+    expect(containerEnv({ DASH_SECRET: "secret", DEMO_ENVIRONMENT: " TRUE " }).DEMO_ENVIRONMENT).toBe(
       "true",
     );
-    expect(containerEnv({ DASH_SECRET: "secret", DASH_SEED_DEMO: "false" }).DASH_SEED_DEMO).toBe(
+    expect(containerEnv({ DASH_SECRET: "secret", DEMO_ENVIRONMENT: "false" }).DEMO_ENVIRONMENT).toBe(
       "false",
     );
-    expect(containerEnv({ DASH_SECRET: "secret", DASH_SEED_DEMO: "1" }).DASH_SEED_DEMO).toBe(
+    expect(containerEnv({ DASH_SECRET: "secret", DEMO_ENVIRONMENT: "1" }).DEMO_ENVIRONMENT).toBe(
       "false",
     );
   });

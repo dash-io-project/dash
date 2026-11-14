@@ -16,7 +16,7 @@ import {
 export interface Env {
   DASH_CONTAINER: DurableObjectNamespace<DashContainer>;
   DASH_SECRET?: string;
-  DASH_SEED_DEMO?: string;
+  DEMO_ENVIRONMENT?: string;
   MONGODB_URI?: string;
 }
 
