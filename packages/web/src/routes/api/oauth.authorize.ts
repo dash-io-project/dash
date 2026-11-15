@@ -8,13 +8,19 @@ import {
   denyAuthorization,
 } from "~/server/oauth";
 
-const decisionSchema = z.object({
-  /** The query string of the authorization request, as the browser received it. */
-  query: z.string().max(8_192),
-  decision: z.enum(["approve", "deny"]),
-  name: z.string().trim().min(1).max(80).optional(),
-  write: z.boolean().optional(),
-});
+/** The query string of the authorization request, as the browser received it. */
+const query = z.string().max(8_192);
+
+/** A denial ignores the form fields, so an empty name cannot block `access_denied`. */
+const decisionSchema = z.discriminatedUnion("decision", [
+  z.object({ query, decision: z.literal("deny") }),
+  z.object({
+    query,
+    decision: z.literal("approve"),
+    name: z.string().trim().min(1).max(80).optional(),
+    write: z.boolean().optional(),
+  }),
+]);
 
 function sessionOnly() {
   return error(403, "Sign in to Dash in the browser to create an agent", "forbidden");

@@ -525,28 +525,24 @@ async function exchangeCode(
     "The authorization code is not valid, has expired, or was already used.",
   );
   const codes = await oauthCodes();
-  const codeHash = hashSecret(code);
-  const row = await codes.findOneAndUpdate(
-    { codeHash, usedAt: null },
-    { $set: { usedAt: nowIso() } },
-  );
-  if (!row) {
-    // A second use of a code can mean that someone stole it. Revoke the agent (RFC 6749 section 4.1.2).
-    const used = await codes.findOne({ codeHash });
-    if (used) {
-      await revokeAgent(used.tokenId);
-    }
-    return invalid;
-  }
+  const row = await codes.findOne({ codeHash: hashSecret(code) });
   const redirectUri = params.get("redirect_uri");
   const challenge = createHash("sha256").update(verifier).digest("base64url");
+  // Check the request before the code is used up. A wrong verifier must not burn the code of the real client.
   if (
+    !row ||
     row.expiresAt.getTime() <= Date.now() ||
     row.clientId !== client._id ||
     (redirectUri !== null && redirectUri !== row.redirectUri) ||
     !CODE_VERIFIER.test(verifier) ||
     !safeEqualHex(challenge, row.codeChallenge)
   ) {
+    return invalid;
+  }
+  const claimed = await codes.updateOne({ _id: row._id, usedAt: null }, { $set: { usedAt: nowIso() } });
+  if (claimed.modifiedCount !== 1) {
+    // A second valid use means that someone has the code and its verifier. Revoke the agent (RFC 6749 section 4.1.2).
+    await revokeAgent(row.tokenId);
     return invalid;
   }
   return (await issueAgentTokens({ _id: row.tokenId }, client._id)) ?? invalid;

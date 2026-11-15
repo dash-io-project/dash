@@ -205,29 +205,56 @@ describe("MCP OAuth", () => {
     expect(rest.status).toBe(403);
   });
 
-  it("refuses a wrong PKCE verifier and revokes the agent when a code is used twice", async () => {
+  it("refuses a wrong PKCE verifier without using up the code", async () => {
     const client = await registerClient({ redirect_uris: [CALLBACK], token_endpoint_auth_method: "none" });
-    const { challenge } = pkce();
+    const { verifier, challenge } = pkce();
     const redirect = await approve(authorizationQuery(client.body.client_id!, challenge));
-    const wrong = await tokenRequest({
-      grant_type: "authorization_code",
-      code: redirect.searchParams.get("code")!,
-      code_verifier: pkce().verifier,
-      client_id: client.body.client_id!,
-    });
+    const exchange = (codeVerifier: string) =>
+      tokenRequest({
+        grant_type: "authorization_code",
+        code: redirect.searchParams.get("code")!,
+        code_verifier: codeVerifier,
+        client_id: client.body.client_id!,
+      });
+    const wrong = await exchange(pkce().verifier);
     expect(wrong.status).toBe(400);
     expect(((await wrong.json()) as { error: string }).error).toBe("invalid_grant");
+    expect((await exchange(verifier)).status).toBe(200);
+  });
 
+  it("revokes the agent only when a used code comes back with its verifier", async () => {
     const { clientId, code, verifier, exchange } = await connectAgent();
     const { access_token: accessToken } = (await exchange.json()) as { access_token: string };
-    const replay = await tokenRequest({
-      grant_type: "authorization_code",
-      code,
-      code_verifier: verifier,
-      client_id: clientId,
-    });
-    expect(replay.status).toBe(400);
+    const replay = (codeVerifier: string) =>
+      tokenRequest({ grant_type: "authorization_code", code, code_verifier: codeVerifier, client_id: clientId });
+
+    expect((await replay(pkce().verifier)).status).toBe(400);
+    expect((await call(Mcp, "POST", mcpInitialize(accessToken))).status).toBe(200);
+
+    expect((await replay(verifier)).status).toBe(400);
     expect((await call(Mcp, "POST", mcpInitialize(accessToken))).status).toBe(401);
+  });
+
+  it("returns access_denied when the user cancels with an empty name", async () => {
+    const client = await registerClient({ redirect_uris: [CALLBACK], token_endpoint_auth_method: "none" });
+    const response = await call(
+      Authorize,
+      "POST",
+      new Request(`${ORIGIN}/api/oauth/authorize`, {
+        method: "POST",
+        headers: { "content-type": "application/json", cookie: `dash_session=${session}` },
+        body: JSON.stringify({
+          query: authorizationQuery(client.body.client_id!, pkce().challenge),
+          decision: "deny",
+          name: "",
+          write: false,
+        }),
+      }),
+    );
+    expect(response.status).toBe(200);
+    const redirect = new URL(((await response.json()) as { redirectTo: string }).redirectTo);
+    expect(redirect.searchParams.get("error")).toBe("access_denied");
+    expect(redirect.searchParams.get("state")).toBe("123");
   });
 
   it("rotates the refresh token and expires the access token after one hour", async () => {

@@ -237,7 +237,7 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 
 ## REST surface
 
-All routes except bootstrap, register, login, invitation preview and accept, healthz, ping, and the OAuth discovery, registration, and token endpoints require a session cookie or `Authorization: Bearer dash_live_…`.
+Most routes require a session cookie or `Authorization: Bearer dash_live_…`. Bootstrap, register, login, invitation preview and accept, healthz, and ping are public. The OAuth discovery, registration, and token endpoints are also public.
 
 | Method | Path | Notes |
 | --- | --- | --- |
