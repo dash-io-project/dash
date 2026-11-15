@@ -17,6 +17,8 @@ All notable changes to Dash are documented here.
 - A token writes its last-use time at most once a minute.
 
 - The **Agent tokens** page is now **Agents** (`/agents`) in the sidebar and in the page header. Connect an agent with OAuth or with a token on that page. The old `/agent-tokens` path opens the Agents page. The API tokens page does not list OAuth agents.
+- The **Team** page is now **Members** (`/members`) in the sidebar and in the page header. The old `/team` path opens the Members page. The website and the README also use **Members**.
+- Two API error messages use "member" in place of "team". `POST /api/invitations` returns "That email already belongs to a member". An API token request to invite a person or to change a role returns "Session authentication required to manage members".
 - The `demo.dash.io` Worker sends `X-Forwarded-Proto` and `X-Forwarded-Host` to the container. It replaces values that the client sent.
 - `DEMO_ENVIRONMENT` replaces `DASH_SEED_DEMO` and `DASH_SEED_DEV_SOURCES`. Set it to `true` to show **Sample company data**. `demo.dash.io` sets this value. The flag works in production.
 - A seed run skips a data source when its database is not available. The run writes the other sources.

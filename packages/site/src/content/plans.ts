@@ -143,7 +143,7 @@ export const comparisonGroups: readonly ComparisonGroup[] = [
         values: { "open-source": true, cloud: true, enterprise: true },
       },
       {
-        label: "Workspaces, team roles, and invitations",
+        label: "Workspaces, member roles, and invitations",
         values: { "open-source": true, cloud: true, enterprise: true },
       },
       {

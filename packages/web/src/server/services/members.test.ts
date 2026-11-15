@@ -24,7 +24,7 @@ import {
   previewInvitation,
   revokeInvitation,
   setMemberRole,
-} from "./team.ts";
+} from "./members.ts";
 
 function admin(email = "ada@example.com", name = "Ada") {
   return createUser({ email, name, password: "password123", role: "admin" });
@@ -34,7 +34,7 @@ function member(email = "grace@example.com", name = "Grace") {
   return createUser({ email, name, password: "password123", role: "member" });
 }
 
-describe("team", () => {
+describe("members", () => {
   beforeEach(async () => {
     await useFreshAppDatabase();
   });

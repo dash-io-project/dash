@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { isResponse, requireUser } from "~/server/guard";
 import { json } from "~/server/http";
-import { listMembers } from "~/server/services/team";
+import { listMembers } from "~/server/services/members";
 
 export const Route = createFileRoute("/api/members/")({
   server: {

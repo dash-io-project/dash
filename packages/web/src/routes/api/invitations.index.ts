@@ -5,7 +5,7 @@ import { EmailTakenError } from "~/server/auth";
 import { isResponse, requireAdminSession } from "~/server/guard";
 import { error, json, readJson } from "~/server/http";
 import { EmailDomainNotAllowedError } from "~/server/services/account-policy";
-import { createInvitation, listInvitations } from "~/server/services/team";
+import { createInvitation, listInvitations } from "~/server/services/members";
 
 const createSchema = z.object({
   email: z.string().trim().email(),
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/api/invitations/")({
           return json(issued, { status: 201 });
         } catch (cause) {
           if (cause instanceof EmailTakenError) {
-            return error(409, "That email already belongs to a team member", "email_taken");
+            return error(409, "That email already belongs to a member", "email_taken");
           }
           if (cause instanceof EmailDomainNotAllowedError) {
             return error(403, cause.message, "domain_not_allowed");
