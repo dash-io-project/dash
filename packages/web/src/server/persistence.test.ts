@@ -1,5 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Collection } from "mongodb";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   EmailTakenError,
   authenticatePassword,
@@ -7,7 +6,6 @@ import {
   createSession,
   createUser,
   findUserById,
-  findUserByEmail,
   grantInitialAdmin,
   issueApiToken,
   listTokens,
@@ -16,12 +14,11 @@ import {
 } from "./auth.ts";
 import { ensurePersonalWorkspace } from "./services/workspaces.ts";
 import { hashSecret } from "./crypto.ts";
-import { dashboards, dataSources, nowIso, organizationSettings, sessions, workspaces } from "./db.ts";
+import { apiTokens, dashboards, dataSources, nowIso, organizationSettings, sessions, users, workspaces } from "./db.ts";
 import { SESSION_COOKIE } from "./http.ts";
 import { ensureSeeded, resetSeedForTests } from "./seed.ts";
 import { appendDashboardWidget, createDashboard, listDashboards, updateDashboard } from "./services/dashboards.ts";
 import { getSettings, InvalidEmailDomainError, updateSettings } from "./services/settings.ts";
-import { listDataSources } from "./services/data-sources.ts";
 import { destroyAppDatabase, useFreshAppDatabase } from "./test-db.ts";
 
 function sessionRequest(token: string): Request {
@@ -205,45 +202,127 @@ describe("app database", () => {
     expect((await findUserById(loser))?.role).toBe("member");
   });
 
-  it("seeds the demo admin once, with no sample source or dashboard", async () => {
-    process.env.DASH_SEED_DEMO = "true";
+  it("removes admin@dash.dev when the published password still matches", async () => {
+    const admin = await createUser({
+      email: "admin@dash.dev",
+      name: "Dash Admin",
+      password: "dashadmin",
+      role: "member",
+    });
+    expect(await grantInitialAdmin(admin.id)).toBe(true);
+    const workspaceId = await ensurePersonalWorkspace(admin.id);
+    const session = await createSession(admin.id);
+    await issueApiToken({ userId: admin.id, workspaceId, name: "ci", scopes: ["read"], expiresAt: null });
+
     resetSeedForTests();
-    await Promise.all([ensureSeeded(), ensureSeeded()]);
-    expect(await countUsers()).toBe(1);
-    const admin = (await findUserByEmail("admin@dash.dev"))!;
-    expect(admin.role).toBe("admin");
-    const workspaceId = await ensurePersonalWorkspace(admin._id);
-    expect(await listDashboards(workspaceId)).toEqual([]);
-    expect(await listDataSources()).toEqual([]);
     await ensureSeeded();
-    expect(await countUsers()).toBe(1);
+    expect(await findUserById(admin.id)).toBeUndefined();
+    expect(await authenticatePassword("admin@dash.dev", "dashadmin")).toBeUndefined();
+    expect(await (await sessions()).countDocuments({ userId: admin.id })).toBe(0);
+    expect(await (await apiTokens()).countDocuments({ userId: admin.id, revokedAt: null })).toBe(0);
+    expect(await (await users()).countDocuments({ email: "admin@dash.dev" })).toBe(0);
+
+    const next = await createUser({
+      email: "ada@example.com",
+      name: "Ada",
+      password: "password123",
+      role: "member",
+    });
+    expect(await grantInitialAdmin(next.id)).toBe(true);
+    expect((await findUserById(next.id))?.role).toBe("admin");
+    expect(session).toEqual(expect.any(String));
   });
 
-  it("resumes demo setup after a failed workspace write", async () => {
-    process.env.DASH_SEED_DEMO = "true";
-    const updateOne = Collection.prototype.updateOne;
-    const update = vi
-      .spyOn(Collection.prototype, "updateOne")
-      .mockImplementation(function (this: Collection, ...args) {
-        if (this.collectionName === "workspaces") {
-          return Promise.reject(new Error("Seed write failed"));
-        }
-        return updateOne.apply(this, args);
-      });
-    try {
-      await expect(ensureSeeded()).rejects.toThrow("Seed write failed");
-    } finally {
-      update.mockRestore();
-    }
-    expect(await countUsers()).toBe(1);
-    resetSeedForTests();
-    await Promise.all([ensureSeeded(), ensureSeeded()]);
-    const admin = (await findUserByEmail("admin@dash.dev"))!;
-    expect(admin.role).toBe("admin");
-    expect(await (await workspaces()).countDocuments({ _id: `personal:${admin._id}` })).toBe(1);
+  it("lets the next account become admin when cleanup stopped after the user delete", async () => {
+    const admin = await createUser({
+      email: "admin@dash.dev",
+      name: "Dash Admin",
+      password: "dashadmin",
+      role: "member",
+    });
+    expect(await grantInitialAdmin(admin.id)).toBe(true);
+    await (await users()).deleteOne({ _id: admin.id });
+
     resetSeedForTests();
     await ensureSeeded();
-    expect(await countUsers()).toBe(1);
+    const next = await createUser({
+      email: "ada@example.com",
+      name: "Ada",
+      password: "password123",
+      role: "member",
+    });
+    expect(await grantInitialAdmin(next.id)).toBe(true);
+    expect((await findUserById(next.id))?.role).toBe("admin");
+  });
+
+  it("keeps the first-admin record when the published account is absent", async () => {
+    const owner = await createUser({
+      email: "owner@example.com",
+      name: "Owner",
+      password: "password123",
+      role: "member",
+    });
+    expect(await grantInitialAdmin(owner.id)).toBe(true);
+
+    resetSeedForTests();
+    await ensureSeeded();
+    const next = await createUser({
+      email: "ada@example.com",
+      name: "Ada",
+      password: "password123",
+      role: "member",
+    });
+    expect(await grantInitialAdmin(next.id)).toBe(false);
+    expect((await findUserById(owner.id))?.role).toBe("admin");
+    expect((await findUserById(next.id))?.role).toBe("member");
+  });
+
+  it("gives the admin role to another member before it removes admin@dash.dev", async () => {
+    const admin = await createUser({
+      email: "admin@dash.dev",
+      name: "Dash Admin",
+      password: "dashadmin",
+      role: "member",
+    });
+    expect(await grantInitialAdmin(admin.id)).toBe(true);
+    const pending = await createUser({
+      email: "pending@example.com",
+      name: "Pending",
+      password: "password123",
+      role: "member",
+      accountState: "pending",
+    });
+    const member = await createUser({
+      email: "ada@example.com",
+      name: "Ada",
+      password: "password123",
+      role: "member",
+    });
+
+    resetSeedForTests();
+    await ensureSeeded();
+    expect(await findUserById(admin.id)).toBeUndefined();
+    expect((await findUserById(pending.id))?.role).toBe("member");
+    expect((await findUserById(pending.id))?.accountState).toBe("pending");
+    expect((await findUserById(member.id))?.role).toBe("admin");
+  });
+
+  it("keeps admin@dash.dev when the password is no longer the published one", async () => {
+    const admin = await createUser({
+      email: "admin@dash.dev",
+      name: "Dash Admin",
+      password: "a-private-password",
+      role: "admin",
+    });
+    const session = await createSession(admin.id);
+
+    resetSeedForTests();
+    await ensureSeeded();
+    expect((await findUserById(admin.id))?.email).toBe("admin@dash.dev");
+    expect(await authenticatePassword("admin@dash.dev", "a-private-password")).toMatchObject({ id: admin.id });
+    expect(await authenticatePassword("admin@dash.dev", "dashadmin")).toBeUndefined();
+    expect(await (await sessions()).countDocuments({ userId: admin.id })).toBe(1);
+    expect(session).toEqual(expect.any(String));
   });
 
   it("retires built-in sample warehouse sources and the widgets that read them", async () => {

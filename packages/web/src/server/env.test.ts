@@ -7,12 +7,12 @@ describe("parseEnvFile", () => {
       parseEnvFile(`
 # comment
 export MONGODB_URI=mongodb://127.0.0.1:27017/dash
-DASH_SEED_DEMO="false"
+DEMO_ENVIRONMENT="false"
 not a line
 `),
     ).toEqual({
       MONGODB_URI: "mongodb://127.0.0.1:27017/dash",
-      DASH_SEED_DEMO: "false",
+      DEMO_ENVIRONMENT: "false",
     });
   });
 });
@@ -63,11 +63,11 @@ describe("getEnv", () => {
   const previousUri = process.env.MONGODB_URI;
   const previousSecret = process.env.DASH_SECRET;
   const previousNodeEnv = process.env.NODE_ENV;
-  const previousSeed = process.env.DASH_SEED_DEV_SOURCES;
+  const previousSeed = process.env.DEMO_ENVIRONMENT;
 
   afterEach(() => {
-    if (previousSeed === undefined) delete process.env.DASH_SEED_DEV_SOURCES;
-    else process.env.DASH_SEED_DEV_SOURCES = previousSeed;
+    if (previousSeed === undefined) delete process.env.DEMO_ENVIRONMENT;
+    else process.env.DEMO_ENVIRONMENT = previousSeed;
     if (previousUri === undefined) delete process.env.MONGODB_URI;
     else process.env.MONGODB_URI = previousUri;
     if (previousSecret === undefined) delete process.env.DASH_SECRET;
@@ -110,17 +110,17 @@ describe("getEnv", () => {
     expect(() => getEnv()).toThrow(/TLS/);
   });
 
-  it("turns on data source seeding only for true, and never in production", () => {
+  it("turns on the demo environment only for the string true", () => {
     process.env.MONGODB_URI = "mongodb://127.0.0.1:27017/dash";
     process.env.DASH_SECRET = "a-real-secret";
     delete process.env.NODE_ENV;
-    delete process.env.DASH_SEED_DEV_SOURCES;
-    expect(getEnv().seedDevSources).toBe(false);
-    process.env.DASH_SEED_DEV_SOURCES = "yes";
-    expect(getEnv().seedDevSources).toBe(false);
-    process.env.DASH_SEED_DEV_SOURCES = " TRUE ";
-    expect(getEnv().seedDevSources).toBe(true);
+    delete process.env.DEMO_ENVIRONMENT;
+    expect(getEnv().demoEnvironment).toBe(false);
+    process.env.DEMO_ENVIRONMENT = "yes";
+    expect(getEnv().demoEnvironment).toBe(false);
+    process.env.DEMO_ENVIRONMENT = " TRUE ";
+    expect(getEnv().demoEnvironment).toBe(true);
     process.env.NODE_ENV = "production";
-    expect(getEnv().seedDevSources).toBe(false);
+    expect(getEnv().demoEnvironment).toBe(true);
   });
 });

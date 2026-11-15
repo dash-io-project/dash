@@ -21,7 +21,7 @@ ENV NODE_ENV=production \
     PORT=3000 \
     NITRO_HOST=0.0.0.0 \
     NITRO_PORT=3000 \
-    DASH_SEED_DEMO=false
+    DEMO_ENVIRONMENT=false
 
 COPY --from=build --chown=node:node /app/packages/web/.output ./.output
 

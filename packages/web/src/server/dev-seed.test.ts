@@ -65,7 +65,7 @@ const mongo = new MongoClient(
 const SEED_TEST_TIMEOUT = 60_000;
 
 describe("development seeding", () => {
-  const previous = { flag: process.env.DASH_SEED_DEV_SOURCES, nodeEnv: process.env.NODE_ENV };
+  const previous = { flag: process.env.DEMO_ENVIRONMENT, nodeEnv: process.env.NODE_ENV };
   let admin: PublicUser;
   let session: string;
 
@@ -84,7 +84,7 @@ describe("development seeding", () => {
 
   beforeEach(async () => {
     await useFreshAppDatabase();
-    process.env.DASH_SEED_DEV_SOURCES = "true";
+    process.env.DEMO_ENVIRONMENT = "true";
     delete process.env.NODE_ENV;
     admin = await createUser({ email: "admin@example.com", name: "Admin", password: "password123", role: "admin" });
     session = await createSession(admin.id);
@@ -94,20 +94,20 @@ describe("development seeding", () => {
     await settled().catch(() => undefined);
     await closeAdapters();
     await destroyAppDatabase();
-    if (previous.flag === undefined) delete process.env.DASH_SEED_DEV_SOURCES;
-    else process.env.DASH_SEED_DEV_SOURCES = previous.flag;
+    if (previous.flag === undefined) delete process.env.DEMO_ENVIRONMENT;
+    else process.env.DEMO_ENVIRONMENT = previous.flag;
     if (previous.nodeEnv === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = previous.nodeEnv;
   });
 
-  it("answers 404 unless the flag is on outside production, and refuses API tokens", async () => {
-    delete process.env.DASH_SEED_DEV_SOURCES;
+  it("answers 404 unless DEMO_ENVIRONMENT is true, and refuses API tokens", async () => {
+    delete process.env.DEMO_ENVIRONMENT;
     for (const method of ["GET", "POST", "DELETE"]) {
       expect((await call(method, { session }, { body: {} })).status).toBe(404);
     }
-    process.env.DASH_SEED_DEV_SOURCES = "true";
+    process.env.DEMO_ENVIRONMENT = "true";
     process.env.NODE_ENV = "production";
-    expect((await call("GET", { session })).status).toBe(404);
+    expect((await call("GET", { session })).status).toBe(200);
     delete process.env.NODE_ENV;
 
     const workspaceId = await ensurePersonalWorkspace(admin.id);
@@ -277,5 +277,34 @@ describe("development seeding", () => {
     expect(removed.status).toBe("succeeded");
     expect(await listDashboards(state.workspaceId!)).toEqual([]);
     expect(await fernwaySchemas()).toEqual([]);
+  }, SEED_TEST_TIMEOUT);
+
+  it("skips a database that is not there and seeds the other sources", async () => {
+    await createDataSource({
+      name: "Product Postgres",
+      description: "",
+      config: { kind: "postgres", ...pgEndpoint, database: warehouse },
+      createdBy: admin.id,
+    });
+    await createDataSource({
+      name: "Missing BigQuery",
+      description: "",
+      config: { kind: "bigquery", projectId: "dash", apiEndpoint: "http://127.0.0.1:59991" },
+      createdBy: admin.id,
+    });
+    const planned = await (await call("GET", { session }, { query: "?size=small" })).json();
+    expect((await call("POST", { session }, { body: { planId: planned.plan.planId, size: "small" } })).status).toBe(202);
+    const state = await settled();
+    const bigQuery = state.steps.filter((step) => step.sourceName === "Missing BigQuery");
+    const postgres = state.steps.filter((step) => step.sourceName === "Product Postgres");
+    expect(bigQuery.length).toBeGreaterThan(0);
+    expect(bigQuery.every((step) => step.status === "skipped")).toBe(true);
+    expect(postgres.length).toBeGreaterThan(0);
+    expect(postgres.every((step) => step.status === "done" && step.rows > 0)).toBe(true);
+    expect(state.status).toBe("succeeded");
+    expect(state.error).toBeNull();
+
+    expect((await call("DELETE", { session })).status).toBe(202);
+    expect((await settled()).status).toBe("succeeded");
   }, SEED_TEST_TIMEOUT);
 });

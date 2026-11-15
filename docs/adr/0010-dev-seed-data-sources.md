@@ -29,7 +29,8 @@ A Dash query reads one resource. It has columns, filters, sort order, and a limi
   - Each writer counts the rows of each table after the write. A count that does not agree fails the step.
 - BigQuery load jobs use a multipart upload. Real BigQuery accepts it, including sandbox projects, which refuse streaming inserts and DML. The pinned emulator (0.8.1) answers an upload with no load job, so for a non-Google endpoint the writer uses streaming inserts. A Google endpoint never falls back. On the streaming path, the manifest table only gets new rows and is never dropped, and ownership reads the latest row. Dataset and table management is on `BigQueryAdminClient` in `@dash/adapter-bigquery`. The read adapter does not use it.
 - Access:
-  - The feature is on only when `DASH_SEED_DEV_SOURCES=true` and `NODE_ENV` is not `production`. Otherwise `/api/dev-seed` answers 404.
+  - The feature is on only when `DEMO_ENVIRONMENT=true`. Otherwise `/api/dev-seed` answers 404. The flag works when `NODE_ENV` is `production`.
+  - Dash skips a source when its database is not available. The run writes the other sources. A missing schema or dataset does not stop the run. The writer creates it. A missing BigQuery project is not available, so that source is skipped.
   - Only an administrator with a browser session can call it. API tokens and MCP cannot.
   - The Settings page shows the plan before a run. The POST request must send the `planId` of that plan, so a changed source list cannot receive data that nobody reviewed.
   - A MongoDB source that points at the Dash app database is refused.
@@ -42,7 +43,7 @@ A Dash query reads one resource. It has columns, filters, sort order, and a limi
   - The server close hook stops a run and closes the writer clients.
 - The web app loads `@dash/seed` with a dynamic import, so the generator loads only for a development run.
 - The `demo` adapter and the `demo` kind are removed.
-  - `DASH_SEED_DEMO` keeps its name and default, and now seeds only the demo admin.
+  - Dash does not create a demo admin account. The first account is created at `/register`.
   - A one-time step deletes stored `demo` data sources and the widgets that read them. It also deletes a dashboard that has no widget left. The `settings` document `demo-retired` records that the step ran.
 
 ## Consequences

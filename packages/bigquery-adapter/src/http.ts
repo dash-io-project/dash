@@ -634,7 +634,13 @@ export function createBigQueryClient(config: BigQueryClientConfig): BigQueryAdmi
     },
     async getDataset(datasetId) {
       const sent = await send(new URL(datasetPath(datasetId), origin), { method: "GET" }, 10_000, true);
-      return sent.status === 404 ? null : { description: description(sent.payload) };
+      if (sent.status !== 404) return { description: description(sent.payload) };
+      // A missing dataset is absent. A missing project raises an error.
+      const message = (sent.payload?.error as { message?: string } | undefined)?.message ?? "";
+      if (/not found:\s*project/i.test(message)) {
+        throw new BigQueryHttpError(404, `BigQuery API: ${message}`);
+      }
+      return null;
     },
     async createDataset(datasetId, options = {}) {
       await send(

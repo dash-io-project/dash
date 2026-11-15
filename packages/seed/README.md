@@ -1,6 +1,6 @@
 # @dash/seed
 
-Development seed data for Dash. This package generates Fernway, Inc., a fictional B2B SaaS company, and writes it into configured data sources. The web app uses it from **Settings → Sample company data** when `DASH_SEED_DEV_SOURCES=true` outside production.
+Demo seed data for Dash. This package generates Fernway, Inc., a fictional B2B SaaS company, and writes it into configured data sources. The web app uses it from **Settings → Sample company data** when `DEMO_ENVIRONMENT=true`.
 
 ## Parts
 

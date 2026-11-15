@@ -49,15 +49,14 @@ export function containerBlockedReason(env: {
 
 /**
  * Environment passed into the container on start.
- * Demo seed stays off unless the Worker var is the string "true", so the public
- * dev host does not boot with the published admin password.
+ * Sample data stays off unless the Worker var is the string "true".
  */
 export function containerEnv(env: {
   DASH_SECRET?: string;
-  DASH_SEED_DEMO?: string;
+  DEMO_ENVIRONMENT?: string;
   MONGODB_URI?: string;
 }): Record<string, string> {
-  const seedDemo = env.DASH_SEED_DEMO?.trim().toLowerCase() === "true";
+  const demoEnvironment = env.DEMO_ENVIRONMENT?.trim().toLowerCase() === "true";
   const mongoUri = env.MONGODB_URI?.trim();
   return {
     NODE_ENV: "production",
@@ -67,6 +66,6 @@ export function containerEnv(env: {
     NITRO_PORT: String(CONTAINER_PORT),
     ...(env.DASH_SECRET !== undefined ? { DASH_SECRET: env.DASH_SECRET } : {}),
     ...(mongoUri ? { MONGODB_URI: mongoUri } : {}),
-    DASH_SEED_DEMO: seedDemo ? "true" : "false",
+    DEMO_ENVIRONMENT: demoEnvironment ? "true" : "false",
   };
 }

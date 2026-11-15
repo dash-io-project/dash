@@ -4,11 +4,24 @@ All notable changes to Dash are documented here.
 
 ## Unreleased
 
+### Changed
+
+- `DEMO_ENVIRONMENT` replaces `DASH_SEED_DEMO` and `DASH_SEED_DEV_SOURCES`. Set it to `true` to show **Sample company data**. `demo.dash.io` sets this value. The flag works in production.
+- A seed run skips a data source when its database is not available. The run writes the other sources.
+
 ### Removed
 
-- **Breaking:** the built-in `demo` adapter and the `demo` data source kind. `DASH_SEED_DEMO` now seeds only the demo admin, with no sample warehouse and no Growth overview dashboard. On the first request, Dash deletes stored `demo` data sources and the widgets that read them. It also deletes a dashboard that has no widget left.
+- **Breaking:** the built-in `demo` adapter and the `demo` data source kind. Dash does not seed a sample warehouse or a Growth overview dashboard. On the first request, Dash deletes stored `demo` data sources and the widgets that read them. It also deletes a dashboard that has no widget left.
+- **Breaking:** Dash does not create the `admin@dash.dev` account. Create the first account at `/register`. The login page does not show a demo password.
 
 ### Fixed
+
+- A domain that finished before its database dropped does not hide a failed domain on another source.
+- Startup deletes `admin@dash.dev` when the password is still `dashadmin`. It also deletes that account's sessions and tokens. An account with a different password stays.
+- A timeout or a connection reset on a live data source fails that seed step. Only a refused connection, a missing name, or a missing database is skipped.
+- A missing BigQuery project is skipped. The seed run writes the other sources. A missing dataset is still created.
+- Startup gives the admin role to the oldest active member before it deletes `admin@dash.dev`, when that account is the only admin. A pending account is not promoted.
+- Startup clears the first-admin record before it deletes that account. A stopped cleanup still lets the next account become admin. A live administrator keeps the record.
 
 - A table widget fills its dashboard card and scrolls inside it. The header row stays in view during the scroll. Before, a long table ran past the bottom of its card and over the widgets below it.
 - The seeded "First response by priority" chart uses the short series names `median_minutes` and `sla_minutes`, so its legend fits in the card. The `mart_first_response_by_priority` columns have the same new names.
@@ -20,7 +33,7 @@ All notable changes to Dash are documented here.
 - Cloud setup installs Aikido Safe Chain 1.5.27. Version 1.5.15 exits on pnpm 12, so the environment build fails and agents boot the default image.
 - Sidebar sections use a subtle blue selected state with a left accent and brighter icon. Keyboard focus gets its own inset outline, and the current section is announced to screen readers.
 - App MongoDB connections authenticate a URI user against `admin` when `authSource` is omitted, which is where Atlas stores SCRAM users. The database named in the URI is created on that first connection. A `dbAdmin` role still cannot store accounts; sign-in reports that the user needs `readWrite` on that database. MongoDB data-source connection strings follow the same `authSource` default.
-- `pnpm dev` reads `MONGODB_URI`, `DASH_SECRET`, and `DASH_SEED_DEMO` from the repo `.env`. Vite does not copy those unprefixed variables into the server process. Values already set in the environment win, and production ignores `.env`.
+- `pnpm dev` reads `MONGODB_URI`, `DASH_SECRET`, and `DEMO_ENVIRONMENT` from the repo `.env`. Vite does not copy those unprefixed variables into the server process. Values already set in the environment win, and production ignores `.env`.
 - Databricks SQL sends integers outside the 32-bit range as `BIGINT`, keeps `DECIMAL` values and integers that do not fit a safe JavaScript number as strings, and inlines `LIMIT` and `OFFSET`. Query pages request one extra row so an exact page is not marked truncated. External result links are refused even when some rows arrived inline, repeated chunks are rejected, and closing the client or timing out cancels the warehouse statement. `http` is allowed only for loopback. Introspection normalizes DuckDB and Spark type names, skips unnamed columns, and stops after 10,000 columns unless a schema is set. The test cluster receives `DASH_TEST_DATABRICKS_TOKEN`, `DASH_TEST_DATABRICKS_WAREHOUSE`, `DASH_TEST_DATABRICKS_CATALOG`, and `DASH_TEST_DATABRICKS_SCHEMA`.
 
 ### Added
@@ -29,7 +42,7 @@ All notable changes to Dash are documented here.
 
 - Dash Cloud accounts in `@dash/site`. `/register/` creates an account and an organization on the Cloud plan. `/login/` signs in, and `/account/` shows the account and its organization. Accounts, organizations, and sessions live in the MongoDB database that `DASH_CLOUD_MONGODB_URI` names. Passwords use scrypt, and a session lasts 30 days in an `HttpOnly` cookie. After 10 failed sign-ins for one email, sign-in for that email stops for 15 minutes. The website now runs as a Node.js server (`pnpm --filter @dash/site start`), not as a static export. The marketing pages stay static. New dependencies of `@dash/site`: `mongodb` 7.7.0 and `zod` 4.6.7, the versions that `@dash/web` uses. See [ADR 0012](docs/adr/0012-dash-cloud-accounts.md).
 - Public website in the new `@dash/site` package (`packages/site`). The website tells visitors that Dash is open source under the MIT license and free to host. It also describes Dash Cloud, the paid hosted service. Pages: home, pricing, and open source. Dash Cloud bills by compute hour, with no charge for each user. The rate on the site is a placeholder. Dash Cloud runs in the website: sign-up is at `/register/` and sign-in is at `/login/`. The stack is Next.js 16, Tailwind CSS 4, Biome 2, and Vitest. `pnpm dev:site` starts it on port 3001, and `pnpm lint` runs Biome. CI runs `pnpm lint` and builds the website. See [ADR 0011](docs/adr/0011-public-website.md).
-- Development seed for data sources. When `DASH_SEED_DEV_SOURCES` is `true` outside production, **Settings** shows **Sample company data**. An administrator can write the Fernway sample company into the configured Postgres, MongoDB, and BigQuery sources. The run adds six dashboards in a shared **Fernway** workspace. The numbers agree across sources: finance MRR equals the subscriptions, and collections equal the charges. Dash refuses a schema, dataset, or collection that it did not create. New endpoint: `GET/POST/DELETE /api/dev-seed`, for an admin session only. The generator is the new `@dash/seed` package, with `@faker-js/faker` 10.6.0. See [ADR 0010](docs/adr/0010-dev-seed-data-sources.md).
+- Demo seed for data sources. When `DEMO_ENVIRONMENT` is `true`, **Settings** shows **Sample company data**. An administrator can write the Fernway sample company into the configured Postgres, MongoDB, and BigQuery sources. The run adds six dashboards in a shared **Fernway** workspace. The numbers agree across sources: finance MRR equals the subscriptions, and collections equal the charges. Dash refuses a schema, dataset, or collection that it did not create. New endpoint: `GET/POST/DELETE /api/dev-seed`, for an admin session only. The generator is the new `@dash/seed` package, with `@faker-js/faker` 10.6.0. See [ADR 0010](docs/adr/0010-dev-seed-data-sources.md).
 - `@dash/adapter-bigquery` exports `BigQueryAdminClient` for dataset and table management, streaming inserts, and load jobs by multipart upload. Only the seed writer uses it. `@dash/adapter-postgres` exports `postgresPoolConfig`.
 - The Postgres test cluster creates an empty `fernway` database for development seeding.
 - Administrators can save the email domains that can create accounts. An empty list allows every domain. Open registration and invitations both use the list. The first account does not use the list.

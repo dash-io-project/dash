@@ -1,13 +1,11 @@
-import { EmailTakenError, countUsers, createUser, findUserByEmail, grantInitialAdmin } from "./auth.ts";
-import { ensurePersonalWorkspace } from "./services/workspaces.ts";
-import { dashboards, getDb, nowIso } from "./db.ts";
-import { getEnv } from "./env.ts";
-import { getSettings, updateSettings } from "./services/settings.ts";
+import { findUserByEmail } from "./auth.ts";
+import { verifyPassword } from "./crypto.ts";
+import { apiTokens, dashboards, getDb, nowIso, sessions, users } from "./db.ts";
+import { getSettings } from "./services/settings.ts";
 
-export const DEMO_LOGIN = {
-  email: "admin@dash.dev",
-  password: "dashadmin",
-} as const;
+/** The published demo account. Startup removes it only while this password still matches. */
+const LEGACY_DEMO_EMAIL = "admin@dash.dev";
+const LEGACY_DEMO_PASSWORD = "dashadmin";
 
 /**
  * The built-in sample warehouse (`kind: "demo"`) is gone. Older app databases
@@ -36,6 +34,67 @@ async function retireDemoSources(): Promise<void> {
   await marker.updateOne({ _id: "demo-retired" }, { $set: { complete: true } }, { upsert: true });
 }
 
+/**
+ * Keep one admin when the legacy account is the only admin.
+ * The oldest active member receives the role. A pending account stays pending.
+ */
+async function keepAnotherAdmin(removedId: string): Promise<void> {
+  const collection = await users();
+  const others = await collection.countDocuments({
+    _id: { $ne: removedId },
+    role: "admin",
+    accountState: { $ne: "pending" },
+  });
+  if (others > 0) return;
+  await collection.findOneAndUpdate(
+    {
+      _id: { $ne: removedId },
+      role: { $ne: "admin" },
+      accountState: { $ne: "pending" },
+    },
+    { $set: { role: "admin" } },
+    { sort: { createdAt: 1, _id: 1 } },
+  );
+}
+
+/**
+ * Drop a first-admin record whose account is already gone.
+ * A live account keeps the record. A later member stays a member.
+ */
+async function releaseOrphanBootstrap(): Promise<void> {
+  const marker = (await getDb()).collection<{ _id: string; adminUserId?: string }>("settings");
+  const bootstrap = await marker.findOne({ _id: "bootstrap" });
+  if (!bootstrap?.adminUserId) return;
+  if (await (await users()).findOne({ _id: bootstrap.adminUserId })) return;
+  await marker.deleteOne({ _id: "bootstrap", adminUserId: bootstrap.adminUserId });
+}
+
+/**
+ * Older installs can still hold admin@dash.dev with the published password.
+ * This step runs once. It deletes that account, its sessions, and its tokens
+ * when the password still matches. An account with a different password stays.
+ * When that account is the only admin, another active member becomes admin first.
+ * The first-admin record goes before the account, so a stopped run can finish.
+ */
+async function retireLegacyDemoAdmin(): Promise<void> {
+  const db = await getDb();
+  const marker = db.collection<{ _id: string; complete: boolean; adminUserId?: string }>("settings");
+  if (await marker.findOne({ _id: "demo-admin-retired" })) return;
+  const user = await findUserByEmail(LEGACY_DEMO_EMAIL);
+  if (user && (await verifyPassword(LEGACY_DEMO_PASSWORD, user.passwordHash))) {
+    if (user.role === "admin") await keepAnotherAdmin(user._id);
+    await (await sessions()).deleteMany({ userId: user._id });
+    await (await apiTokens()).updateMany(
+      { userId: user._id, revokedAt: null },
+      { $set: { revokedAt: nowIso() } },
+    );
+    await marker.deleteOne({ _id: "bootstrap", adminUserId: user._id });
+    await (await users()).deleteOne({ _id: user._id });
+  }
+  await releaseOrphanBootstrap();
+  await marker.updateOne({ _id: "demo-admin-retired" }, { $set: { complete: true } }, { upsert: true });
+}
+
 let seedTask: Promise<void> | undefined;
 
 export function resetSeedForTests(): void {
@@ -43,43 +102,9 @@ export function resetSeedForTests(): void {
 }
 
 async function seedOnce(): Promise<void> {
-  const db = await getDb();
   await getSettings();
   await retireDemoSources();
-  if (!getEnv().seedDemo) return;
-  const progress = db.collection<{ _id: string; complete: boolean }>("settings");
-  let state = await progress.findOne({ _id: "demo-seed" });
-  if (!state) {
-    if ((await countUsers()) !== 0) return;
-    await progress.updateOne(
-      { _id: "demo-seed" },
-      { $setOnInsert: { complete: false } },
-      { upsert: true },
-    );
-    state = await progress.findOne({ _id: "demo-seed" });
-  }
-  if (state?.complete) return;
-
-  // Resume each step after a failed request or a server restart.
-  let admin = await findUserByEmail(DEMO_LOGIN.email);
-  if (!admin) {
-    try {
-      await createUser({
-        email: DEMO_LOGIN.email,
-        name: "Dash Admin",
-        password: DEMO_LOGIN.password,
-        role: "member",
-      });
-    } catch (error) {
-      if (!(error instanceof EmailTakenError)) throw error;
-    }
-    admin = await findUserByEmail(DEMO_LOGIN.email);
-  }
-  if (!admin) throw new Error("Demo account not found");
-  await grantInitialAdmin(admin._id);
-  await ensurePersonalWorkspace(admin._id);
-  await updateSettings({ name: "Dash", allowRegistration: true });
-  await progress.updateOne({ _id: "demo-seed" }, { $set: { complete: true } });
+  await retireLegacyDemoAdmin();
 }
 
 export function ensureSeeded(): Promise<void> {

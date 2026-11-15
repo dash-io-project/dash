@@ -29,9 +29,9 @@ function failure(cause: unknown): Response {
 }
 
 /**
- * Development seeding. Each method answers 404 unless DASH_SEED_DEV_SOURCES
- * is true outside production. It writes into data sources, so it needs an
- * admin browser session. API tokens and MCP cannot call it.
+ * Demo seeding. Each method answers 404 unless DEMO_ENVIRONMENT is true.
+ * It writes into data sources, so it needs an admin browser session.
+ * API tokens and MCP cannot call it.
  */
 export const Route = createFileRoute("/api/dev-seed")({
   server: {

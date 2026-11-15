@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AuthBootstrap, DemoLogin } from "~/lib/bootstrap";
+import type { AuthBootstrap } from "~/lib/bootstrap";
 import { api } from "~/lib/api";
 import { AuthCard, Field, PrimaryButton, TextInput } from "~/components/ui";
 
@@ -29,12 +29,7 @@ function LoginPage() {
   if (bootstrap.data.needsSetup) {
     return <SetupPrompt />;
   }
-  return (
-    <LoginForm
-      demoLogin={bootstrap.data.demoLogin}
-      allowRegistration={bootstrap.data.allowRegistration}
-    />
-  );
+  return <LoginForm allowRegistration={bootstrap.data.allowRegistration} />;
 }
 
 function SetupPrompt() {
@@ -53,17 +48,11 @@ function SetupPrompt() {
   );
 }
 
-function LoginForm({
-  demoLogin,
-  allowRegistration,
-}: {
-  demoLogin: DemoLogin | null;
-  allowRegistration: boolean;
-}) {
+function LoginForm({ allowRegistration }: { allowRegistration: boolean }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [email, setEmail] = useState(demoLogin?.email ?? "");
-  const [password, setPassword] = useState(demoLogin?.password ?? "");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -88,11 +77,7 @@ function LoginForm({
   return (
     <AuthCard
       title="Welcome back"
-      subtitle={
-        demoLogin
-          ? `Local demo: ${demoLogin.email} / ${demoLogin.password}`
-          : "Sign in with your organization account."
-      }
+      subtitle="Sign in with your organization account."
       onSubmit={(event) => void onSubmit(event)}
       footer={
         allowRegistration ? (
