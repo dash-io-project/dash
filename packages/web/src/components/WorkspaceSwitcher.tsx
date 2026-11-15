@@ -2,18 +2,14 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { Check, ChevronsUpDown, UserRound, Users } from "lucide-react";
 import type { Workspace } from "@dash/core";
 import { cn } from "~/lib/cn";
+import { ICON_STROKE } from "./ui";
 import { useWorkspace } from "./WorkspaceProvider";
 
 function WorkspaceIcon({ workspace }: { workspace: Workspace }) {
   const Icon = workspace.kind === "personal" ? UserRound : Users;
   return (
-    <span
-      className={cn(
-        "grid h-8 w-8 shrink-0 place-items-center rounded-lg",
-        workspace.kind === "personal" ? "bg-accent/10 text-accent" : "bg-accent-2/15 text-accent-2",
-      )}
-    >
-      <Icon size={16} aria-hidden="true" />
+    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-sm border border-border bg-hover text-foreground">
+      <Icon size={15} strokeWidth={ICON_STROKE} aria-hidden="true" />
     </span>
   );
 }
@@ -33,15 +29,15 @@ export function WorkspaceSwitcher({ userId }: { userId: string }) {
   if (supportsPopover) return <WorkspaceMenu userId={userId} />;
 
   return (
-    <label className="relative mt-6 block">
+    <label className="relative block">
       <span className="sr-only">Switch workspace</span>
-      <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+      <span className="pointer-events-none absolute inset-y-0 left-2 flex items-center">
         <WorkspaceIcon workspace={workspace} />
       </span>
       <select
         value={workspace.id}
         onChange={(event) => selectWorkspace(event.target.value)}
-        className="w-full appearance-none truncate rounded-xl border border-line bg-panel py-4 pl-14 pr-9 text-sm text-paper hover:border-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="input min-h-11 appearance-none truncate bg-control pl-11 pr-9 font-medium"
       >
         {workspaces.map((item) => (
           <option key={item.id} value={item.id}>
@@ -52,8 +48,9 @@ export function WorkspaceSwitcher({ userId }: { userId: string }) {
       </select>
       <ChevronsUpDown
         size={15}
+        strokeWidth={ICON_STROKE}
         aria-hidden="true"
-        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-mist"
+        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
       />
     </label>
   );
@@ -131,7 +128,7 @@ function WorkspaceMenu({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="mt-6">
+    <div>
       <button
         ref={trigger}
         type="button"
@@ -148,22 +145,16 @@ function WorkspaceMenu({ userId }: { userId: string }) {
             menu.current?.showPopover();
           }
         }}
-        className="group flex w-full items-center gap-3 rounded-xl border border-line bg-panel/70 p-3 text-left transition-colors hover:border-white/20 hover:bg-panel-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
+        className="flex min-h-11 w-full items-center gap-2.5 rounded-md border border-control-border bg-control px-2 py-1.5 text-left shadow-xs hover:bg-control-hover"
       >
         <WorkspaceIcon workspace={workspace} />
-        <span className="min-w-0 flex-1">
-          <span className="block text-[10px] font-medium uppercase tracking-[0.14em] text-mist">
-            Workspace
-          </span>
-          <span className="block truncate text-sm font-medium text-paper" title={workspace.name}>
+        <span className="min-w-0 flex-1 leading-tight">
+          <span className="block text-xs text-muted-foreground">Workspace</span>
+          <span className="block truncate font-medium" title={workspace.name}>
             {workspace.name}
           </span>
         </span>
-        <ChevronsUpDown
-          size={15}
-          aria-hidden="true"
-          className="shrink-0 text-mist group-hover:text-paper"
-        />
+        <ChevronsUpDown size={15} strokeWidth={ICON_STROKE} aria-hidden="true" className="shrink-0 text-muted-foreground" />
       </button>
       <div
         ref={menu}
@@ -175,9 +166,9 @@ function WorkspaceMenu({ userId }: { userId: string }) {
           setOpen(event.newState === "open");
         }}
         onKeyDown={moveFocus}
-        className="fixed inset-auto m-0 overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-panel p-1.5 text-paper shadow-[0_16px_48px_rgb(0_0_0_/0.45)]"
+        className="menu-panel fixed inset-auto m-0 overflow-y-auto overscroll-contain"
       >
-        <p className="px-3 pb-2 pt-2 text-xs font-medium text-mist" role="presentation">
+        <p className="px-2 py-1.5 text-xs font-medium text-muted-foreground" role="presentation">
           Switch workspace
         </p>
         {workspaces.map((item) => (
@@ -196,17 +187,14 @@ function WorkspaceMenu({ userId }: { userId: string }) {
               trigger.current?.focus();
               if (item.id !== workspace.id) selectWorkspace(item.id);
             }}
-            className={cn(
-              "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left outline-none hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60",
-              item.id === workspace.id && "bg-accent/5",
-            )}
+            className={cn("menu-item gap-2.5", item.id === workspace.id && "bg-hover")}
           >
             <WorkspaceIcon workspace={item} />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium" title={item.name}>
+              <span className="block truncate font-medium" title={item.name}>
                 {item.name}
               </span>
-              <span className="block text-xs text-mist">
+              <span className="block text-xs text-muted-foreground">
                 {item.kind === "personal"
                   ? item.ownerId === userId
                     ? "Your personal workspace"
@@ -215,7 +203,7 @@ function WorkspaceMenu({ userId }: { userId: string }) {
               </span>
             </span>
             {item.id === workspace.id ? (
-              <Check size={16} aria-hidden="true" className="shrink-0 text-accent" />
+              <Check size={16} strokeWidth={ICON_STROKE} aria-hidden="true" className="shrink-0" />
             ) : null}
           </button>
         ))}

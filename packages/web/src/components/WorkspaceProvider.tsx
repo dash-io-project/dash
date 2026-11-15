@@ -34,25 +34,26 @@ export function WorkspaceProvider({ user, children }: { user: PublicUser; childr
 
   if (query.isError)
     return (
-      <p role="alert" className="p-8 text-rose-300">
+      <p role="alert" className="p-8 text-negative">
         Could not load workspaces. Refresh this page to try again.
       </p>
     );
   if (query.data && !workspace)
     return (
       <div className="p-8">
-        <p role="alert" className="text-rose-300">
+        <p role="alert" className="text-negative">
           Workspace not found or access removed.
         </p>
         <button
-          className="mt-4 text-accent underline"
+          type="button"
+          className="link mt-4"
           onClick={() => void navigate({ to: "/dashboards", search: { workspace: undefined } })}
         >
           Open your personal workspace
         </button>
       </div>
     );
-  if (!workspace) return <p className="p-8 text-mist">Loading workspaces…</p>;
+  if (!workspace) return <p className="p-8 text-muted-foreground">Loading workspaces…</p>;
 
   function selectWorkspace(id: string) {
     void navigate({ to: "/dashboards", search: { workspace: id } });
