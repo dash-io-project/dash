@@ -463,7 +463,11 @@ export async function startDevSeed(user: PublicUser, planId: string, size: SeedS
       const done = new Set<SeedDomainKey>();
       for (const [index, item] of plan.assignments.entries()) {
         if (signal.aborted) throw signal.reason;
-        if (unavailable.has(item.sourceId) || failedSources.has(item.sourceId)) continue;
+        if (unavailable.has(item.sourceId)) {
+          await update({ [`steps.${index}.status`]: "skipped", [`steps.${index}.error`]: UNAVAILABLE_STEP });
+          continue;
+        }
+        if (failedSources.has(item.sourceId)) continue;
         const domain = dataset.domains.find((entry) => entry.key === item.domain)!;
         const target = seed.seedTarget(configs.get(item.sourceId)!);
         await update({ [`steps.${index}.status`]: "running" });
@@ -489,9 +493,19 @@ export async function startDevSeed(user: PublicUser, planId: string, size: SeedS
           await update({ [`steps.${index}.status`]: "done", [`steps.${index}.rows`]: rows });
         } catch (error) {
           if (signal.aborted) throw error;
+          // Inspect can read a missing project as an absent dataset. The
+          // create call then reports the missing project. Skip that source.
+          if (isDatabaseUnavailable(error)) {
+            unavailable.add(item.sourceId);
+            await update({ [`steps.${index}.status`]: "skipped", [`steps.${index}.error`]: UNAVAILABLE_STEP });
+            continue;
+          }
           writeFailures.add(item.domain);
           await update({ [`steps.${index}.status`]: "failed", [`steps.${index}.error`]: message(error) });
         }
+      }
+      if (done.size === 0 && plan.assignments.length > 0 && plan.assignments.every((item) => unavailable.has(item.sourceId))) {
+        throw new Error("No data source database is available.");
       }
 
       // Dashboards on the domains that were written. Each id is saved as soon

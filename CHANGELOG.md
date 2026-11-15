@@ -19,6 +19,7 @@ All notable changes to Dash are documented here.
 - A domain that finished before its database dropped does not hide a failed domain on another source.
 - Startup deletes `admin@dash.dev` when the password is still `dashadmin`. It also deletes that account's sessions and tokens. An account with a different password stays.
 - A timeout or a connection reset on a live data source fails that seed step. Only a refused connection, a missing name, or a missing database is skipped.
+- A missing BigQuery project is skipped. The seed run writes the other sources. A missing dataset is still created.
 
 - A table widget fills its dashboard card and scrolls inside it. The header row stays in view during the scroll. Before, a long table ran past the bottom of its card and over the widgets below it.
 - The seeded "First response by priority" chart uses the short series names `median_minutes` and `sla_minutes`, so its legend fits in the card. The `mart_first_response_by_priority` columns have the same new names.

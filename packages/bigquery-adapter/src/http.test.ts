@@ -1,6 +1,6 @@
 import { createVerify, generateKeyPairSync } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { BigQueryUploadUnsupportedError, createBigQueryClient, signServiceAccountJwt } from "./http.ts";
+import { BigQueryHttpError, BigQueryUploadUnsupportedError, createBigQueryClient, signServiceAccountJwt } from "./http.ts";
 
 const { privateKey, publicKey } = generateKeyPairSync("rsa", {
   modulusLength: 2048,
@@ -358,6 +358,20 @@ describe("BigQuery HTTP client", () => {
     await expect(client.deleteDataset("missing")).resolves.toBeUndefined();
     const deleteUrl = new URL(String(fetchImpl.mock.calls[3]?.[0]));
     expect(deleteUrl.searchParams.get("deleteContents")).toBe("true");
+  });
+
+  it("raises a missing project and reads a missing dataset as null", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async (url) => {
+      const path = String(url);
+      if (path.endsWith("/datasets/missing")) {
+        return jsonResponse({ error: { code: 404, message: "Not found: Dataset dash:missing" } }, 404);
+      }
+      return jsonResponse({ error: { code: 404, message: "Not found: Project dash" } }, 404);
+    });
+    const client = createBigQueryClient({ projectId: "dash", apiEndpoint: "http://127.0.0.1:9059", fetchImpl, env: {} });
+    await expect(client.getDataset("missing")).resolves.toBeNull();
+    await expect(client.getDataset("other")).rejects.toBeInstanceOf(BigQueryHttpError);
+    await expect(client.getDataset("other")).rejects.toMatchObject({ status: 404 });
   });
 
   it("raises the first row error from a streaming insert", async () => {
