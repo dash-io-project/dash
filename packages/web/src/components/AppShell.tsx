@@ -1,5 +1,5 @@
 import type { PublicUser } from "@dash/core";
-import { Link, Navigate, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, Navigate, Outlet, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bot,
@@ -101,13 +101,17 @@ export function AppShell({ user }: { user: PublicUser }) {
 
 export function AuthedGate() {
   const me = useQuery({ queryKey: ["me"], queryFn: fetchMe });
+  const router = useRouter();
   if (me.isLoading) {
     return (
       <div className="grid min-h-screen place-items-center text-mist">Loading workspace…</div>
     );
   }
   if (me.isError || !me.data) {
-    return <Navigate to="/login" />;
+    // Return to this page after sign-in, so that a shared dashboard or chart
+    // link still works. Read the location once: a subscription re-renders this
+    // gate on each navigation, and `Navigate` then navigates again in a loop.
+    return <Navigate to="/login" search={{ redirect: router.state.location.href }} />;
   }
   return <WorkspaceProvider key={me.data.id} user={me.data}><AppShell user={me.data} /></WorkspaceProvider>;
 }

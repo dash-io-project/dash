@@ -4,6 +4,12 @@ All notable changes to Dash are documented here.
 
 ## Unreleased
 
+### Added
+
+- `add_chart_widget` accepts `rows` for a snapshot chart. An agent can save data that it calculated, for example average tickets for each hour. Dash keeps up to 1,000 rows with the widget. The rows do not refresh. The chart shows a **Snapshot** label with the save date. Give `rows`, or give `dataSourceId` and `resource`. Do not give both.
+- MCP dashboard responses include links. `create_dashboard`, `get_dashboard`, and `list_dashboards` return `dashboardUrl`, and `widgetUrl` for each widget. `add_chart_widget` also returns `widgetId` and `chartUrl`. See [ADR 0015](docs/adr/0015-snapshot-charts-and-links.md).
+- A widget link opens a view of the dashboard that shows only that widget. The link can name more than one widget, for example a chart and a table. Each widget card has a **Copy link** button. The view has a **Show all widgets** link.
+
 ### Changed
 
 - The **Agent tokens** page is now **Agents** (`/agents`) in the sidebar and in the page header. Connect an agent with OAuth or with a token on that page. The old `/agent-tokens` path opens the Agents page. The API tokens page does not list OAuth agents.
@@ -18,6 +24,9 @@ All notable changes to Dash are documented here.
 
 ### Fixed
 
+- A signed-out user who opens a Dash link returns to that link after sign-in. Before, Dash opened the dashboard list.
+- `add_chart_widget` reports "Dashboard not found" when the dashboard is deleted during the call. Before, the tool sent an empty result.
+- The dashboard page can save a dashboard after `add_chart_widget` adds a chart to it. Before, MongoDB stored each unset chart field as null, and the save failed with 400. The tool does not store unset fields now, and the save accepts the null fields of earlier charts.
 - A domain that finished before its database dropped does not hide a failed domain on another source.
 - Startup deletes `admin@dash.dev` when the password is still `dashadmin`. It also deletes that account's sessions and tokens. An account with a different password stays.
 - A timeout or a connection reset on a live data source fails that seed step. Only a refused connection, a missing name, or a missing database is skipped.

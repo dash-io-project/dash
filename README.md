@@ -313,6 +313,15 @@ To connect with a token, issue an agent token on the Agents page. The token has 
 
 The Agents page lists OAuth agents and API tokens with the `mcp` scope. Revoke an agent on the Agents page. The old `/agent-tokens` path opens the Agents page. Tools include `list_data_sources`, `get_schema`, `query_data`, `list_dashboards`, `get_dashboard`, `create_dashboard`, and `add_chart_widget`.
 
+`add_chart_widget` adds a live chart or a snapshot chart:
+
+- A live chart has `dataSourceId` and `resource`. Dash runs its query each time that the chart renders.
+- A snapshot chart has `rows` that the agent calculated, for example 24 hourly averages. Dash saves up to 1,000 rows with the chart. The rows do not refresh, and the chart shows a **Snapshot** label with the save date.
+
+`create_dashboard`, `get_dashboard`, and `list_dashboards` return a `dashboardUrl`, and a `widgetUrl` for each widget. `add_chart_widget` also returns `widgetId` and `chartUrl`. The links use the public address of Dash.
+
+A widget link opens a view of the dashboard that shows only that widget. The widget can be a chart, a table, or a KPI. To show more than one widget, put their ids in the `widgets` value of the link, with commas between them. Each widget card has a **Copy link** button. A link opens only for a signed-in member of the workspace. See [ADR 0015](docs/adr/0015-snapshot-charts-and-links.md).
+
 ## Scripts
 
 | Command | |
