@@ -44,6 +44,7 @@ All notable changes to Dash are documented here.
 
 ### Fixed
 
+- The sidebar stays the full height of the window when you scroll a long dashboard. Before, the hidden status text of each widget card made the page taller than the window. The page then scrolled, and the sidebar stopped above the bottom of the window.
 - **Security:** an API token cannot change the profile, the password, or the organization settings. `PATCH /api/users/me` and `PATCH /api/settings` need a browser session. Before, a leaked `write` token could set a new password and take over the account.
 - A signed-out user who opens a Dash link returns to that link after sign-in. Before, Dash opened the dashboard list.
 - `add_chart_widget` reports "Dashboard not found" when the dashboard is deleted during the call. Before, the tool sent an empty result.
