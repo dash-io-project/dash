@@ -12,17 +12,20 @@ import { Badge, ICON_STROKE, IconButton } from "./ui";
 const savedDate = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
 
 /** Tells the viewer that the widget shows saved rows, and when Dash saved them. */
-function SnapshotLabel({ savedAt }: { savedAt: string }) {
+function SnapshotLabel({ savedAt, className }: { savedAt: string; className?: string }) {
   const saved = new Date(savedAt);
   return (
-    <Badge className="shrink-0" title="Saved data. It does not refresh.">
-      Snapshot
-      {Number.isNaN(saved.getTime()) ? null : (
-        <>
-          {" · "}
-          <time dateTime={savedAt}>{savedDate.format(saved)}</time>
-        </>
-      )}
+    // In a narrow card the text gets shorter and ends with an ellipsis.
+    <Badge className={cn("min-w-0", className)} title="Saved data. It does not refresh.">
+      <span className="truncate">
+        Snapshot
+        {Number.isNaN(saved.getTime()) ? null : (
+          <>
+            {" · "}
+            <time dateTime={savedAt}>{savedDate.format(saved)}</time>
+          </>
+        )}
+      </span>
     </Badge>
   );
 }
@@ -108,7 +111,9 @@ export function WidgetCard({ widget, getShareUrl }: { widget: DashboardWidget; g
           {widget.title}
         </h2>
         <div className="flex shrink-0 items-center gap-1">
-          {snapshot ? <SnapshotLabel savedAt={snapshot.savedAt} /> : null}
+          {/* A KPI card shows the Snapshot label above its value. The header row of a
+              narrow KPI card has no room for it. */}
+          {snapshot && !isKpi ? <SnapshotLabel savedAt={snapshot.savedAt} className="shrink-0" /> : null}
           {getShareUrl ? <CopyLinkButton getUrl={getShareUrl} /> : null}
         </div>
       </div>
@@ -121,7 +126,12 @@ export function WidgetCard({ widget, getShareUrl }: { widget: DashboardWidget; g
             {(query.error as Error).message}
           </div>
         ) : widget.type === "kpi" && widget.kpi ? (
-          <KpiCard rows={rows} spec={widget.kpi} />
+          <>
+            {snapshot ? (
+              <SnapshotLabel savedAt={snapshot.savedAt} className="mb-2 max-w-full self-start" />
+            ) : null}
+            <KpiCard rows={rows} spec={widget.kpi} />
+          </>
         ) : widget.type === "table" ? (
           <DataTable rows={rows} />
         ) : widget.chart ? (

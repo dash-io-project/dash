@@ -280,7 +280,7 @@ The tokens are at the top of [`packages/web/src/styles/app.css`](packages/web/sr
 - `--control`, `--control-hover`, `--control-border`, and `--field` are the fills of buttons and text fields. They have dark values, so a component needs no rule for dark mode.
 - Radii: `--radius-lg` 10px (cards, dialogs), `--radius-md` 8px (buttons, fields, sidebar rows), and `--radius-sm` 6px (menu items). Only badges and avatars are round.
 - Shadows: `--shadow-xs` (buttons, fields), `--shadow-menu` (menus), and `--shadow-dialog`. The sidebar, the drawer, cards, and widgets have no shadow.
-- Text: the system font stack, 14px for the interface, 18px with weight 600 for the title of a page, 15px with weight 600 for the heading of a panel, and 12px for table headers. The app loads no font file.
+- Text uses the system font stack. The interface text is 14px. The title of a page is 18px with weight 600, and the heading of a panel is 15px with weight 600. Table headers are 12px. The app loads no font file.
 - Each number column, KPI value, and count uses tabular figures (`.tabular`).
 - Use a token for each color. The theme removes the default Tailwind palette, so a class such as `text-rose-300` makes no CSS.
 
@@ -288,7 +288,7 @@ The tokens are at the top of [`packages/web/src/styles/app.css`](packages/web/sr
 
 Each text color has a contrast ratio of 4.5:1 or more on each fill behind it, in the two modes. The lowest ratio is `--muted-foreground` on `--hover`: 4.76:1 in light mode and 5.84:1 in dark mode.
 
-Known limit: the border of a text field (`--input`) has a ratio of 1.48:1 on the canvas in light mode and 1.73:1 in dark mode. This is less than the 3:1 of WCAG 1.4.11. Each field has a visible label. With the focus, the border changes to `--ring`, which has 4.74:1 in light mode and 7.11:1 in dark mode.
+Known limit: the border of a text field (`--input`) has a low contrast on the canvas. The ratio is 1.48:1 in light mode and 1.73:1 in dark mode. This is less than the 3:1 of WCAG 1.4.11. Each field has a visible label. With the focus, the border changes to `--ring`, which has 4.74:1 in light mode and 7.11:1 in dark mode.
 
 Three light chart colors (`--chart-3`, `--chart-4`, and `--chart-5`) have less than 3:1 on a white card. A chart with two or more series has a legend, and each chart has a tooltip with the values.
 
@@ -311,8 +311,8 @@ The icons are from [lucide-react](https://lucide.dev), with a stroke width of 1.
 - The sidebar has the brand mark, the workspace switcher, the navigation groups **Analytics** and **Organization**, and the account button. The account panel has the name and the email address, the Appearance choice, the **Profile** link, and **Sign out**.
 - A sidebar row is 36px high with a radius of 8px. The current row has the `--hover` fill.
 - Each page starts with `PageHeader`: the title, one line of description, and the actions at the right.
-- Settings, Profile, Members, Workspaces, API tokens, and Agents use panels: a heading (`.panel-title`), a muted line (`.panel-note`), and a card (`.card`) only for a list or a form. Sign-in, register, invite, and the OAuth approval use one card of 420px on the surface, with fields and buttons 40px high.
-- A widget is a card with a header row: the title at the left, the **Snapshot** label and the **Copy link** button at the right. A dashboard grid row is 56px. A chart fills its card. A KPI card shows its label at the top and its value at the bottom. From 360px to 900px, two KPI cards share a row, and the value gets smaller in a narrow card.
+- Settings, Profile, Members, Workspaces, API tokens, and Agents use panels. A panel has a heading (`.panel-title`) and a muted line (`.panel-note`). A card (`.card`) holds only a list or a form. Sign-in, register, invite, and the OAuth approval use one card of 420px on the surface, with fields and buttons 40px high.
+- A widget is a card with a header row: the title at the left, the **Snapshot** label and the **Copy link** button at the right. A KPI card shows the **Snapshot** label above its value. A dashboard grid row is 56px. A chart fills its card. A KPI card shows its label at the top and its value at the bottom. From 360px to 900px, two KPI cards share a row, and the value gets smaller in a narrow card.
 - The app has one breakpoint for the drawer: 900px. At 900px and below, a top bar has the menu button, and the sidebar opens as a drawer. Escape, the close button, and the backdrop close it.
 - At 900px and below, and for a touch screen (`pointer: coarse`), each control is 44px or more and text fields have 16px text. A checkbox keeps its size: the label around it is the 44px target.
 - No page scrolls sideways at 360px. A table scrolls in its own container.

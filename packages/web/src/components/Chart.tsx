@@ -3,9 +3,6 @@ import { Chart as TanStackChart } from "@tanstack/charts/react";
 import type { ChartSpec } from "@dash/core";
 import { toChartDefinition } from "~/lib/chart/tanstack";
 
-/** The smallest height of a chart. A chart below this height has no room for its axes. */
-const MIN_HEIGHT = 120;
-
 /**
  * A chart that fills the height of its container. TanStack Charts needs the height as
  * a number, so this component measures the container.
@@ -30,7 +27,9 @@ export function Chart({
   useLayoutEffect(() => {
     const element = container.current;
     if (!element) return;
-    const measure = () => setHeight(Math.max(MIN_HEIGHT, Math.floor(element.clientHeight)));
+    // The chart takes the height of its card, also when the card is small. A larger
+    // chart is clipped by the card.
+    const measure = () => setHeight(Math.floor(element.clientHeight));
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
