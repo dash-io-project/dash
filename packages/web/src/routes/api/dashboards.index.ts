@@ -2,13 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { isResponse, requireWorkspace } from "~/server/guard";
 import { error, json, readJson } from "~/server/http";
-import { widgetSchema } from "~/server/widget-schema";
+import { widgetListSchema } from "~/server/widget-schema";
 import { createDashboard, listDashboards } from "~/server/services/dashboards";
 
 const createSchema = z.object({
   name: z.string().min(1).max(80),
   description: z.string().max(2000).optional(),
-  widgets: z.array(widgetSchema).optional(),
+  widgets: widgetListSchema.optional(),
 });
 
 export const Route = createFileRoute("/api/dashboards/")({

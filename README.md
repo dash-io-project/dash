@@ -316,7 +316,7 @@ The Agents page lists OAuth agents and API tokens with the `mcp` scope. Revoke a
 `add_chart_widget` adds a live chart or a snapshot chart:
 
 - A live chart has `dataSourceId` and `resource`. Dash runs its query each time that the chart renders.
-- A snapshot chart has `rows` that the agent calculated, for example 24 hourly averages. Dash saves up to 1,000 rows with the chart. The rows do not refresh, and the chart shows a **Snapshot** label with the save date.
+- A snapshot chart has `rows` that the agent calculated, for example 24 hourly averages. Dash saves up to 1,000 rows, or 256 KiB of JSON, with the chart. The snapshots on one dashboard can use 2 MiB in total. The rows do not refresh, and the chart shows a **Snapshot** label with the save date.
 
 `create_dashboard`, `get_dashboard`, and `list_dashboards` return a `dashboardUrl`, and a `widgetUrl` for each widget. `add_chart_widget` also returns `widgetId` and `chartUrl`. The links use the public address of Dash.
 

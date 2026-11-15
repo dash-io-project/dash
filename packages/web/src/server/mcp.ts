@@ -7,7 +7,7 @@ import { randomId } from "./crypto.ts";
 import type { WorkspaceAuthContext } from "./http.ts";
 import { nowIso } from "./db.ts";
 import { publicOrigin } from "./oauth.ts";
-import { snapshotRowsSchema } from "./widget-schema.ts";
+import { jsonBytes, MAX_DASHBOARD_SNAPSHOT_BYTES, snapshotBytes, snapshotRowsSchema } from "./widget-schema.ts";
 import { dashboardUrl, widgetUrl } from "../lib/dashboard-links.ts";
 import {
   createDashboard,
@@ -194,7 +194,7 @@ function buildServer(auth: WorkspaceAuthContext, origin: string): McpServer {
           rows: snapshotRowsSchema
             .optional()
             .describe(
-              'Snapshot chart: 1 to 1,000 rows of calculated data, for example [{"hour": 0, "weekday_average": 1.5}]. Do not use with `dataSourceId` or `resource`.',
+              'Snapshot chart: 1 to 1,000 rows of calculated data, up to 256 KiB of JSON, for example [{"hour": 0, "weekday_average": 1.5}]. Do not use with `dataSourceId` or `resource`.',
             ),
           chartType: z.string(),
           x: z.string().optional(),
@@ -231,6 +231,11 @@ function buildServer(auth: WorkspaceAuthContext, origin: string): McpServer {
         const dashboard = await getDashboard(auth.workspace.id, input.dashboardId);
         if (!dashboard) {
           return errorResult("Dashboard not found");
+        }
+        if (input.rows && snapshotBytes(dashboard.widgets) + jsonBytes(input.rows) > MAX_DASHBOARD_SNAPSHOT_BYTES) {
+          return errorResult(
+            `The snapshots on one dashboard can use at most ${MAX_DASHBOARD_SNAPSHOT_BYTES / 1024 / 1024} MiB of JSON. Give fewer rows, or add the chart to a different dashboard.`,
+          );
         }
         const y = dashboard.widgets.reduce((max, widget) => Math.max(max, widget.layout.y + widget.layout.h), 0);
         const base = {

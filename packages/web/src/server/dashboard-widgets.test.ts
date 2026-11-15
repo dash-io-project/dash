@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { DashboardWidget } from "@dash/core";
 import { createSession, createUser } from "./auth.ts";
-import { createDashboard } from "./services/dashboards.ts";
+import { createDashboard, getDashboard } from "./services/dashboards.ts";
 import { ensurePersonalWorkspace } from "./services/workspaces.ts";
 import { destroyAppDatabase, useFreshAppDatabase } from "./test-db.ts";
 import { Route as DashboardItem } from "../routes/api/dashboards.$id.ts";
@@ -42,5 +42,26 @@ describe("dashboard widget payloads", () => {
 
     expect(saved.status).toBe(200);
     expect((await saved.json()).dashboard.widgets).toEqual([snapshot, added]);
+  });
+
+  it("refuses a widget list whose snapshots are over the dashboard budget", async () => {
+    const user = await createUser({ email: "snapshot-budget@example.com", name: "Snapshot", password: "password123", role: "admin" });
+    const session = await createSession(user.id);
+    const workspaceId = await ensurePersonalWorkspace(user.id);
+    const dashboard = await createDashboard({ workspaceId, name: "Big", description: "", widgets: [], createdBy: user.id });
+    // Each table has 253,001 bytes of rows, under the 256 KiB budget for one snapshot.
+    // Nine tables are over the 2 MiB budget for one dashboard.
+    const rows = Array.from({ length: 1000 }, () => ({ label: "x".repeat(240) }));
+    const widgets = Array.from({ length: 9 }, (_, index) => ({
+      id: `table-${index}`,
+      type: "table",
+      title: "Labels",
+      layout: { x: 0, y: index * 4, w: 12, h: 4 },
+      snapshot: { rows, savedAt: "2026-11-15T08:00:00.000Z" },
+    }));
+
+    expect((await call("PATCH", session, workspaceId, dashboard.id, { widgets })).status).toBe(400);
+    expect((await call("PATCH", session, workspaceId, dashboard.id, { widgets: widgets.slice(0, 8) })).status).toBe(200);
+    expect((await getDashboard(workspaceId, dashboard.id))?.widgets).toHaveLength(8);
   });
 });

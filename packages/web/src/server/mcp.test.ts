@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { defaultParseSearch } from "@tanstack/react-router";
+import type { DashboardWidget } from "@dash/core";
 import { createUser } from "./auth.ts";
 import { createDashboard, getDashboard } from "./services/dashboards.ts";
 import { createWorkspace, ensurePersonalWorkspace, setWorkspaceMember } from "./services/workspaces.ts";
@@ -213,6 +214,30 @@ describe("mcp handler", () => {
       expect(result.content[0]!.text).toContain(message);
     }
     expect((await getDashboard(workspaceId, dashboard.id))?.widgets).toEqual([]);
+  });
+
+  it("refuses snapshot rows over the size budget of one chart or one dashboard", async () => {
+    const user = await createUser({ email: "mcp-snapshot-size@example.com", name: "MCP", password: "password123", role: "admin" });
+    const workspaceId = await ensurePersonalWorkspace(user.id);
+    const labels = (count: number, length: number) => Array.from({ length: count }, () => ({ label: "x".repeat(length) }));
+    // 8 tables of 253,001 bytes each: the dashboard is just under its 2 MiB budget.
+    const stored = Array.from({ length: 8 }, (_, index): DashboardWidget => ({
+      id: `table-${index}`,
+      type: "table",
+      title: "Labels",
+      layout: { x: 0, y: index * 4, w: 12, h: 4 },
+      snapshot: { rows: labels(1000, 240), savedAt: "2026-11-15T08:00:00.000Z" },
+    }));
+    const dashboard = await createDashboard({ workspaceId, name: "Full", description: "", widgets: stored, createdBy: user.id });
+    const chart = { dashboardId: dashboard.id, title: "Labels", chartType: "bar", x: "label" };
+
+    const oneChart = await callTool(user.id, workspaceId, "add_chart_widget", { ...chart, rows: labels(1000, 300) });
+    expect(oneChart.isError).toBe(true);
+    expect(oneChart.content[0]!.text).toContain("256 KiB");
+    const dashboardFull = await callTool(user.id, workspaceId, "add_chart_widget", { ...chart, rows: labels(150, 700) });
+    expect(dashboardFull.isError).toBe(true);
+    expect(dashboardFull.content[0]!.text).toContain("2 MiB");
+    expect((await getDashboard(workspaceId, dashboard.id))?.widgets).toHaveLength(8);
   });
 
   it("checks MCP membership again after a role change or removal", async () => {

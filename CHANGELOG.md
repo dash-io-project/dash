@@ -6,7 +6,7 @@ All notable changes to Dash are documented here.
 
 ### Added
 
-- `add_chart_widget` accepts `rows` for a snapshot chart. An agent can save data that it calculated, for example average tickets for each hour. Dash keeps up to 1,000 rows with the widget. The rows do not refresh. The chart shows a **Snapshot** label with the save date. Give `rows`, or give `dataSourceId` and `resource`. Do not give both.
+- `add_chart_widget` accepts `rows` for a snapshot chart. An agent can save data that it calculated, for example average tickets for each hour. Dash keeps up to 1,000 rows, or 256 KiB of JSON, with the widget. The snapshots on one dashboard can use 2 MiB in total. The rows do not refresh. The chart shows a **Snapshot** label with the save date. Give `rows`, or give `dataSourceId` and `resource`. Do not give both.
 - MCP dashboard responses include links. `create_dashboard`, `get_dashboard`, and `list_dashboards` return `dashboardUrl`, and `widgetUrl` for each widget. `add_chart_widget` also returns `widgetId` and `chartUrl`. See [ADR 0015](docs/adr/0015-snapshot-charts-and-links.md).
 - A widget link opens a view of the dashboard that shows only that widget. The link can name more than one widget, for example a chart and a table. Each widget card has a **Copy link** button. The view has a **Show all widgets** link.
 

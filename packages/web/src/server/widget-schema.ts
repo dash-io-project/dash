@@ -4,6 +4,26 @@ import { FILTER_OPERATORS, isChartType, MAX_SNAPSHOT_COLUMNS, MAX_SNAPSHOT_ROWS 
 /** The longest text value that a snapshot cell can hold. */
 const MAX_SNAPSHOT_TEXT = 1_000;
 
+/** The most bytes of JSON that the rows of one snapshot can use. */
+export const MAX_SNAPSHOT_BYTES = 256 * 1024;
+
+/**
+ * The most bytes of JSON that all snapshots on one dashboard can use. The
+ * rows are part of the dashboard document, and MongoDB refuses a document
+ * over 16 MiB. This budget keeps a dashboard well below that limit.
+ */
+export const MAX_DASHBOARD_SNAPSHOT_BYTES = 2 * 1024 * 1024;
+
+/** The UTF-8 size of a value as JSON. */
+export function jsonBytes(value: unknown): number {
+  return Buffer.byteLength(JSON.stringify(value));
+}
+
+/** The bytes of JSON that the snapshot rows of these widgets use. */
+export function snapshotBytes(widgets: readonly { id: string; snapshot?: { rows: unknown } }[]): number {
+  return widgets.reduce((total, widget) => total + (widget.snapshot ? jsonBytes(widget.snapshot.rows) : 0), 0);
+}
+
 /**
  * A snapshot column name. The name is a key in a stored MongoDB document, so
  * it cannot start with `$` or contain `.`. Zod drops a `__proto__` key from a
@@ -23,7 +43,14 @@ const snapshotRowSchema = z
     `A row can have at most ${MAX_SNAPSHOT_COLUMNS} columns`,
   );
 
-export const snapshotRowsSchema = z.array(snapshotRowSchema).min(1).max(MAX_SNAPSHOT_ROWS);
+export const snapshotRowsSchema = z
+  .array(snapshotRowSchema)
+  .min(1)
+  .max(MAX_SNAPSHOT_ROWS)
+  .refine(
+    (rows) => jsonBytes(rows) <= MAX_SNAPSHOT_BYTES,
+    `The rows can use at most ${MAX_SNAPSHOT_BYTES / 1024} KiB of JSON`,
+  );
 
 const layoutSchema = z.object({
   x: z.number(),
@@ -120,3 +147,11 @@ const queryWidgetSchema = z.object({
  * a widget with saved rows keeps them, and Dash drops its query fields.
  */
 export const widgetSchema = z.union([snapshotWidgetSchema, queryWidgetSchema]);
+
+/** The widget list of one dashboard in a REST request body. */
+export const widgetListSchema = z
+  .array(widgetSchema)
+  .refine(
+    (widgets) => snapshotBytes(widgets) <= MAX_DASHBOARD_SNAPSHOT_BYTES,
+    `The snapshots on one dashboard can use at most ${MAX_DASHBOARD_SNAPSHOT_BYTES / 1024 / 1024} MiB of JSON`,
+  );
