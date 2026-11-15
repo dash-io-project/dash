@@ -87,10 +87,6 @@ export function TextInput(props: ComponentProps<"input">) {
   return <input {...props} className={cn("input", props.className)} />;
 }
 
-export function Select(props: ComponentProps<"select">) {
-  return <select {...props} className={cn("input", props.className)} />;
-}
-
 export function TextArea(props: ComponentProps<"textarea">) {
   return <textarea {...props} className={cn("input", props.className)} />;
 }
@@ -224,7 +220,7 @@ export function AuthCard({
 }) {
   // The fields and the buttons of the card are 40px high.
   const className =
-    "w-full max-w-[420px] rounded-lg border border-border bg-background p-6 sm:p-8 [&_.btn]:min-h-10 [&_.input]:min-h-10";
+    "w-full max-w-[420px] rounded-lg border border-border bg-background p-6 sm:p-8 [&_.btn]:min-h-10 [&_.input]:min-h-10 [&_.select-trigger]:min-h-10";
   const body = (
     <>
       <div className="mb-6">

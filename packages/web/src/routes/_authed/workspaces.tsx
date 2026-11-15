@@ -4,11 +4,17 @@ import { useState } from "react";
 import type { PublicUser, Workspace, WorkspaceMember, WorkspaceMemberRole } from "@dash/core";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { PageBody, PageHeader } from "~/components/PageHeader";
-import { Badge, Button, Card, Field, Panel, Select, TextInput } from "~/components/ui";
+import { Select, type SelectOption } from "~/components/Select";
+import { Badge, Button, Card, Field, Panel, TextInput } from "~/components/ui";
 import { api } from "~/lib/api";
 import { fetchMe } from "~/lib/session";
 
 export const Route = createFileRoute("/_authed/workspaces")({ component: WorkspacesPage });
+
+const ACCESS_OPTIONS: SelectOption<WorkspaceMemberRole>[] = [
+  { value: "viewer", label: "Viewer", description: "Can view dashboards" },
+  { value: "editor", label: "Editor", description: "Can create, change, and delete dashboards" },
+];
 
 function WorkspacesPage() {
   const { workspace, selectWorkspace } = useWorkspace();
@@ -165,19 +171,12 @@ function WorkspacesPage() {
                         <div className="flex items-center gap-2">
                           <Select
                             aria-label={`Access for ${member.name}`}
-                            className="w-auto"
+                            className="w-28"
                             value={member.role}
                             disabled={share.isPending}
-                            onChange={(event) =>
-                              share.mutate({
-                                userId: member.id,
-                                role: event.target.value as WorkspaceMemberRole,
-                              })
-                            }
-                          >
-                            <option value="viewer">Viewer</option>
-                            <option value="editor">Editor</option>
-                          </Select>
+                            options={ACCESS_OPTIONS}
+                            onValueChange={(role) => share.mutate({ userId: member.id, role })}
+                          />
                           <Button
                             type="button"
                             disabled={share.isPending}
@@ -202,23 +201,19 @@ function WorkspacesPage() {
                   }}
                 >
                   <Field label="Share with an organization member">
-                    <Select required value={userId} onChange={(event) => setUserId(event.target.value)}>
-                      <option value="">Select a person</option>
-                      {candidates.map((person) => (
-                        <option key={person.id} value={person.id}>
-                          {person.name} ({person.email})
-                        </option>
-                      ))}
-                    </Select>
+                    <Select
+                      value={userId}
+                      placeholder="Select a person"
+                      options={candidates.map((person) => ({
+                        value: person.id,
+                        label: person.name,
+                        description: person.email,
+                      }))}
+                      onValueChange={setUserId}
+                    />
                   </Field>
                   <Field label="Access">
-                    <Select
-                      value={role}
-                      onChange={(event) => setRole(event.target.value as WorkspaceMemberRole)}
-                    >
-                      <option value="viewer">Viewer — can view dashboards</option>
-                      <option value="editor">Editor — can create, change, and delete dashboards</option>
-                    </Select>
+                    <Select value={role} options={ACCESS_OPTIONS} onValueChange={setRole} />
                   </Field>
                   <Button variant="primary" type="submit" disabled={!userId || share.isPending}>
                     Share workspace

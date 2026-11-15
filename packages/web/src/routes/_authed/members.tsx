@@ -8,11 +8,17 @@ import { api } from "~/lib/api";
 import { invitationUrl } from "~/lib/invitation";
 import { fetchMe } from "~/lib/session";
 import { PageBody, PageHeader } from "~/components/PageHeader";
-import { Badge, Button, Card, Field, ICON_STROKE, Panel, Select, TextInput } from "~/components/ui";
+import { Select, type SelectOption } from "~/components/Select";
+import { Badge, Button, Card, Field, ICON_STROKE, Panel, TextInput } from "~/components/ui";
 
 export const Route = createFileRoute("/_authed/members")({
   component: MembersPage,
 });
+
+const ROLE_OPTIONS: SelectOption<UserRole>[] = USER_ROLES.map((value) => ({
+  value,
+  label: USER_ROLE_LABELS[value],
+}));
 
 interface IssuedInvitation {
   email: string;
@@ -141,13 +147,7 @@ function InviteForm({ onIssued }: { onIssued: (issued: IssuedInvitation) => void
           />
         </Field>
         <Field label="Role">
-          <Select value={role} onChange={(event) => setRole(event.target.value as UserRole)}>
-            {USER_ROLES.map((value) => (
-              <option key={value} value={value}>
-                {USER_ROLE_LABELS[value]}
-              </option>
-            ))}
-          </Select>
+          <Select value={role} options={ROLE_OPTIONS} onValueChange={setRole} />
         </Field>
         <Button variant="primary" type="submit" disabled={invite.isPending}>
           <UserPlus size={16} strokeWidth={ICON_STROKE} aria-hidden="true" />
@@ -281,20 +281,10 @@ function MembersTable({
                         value={pendingRole ?? member.role}
                         disabled={changeRole.isPending || isLastAdmin}
                         title={isLastAdmin ? "The organization needs at least one admin" : undefined}
-                        onChange={(event) =>
-                          changeRole.mutate({
-                            id: member.id,
-                            role: event.target.value as UserRole,
-                          })
-                        }
+                        options={ROLE_OPTIONS}
+                        onValueChange={(role) => changeRole.mutate({ id: member.id, role })}
                         className="w-28"
-                      >
-                        {USER_ROLES.map((value) => (
-                          <option key={value} value={value}>
-                            {USER_ROLE_LABELS[value]}
-                          </option>
-                        ))}
-                      </Select>
+                      />
                     ) : (
                       <RoleBadge role={member.role} />
                     )}

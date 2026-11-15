@@ -384,6 +384,118 @@
     resize: vertical;
   }
 
+  /* A select (components/Select.tsx): a button with the look of a text field. It opens a
+     list on the menu panel. */
+
+  .select-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 36px;
+    padding: 6px 10px 6px 12px;
+    border: 1px solid var(--input);
+    border-radius: var(--radius-md);
+    background: var(--field);
+    color: var(--foreground);
+    text-align: left;
+    box-shadow: var(--shadow-xs);
+    transition: border-color 120ms ease;
+  }
+
+  .select-trigger:hover:not(:disabled),
+  .select-trigger[aria-expanded="true"] {
+    border-color: var(--ring);
+  }
+
+  .select-trigger:focus-visible {
+    border-color: var(--ring);
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 50%, transparent);
+  }
+
+  .select-trigger:disabled {
+    background: var(--surface);
+    color: var(--muted-foreground);
+    cursor: not-allowed;
+  }
+
+  .select-trigger[aria-invalid="true"] {
+    border-color: var(--negative);
+  }
+
+  .select-value {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .select-trigger[data-placeholder] .select-value {
+    color: var(--muted-foreground);
+  }
+
+  .select-chevron {
+    flex: none;
+    color: var(--muted-foreground);
+    transition: transform 150ms ease;
+  }
+
+  .select-trigger[aria-expanded="true"] .select-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* The list is in the body, above the dialogs (z-index 50). */
+  .select-panel {
+    position: fixed;
+    z-index: 60;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    --select-shift: -4px;
+    animation: select-in 120ms ease-out;
+  }
+
+  .select-panel[data-side="top"] {
+    --select-shift: 4px;
+  }
+
+  @keyframes select-in {
+    from {
+      opacity: 0;
+      transform: translateY(var(--select-shift));
+    }
+  }
+
+  .select-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .select-option[data-active] {
+    background: var(--hover);
+  }
+
+  .select-option[aria-selected="true"] {
+    font-weight: 500;
+  }
+
+  .select-option[aria-disabled="true"] {
+    color: var(--muted-foreground);
+    cursor: not-allowed;
+  }
+
+  .select-empty {
+    padding: 6px 8px;
+    color: var(--muted-foreground);
+  }
+
   /* Badges */
 
   .badge {
@@ -816,6 +928,8 @@
   @media (max-width: 900px), (pointer: coarse) {
     .btn,
     .input,
+    .select-trigger,
+    .select-option,
     .nav-item,
     .menu-item,
     .appearance-option {
@@ -827,7 +941,9 @@
       height: 44px;
     }
 
-    .input {
+    /* A select has the same text size as the text field next to it. */
+    .input,
+    .select-trigger {
       font-size: 16px;
     }
 

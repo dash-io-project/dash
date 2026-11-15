@@ -23,6 +23,7 @@ All notable changes to Dash are documented here.
 - Charts use a new series palette with blue first, and they follow the appearance. A chart fills its widget card.
 - A dashboard grid row is 56px in place of 72px, so a dashboard is shorter. The stored layout of a widget does not change. A KPI card shows a small label and the value. The label is not uppercase. On a phone, two KPI cards share a row.
 - The **Copy link** button of a widget shows only an icon. Its accessible name stays **Copy link**.
+- Each dropdown in the app is a new select. Before, the app used the native select of the browser, which had a different look in each browser. The button has the look of a text field, with a chevron at the right. The list has the look of the workspace menu, with a check mark on the selected option. Some options have a muted second line, for example the access of a workspace member and the data type of a column. The keys follow the WAI-ARIA select-only combobox pattern: the arrow keys, Home, End, Enter, Space, Escape, and type-ahead.
 - A table widget aligns number columns to the right with tabular figures. The filter field has a search icon, and a sorted column header has an `aria-sort` value.
 - The **Remove** button of a data source is an outline button with red text. The confirmation dialog keeps the red button.
 - The favicon is the chart line on an ink tile.
