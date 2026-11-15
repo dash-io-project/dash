@@ -4,7 +4,17 @@ All notable changes to Dash are documented here.
 
 ## Unreleased
 
+### Added
+
+- API users on the **API tokens** page. An API user is an identity for a script or a service. It can have more than one token, so a service can rotate its token without downtime. Create a new token, update the app, and then revoke the old token. Delete an API user to revoke all of its tokens. See [ADR 0015](docs/adr/0015-api-users-and-token-rotation.md).
+- `GET/POST /api/api-users`, `DELETE /api/api-users/:id`, `POST /api/api-users/:id/tokens`, and `DELETE /api/api-users/:id/tokens/:tokenId`. Only a browser session can use them.
+
 ### Changed
+
+- The **API tokens** page is for the REST API only. It does not show the MCP banner or offer the `mcp` scope. Agents stay on the **Agents** page.
+- **Breaking:** `POST /api/tokens` issues agent tokens only. A request without the `mcp` scope gets 400. Use `/api/api-users` for an API token.
+- An older token without the `mcp` scope becomes an API user when its owner opens the API tokens page. The token keeps its access.
+- A token writes its last-use time at most once a minute.
 
 - The **Agent tokens** page is now **Agents** (`/agents`) in the sidebar and in the page header. Connect an agent with OAuth or with a token on that page. The old `/agent-tokens` path opens the Agents page. The API tokens page does not list OAuth agents.
 - The `demo.dash.io` Worker sends `X-Forwarded-Proto` and `X-Forwarded-Host` to the container. It replaces values that the client sent.
@@ -18,6 +28,7 @@ All notable changes to Dash are documented here.
 
 ### Fixed
 
+- **Security:** an API token cannot change the profile, the password, or the organization settings. `PATCH /api/users/me` and `PATCH /api/settings` need a browser session. Before, a leaked `write` token could set a new password and take over the account.
 - A domain that finished before its database dropped does not hide a failed domain on another source.
 - Startup deletes `admin@dash.dev` when the password is still `dashadmin`. It also deletes that account's sessions and tokens. An account with a different password stays.
 - A timeout or a connection reset on a live data source fails that seed step. Only a refused connection, a missing name, or a missing database is skipped.

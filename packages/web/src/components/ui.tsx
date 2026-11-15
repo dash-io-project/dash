@@ -53,7 +53,7 @@ export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
 }
 
 export function DangerButton(
-  props: React.ButtonHTMLAttributes<HTMLButtonElement>,
+  props: React.ComponentProps<"button">,
 ) {
   return (
     <button
@@ -67,7 +67,7 @@ export function DangerButton(
 }
 
 export function PrimaryButton(
-  props: React.ButtonHTMLAttributes<HTMLButtonElement>,
+  props: React.ComponentProps<"button">,
 ) {
   return (
     <button
@@ -81,7 +81,7 @@ export function PrimaryButton(
 }
 
 export function GhostButton(
-  props: React.ButtonHTMLAttributes<HTMLButtonElement>,
+  props: React.ComponentProps<"button">,
 ) {
   return (
     <button

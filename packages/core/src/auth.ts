@@ -58,10 +58,37 @@ export const API_TOKEN_PREFIX = "dash_live_";
 /** `token` is a static bearer token. `oauth` is an agent that connected through the MCP OAuth flow. */
 export type ApiTokenKind = "token" | "oauth";
 
+/** An API user can hold only these scopes. MCP access belongs on the Agents page. */
+export const API_USER_SCOPES = ["read", "write"] as const;
+export type ApiUserScope = (typeof API_USER_SCOPES)[number];
+
+/** Token lifetimes that the API tokens page offers. */
+export const API_TOKEN_EXPIRY_DAYS = [7, 30, 90, 180, 365] as const;
+export const DEFAULT_API_TOKEN_EXPIRY_DAYS = 90;
+
+/** A soft limit. It keeps old tokens from piling up during rotation. */
+export const MAX_ACTIVE_API_USER_TOKENS = 10;
+
+/** A named identity for a script or service. It holds one or more tokens, so a token can rotate. */
+export interface PublicApiUser {
+  id: string;
+  /** Null for an API user adopted from a token that had no workspace. */
+  workspaceId: string | null;
+  name: string;
+  scopes: ApiUserScope[];
+  createdAt: string;
+  /** The most recent use of any token of this API user. */
+  lastUsedAt: string | null;
+  /** Tokens that are not revoked. Expired tokens are included. Newest first. */
+  tokens: PublicApiToken[];
+}
+
 export interface PublicApiToken {
   workspaceId: string;
   id: string;
   kind: ApiTokenKind;
+  /** The API user that holds this token. Null for an agent token or an OAuth agent. */
+  apiUserId: string | null;
   /** The name that the OAuth client registered. Null for a static token. */
   clientName: string | null;
   name: string;

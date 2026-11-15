@@ -1,6 +1,6 @@
 import { findUserByEmail } from "./auth.ts";
 import { verifyPassword } from "./crypto.ts";
-import { apiTokens, dashboards, getDb, nowIso, sessions, users } from "./db.ts";
+import { apiTokens, apiUsers, dashboards, getDb, nowIso, sessions, users } from "./db.ts";
 import { getSettings } from "./services/settings.ts";
 
 /** The published demo account. Startup removes it only while this password still matches. */
@@ -71,7 +71,7 @@ async function releaseOrphanBootstrap(): Promise<void> {
 
 /**
  * Older installs can still hold admin@dash.dev with the published password.
- * This step runs once. It deletes that account, its sessions, and its tokens
+ * This step runs once. It deletes that account, its sessions, its tokens, and its API users
  * when the password still matches. An account with a different password stays.
  * When that account is the only admin, another active member becomes admin first.
  * The first-admin record goes before the account, so a stopped run can finish.
@@ -87,6 +87,10 @@ async function retireLegacyDemoAdmin(): Promise<void> {
     await (await apiTokens()).updateMany(
       { userId: user._id, revokedAt: null },
       { $set: { revokedAt: nowIso() } },
+    );
+    await (await apiUsers()).updateMany(
+      { ownerId: user._id, deletedAt: null },
+      { $set: { deletedAt: nowIso(), updatedAt: nowIso() } },
     );
     await marker.deleteOne({ _id: "bootstrap", adminUserId: user._id });
     await (await users()).deleteOne({ _id: user._id });

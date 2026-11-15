@@ -46,6 +46,25 @@ export async function requireAdminSession(request: Request): Promise<AuthContext
   return auth;
 }
 
+/**
+ * Account, settings, and credential changes need a browser session.
+ * An API token cannot make them, so a leaked token cannot take over the account.
+ */
+export async function requireSession(
+  request: Request,
+  scope: ApiTokenScope,
+  purpose: string,
+): Promise<AuthContext | Response> {
+  const auth = await requireUser(request, scope);
+  if (isResponse(auth)) {
+    return auth;
+  }
+  if (auth.via === "token") {
+    return error(403, `Session authentication required to ${purpose}`, "forbidden");
+  }
+  return auth;
+}
+
 export function isResponse(value: AuthContext | Response): value is Response {
   return value instanceof Response;
 }

@@ -53,16 +53,22 @@ export type {
 export type {
   ApiTokenKind,
   ApiTokenScope,
+  ApiUserScope,
   InvitationPreview,
   OrganizationSettings,
   PublicApiToken,
+  PublicApiUser,
   PublicInvitation,
   PublicUser,
   UserRole,
 } from "./auth.ts";
 export {
+  API_TOKEN_EXPIRY_DAYS,
   API_TOKEN_PREFIX,
   API_TOKEN_SCOPES,
+  API_USER_SCOPES,
+  DEFAULT_API_TOKEN_EXPIRY_DAYS,
+  MAX_ACTIVE_API_USER_TOKENS,
   USER_ROLE_LABELS,
   USER_ROLES,
   isApiTokenScope,

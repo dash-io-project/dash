@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { isResponse, requireUser } from "~/server/guard";
+import { isResponse, requireSession, requireUser } from "~/server/guard";
 import { error, isAdmin, json, readJson } from "~/server/http";
 import { getSettings, InvalidEmailDomainError, updateSettings } from "~/server/services/settings";
 
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/api/settings")({
         return json({ settings: await getSettings() });
       },
       PATCH: async ({ request }) => {
-        const auth = await requireUser(request, "write");
+        const auth = await requireSession(request, "write", "change organization settings");
         if (isResponse(auth)) {
           return auth;
         }
