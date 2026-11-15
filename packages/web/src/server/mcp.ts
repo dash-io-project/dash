@@ -232,11 +232,6 @@ function buildServer(auth: WorkspaceAuthContext, origin: string): McpServer {
         if (!dashboard) {
           return errorResult("Dashboard not found");
         }
-        if (input.rows && snapshotBytes(dashboard.widgets) + jsonBytes(input.rows) > MAX_DASHBOARD_SNAPSHOT_BYTES) {
-          return errorResult(
-            `The snapshots on one dashboard can use at most ${MAX_DASHBOARD_SNAPSHOT_BYTES / 1024 / 1024} MiB of JSON. Give fewer rows, or add the chart to a different dashboard.`,
-          );
-        }
         const y = dashboard.widgets.reduce((max, widget) => Math.max(max, widget.layout.y + widget.layout.h), 0);
         const base = {
           id: randomId(),
@@ -258,7 +253,18 @@ function buildServer(auth: WorkspaceAuthContext, origin: string): McpServer {
         const widget: DashboardWidget = input.rows
           ? { ...base, snapshot: { rows: input.rows, savedAt: nowIso() } }
           : { ...base, dataSourceId: input.dataSourceId!, query: { resource: input.resource!, columns } };
-        const updated = await appendDashboardWidget(auth.workspace.id, input.dashboardId, widget);
+        const rowBytes = input.rows ? jsonBytes(input.rows) : 0;
+        const updated = await appendDashboardWidget(
+          auth.workspace.id,
+          input.dashboardId,
+          widget,
+          (widgets) => rowBytes === 0 || snapshotBytes(widgets) + rowBytes <= MAX_DASHBOARD_SNAPSHOT_BYTES,
+        );
+        if (updated === "rejected") {
+          return errorResult(
+            `The snapshots on one dashboard can use at most ${MAX_DASHBOARD_SNAPSHOT_BYTES / 1024 / 1024} MiB of JSON. Give fewer rows, or add the chart to a different dashboard.`,
+          );
+        }
         if (!updated) {
           return errorResult("Dashboard not found");
         }

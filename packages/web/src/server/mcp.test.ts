@@ -240,6 +240,31 @@ describe("mcp handler", () => {
     expect((await getDashboard(workspaceId, dashboard.id))?.widgets).toHaveLength(8);
   });
 
+  it("keeps the dashboard budget when calls add snapshot charts at the same time", async () => {
+    const user = await createUser({ email: "mcp-snapshot-race@example.com", name: "MCP", password: "password123", role: "admin" });
+    const workspaceId = await ensurePersonalWorkspace(user.id);
+    const labels = (count: number, length: number) => Array.from({ length: count }, () => ({ label: "x".repeat(length) }));
+    // 7 tables of 253,001 bytes. Three charts of 106,951 bytes fit in the rest of the 2 MiB budget. Four do not.
+    const stored = Array.from({ length: 7 }, (_, index): DashboardWidget => ({
+      id: `table-${index}`,
+      type: "table",
+      title: "Labels",
+      layout: { x: 0, y: index * 4, w: 12, h: 4 },
+      snapshot: { rows: labels(1000, 240), savedAt: "2026-11-15T08:00:00.000Z" },
+    }));
+    const dashboard = await createDashboard({ workspaceId, name: "Race", description: "", widgets: stored, createdBy: user.id });
+
+    const results = await Promise.all(
+      Array.from({ length: 8 }, (_, index) =>
+        callTool(user.id, workspaceId, "add_chart_widget", { dashboardId: dashboard.id, title: `Chart ${index}`, chartType: "bar", x: "label", rows: labels(150, 700) }),
+      ),
+    );
+
+    expect(results.filter((result) => !result.isError)).toHaveLength(3);
+    expect(results.filter((result) => result.isError).map((result) => result.content[0]!.text)).toEqual(Array(5).fill(expect.stringContaining("2 MiB")));
+    expect((await getDashboard(workspaceId, dashboard.id))?.widgets).toHaveLength(10);
+  });
+
   it("checks MCP membership again after a role change or removal", async () => {
     const owner = await createUser({ email: "owner@example.com", name: "Owner", password: "password123", role: "member" });
     const guest = await createUser({ email: "guest@example.com", name: "Guest", password: "password123", role: "admin" });
