@@ -233,6 +233,36 @@ describe("app database", () => {
     expect(session).toEqual(expect.any(String));
   });
 
+  it("gives the admin role to another member before it removes admin@dash.dev", async () => {
+    const admin = await createUser({
+      email: "admin@dash.dev",
+      name: "Dash Admin",
+      password: "dashadmin",
+      role: "member",
+    });
+    expect(await grantInitialAdmin(admin.id)).toBe(true);
+    const pending = await createUser({
+      email: "pending@example.com",
+      name: "Pending",
+      password: "password123",
+      role: "member",
+      accountState: "pending",
+    });
+    const member = await createUser({
+      email: "ada@example.com",
+      name: "Ada",
+      password: "password123",
+      role: "member",
+    });
+
+    resetSeedForTests();
+    await ensureSeeded();
+    expect(await findUserById(admin.id)).toBeUndefined();
+    expect((await findUserById(pending.id))?.role).toBe("member");
+    expect((await findUserById(pending.id))?.accountState).toBe("pending");
+    expect((await findUserById(member.id))?.role).toBe("admin");
+  });
+
   it("keeps admin@dash.dev when the password is no longer the published one", async () => {
     const admin = await createUser({
       email: "admin@dash.dev",

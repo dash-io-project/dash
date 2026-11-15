@@ -35,9 +35,33 @@ async function retireDemoSources(): Promise<void> {
 }
 
 /**
+ * Keep one admin when the legacy account is the only admin.
+ * The oldest active member receives the role. A pending account stays pending.
+ */
+async function keepAnotherAdmin(removedId: string): Promise<void> {
+  const collection = await users();
+  const others = await collection.countDocuments({
+    _id: { $ne: removedId },
+    role: "admin",
+    accountState: { $ne: "pending" },
+  });
+  if (others > 0) return;
+  await collection.findOneAndUpdate(
+    {
+      _id: { $ne: removedId },
+      role: { $ne: "admin" },
+      accountState: { $ne: "pending" },
+    },
+    { $set: { role: "admin" } },
+    { sort: { createdAt: 1, _id: 1 } },
+  );
+}
+
+/**
  * Older installs can still hold admin@dash.dev with the published password.
  * This step runs once. It deletes that account, its sessions, and its tokens
  * when the password still matches. An account with a different password stays.
+ * When that account is the only admin, another active member becomes admin first.
  */
 async function retireLegacyDemoAdmin(): Promise<void> {
   const db = await getDb();
@@ -45,6 +69,7 @@ async function retireLegacyDemoAdmin(): Promise<void> {
   if (await marker.findOne({ _id: "demo-admin-retired" })) return;
   const user = await findUserByEmail(LEGACY_DEMO_EMAIL);
   if (user && (await verifyPassword(LEGACY_DEMO_PASSWORD, user.passwordHash))) {
+    if (user.role === "admin") await keepAnotherAdmin(user._id);
     await (await sessions()).deleteMany({ userId: user._id });
     await (await apiTokens()).updateMany(
       { userId: user._id, revokedAt: null },
