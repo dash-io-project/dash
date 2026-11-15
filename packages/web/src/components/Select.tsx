@@ -194,6 +194,8 @@ export function Select<T extends string>({
       event.stopPropagation();
       hide();
     } else if (key === "Tab") {
+      // The pattern sets the value to the active option. Then the browser moves the focus.
+      choose(active);
       hide();
     } else if (key === "Enter" || (key === " " && !searching())) {
       event.preventDefault();
