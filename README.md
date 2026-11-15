@@ -24,6 +24,12 @@ ARR, net revenue retention, paying customers, and gross margin. Charts show ARR 
 
 <img alt="Executive overview dashboard with KPI cards, ARR and MRR charts, and a top customers table" src="docs/screenshots/executive-overview.png" width="880">
 
+### Dark appearance
+
+Select **Dark** in the account panel at the bottom of the sidebar. **System** follows the device.
+
+<img alt="Executive overview dashboard in the dark appearance" src="docs/screenshots/executive-overview-dark.png" width="880">
+
 ### Customer support
 
 Open tickets, first response time, CSAT, and NPS. Charts show ticket volume, categories, response time by priority, and survey results. The data comes from the support collections in MongoDB.
