@@ -306,7 +306,7 @@ The icons are from [lucide-react](https://lucide.dev), with a stroke width of 1.
 - A sidebar row is 36px high with a radius of 8px. The current row has the `--hover` fill.
 - Each page starts with `PageHeader`: the title, one line of description, and the actions at the right.
 - Settings, Profile, Members, Workspaces, API tokens, and Agents use panels: a heading (`.panel-title`), a muted line (`.panel-note`), and a card (`.card`) only for a list or a form. Sign-in, register, invite, and the OAuth approval use one card of 420px on the surface, with fields and buttons 40px high.
-- A widget is a card with a header row: the title at the left, the **Snapshot** label and the **Copy link** button at the right. A dashboard grid row is 56px. A chart fills its card. A KPI card shows its label at the top and its value at the bottom.
+- A widget is a card with a header row: the title at the left, the **Snapshot** label and the **Copy link** button at the right. A dashboard grid row is 56px. A chart fills its card. A KPI card shows its label at the top and its value at the bottom. From 360px to 900px, two KPI cards share a row, and the value gets smaller in a narrow card.
 - The app has one breakpoint for the drawer: 900px. At 900px and below, a top bar has the menu button, and the sidebar opens as a drawer. Escape, the close button, and the backdrop close it.
 - At 900px and below, and for a touch screen (`pointer: coarse`), each control is 44px or more and text fields have 16px text. A checkbox keeps its size: the label around it is the 44px target.
 - No page scrolls sideways at 360px. A table scrolls in its own container.

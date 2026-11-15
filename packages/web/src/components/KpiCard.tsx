@@ -11,7 +11,8 @@ export function KpiCard({
 }) {
   const value = aggregateKpi(rows, spec);
   return (
-    <div className="tabular truncate text-[28px] font-semibold leading-none tracking-tight">
+    // 28px in a wide card. In a narrow card the value gets smaller, down to 16px, so it stays on one line.
+    <div className="tabular truncate text-[length:clamp(16px,12cqi,28px)] font-semibold leading-none tracking-tight">
       {formatKpi(value, spec.format)}
     </div>
   );

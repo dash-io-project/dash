@@ -90,11 +90,19 @@ export function WidgetCard({ widget, getShareUrl }: { widget: DashboardWidget; g
   const isKpi = widget.type === "kpi";
 
   return (
-    <section style={style} className="card flex min-h-0 min-w-0 flex-col overflow-hidden">
-      {/* The header row: the title at the left, the actions at the right. */}
+    // A KPI card is a size container: its value gets smaller when the card is narrow.
+    <section
+      style={style}
+      className={cn("card flex min-h-0 min-w-0 flex-col overflow-hidden", isKpi && "widget-kpi @container")}
+    >
+      {/* The header row: the title at the left, the actions at the right. A KPI label can
+          use two lines, because two KPI cards share a row on a small screen. */}
       <div className="flex min-h-11 shrink-0 items-center justify-between gap-2 pl-4 pr-2 pt-1">
         <h2
-          className={cn("min-w-0 truncate", isKpi ? "text-[13px] text-muted-foreground" : "font-medium")}
+          className={cn(
+            "min-w-0",
+            isKpi ? "line-clamp-2 text-[13px] leading-snug text-muted-foreground" : "truncate font-medium",
+          )}
           title={widget.title}
         >
           {widget.title}

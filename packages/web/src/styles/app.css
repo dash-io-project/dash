@@ -802,6 +802,15 @@
     }
   }
 
+  /* From 360px to 900px, two KPI cards share a row. Below 360px, a label such as
+     "Paying customers" has no room. A KPI card that is the only widget, as in a
+     widget link, keeps the full width. */
+  @media (min-width: 360px) and (max-width: 900px) {
+    .dash-grid > .widget-kpi:not(:only-child) {
+      grid-column: span 6 / span 6 !important;
+    }
+  }
+
   /* A small screen and a touch screen: each control is 44px or more, and a text field
      has 16px text, so that iOS does not zoom the page. */
   @media (max-width: 900px), (pointer: coarse) {
