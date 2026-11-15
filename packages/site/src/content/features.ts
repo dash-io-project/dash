@@ -1,4 +1,10 @@
-export type FeatureIcon = "dashboards" | "data-sources" | "workspaces" | "team" | "tokens" | "api";
+export type FeatureIcon =
+  | "dashboards"
+  | "data-sources"
+  | "workspaces"
+  | "members"
+  | "tokens"
+  | "api";
 
 export type Feature = {
   id: string;
@@ -50,11 +56,11 @@ export const features: readonly Feature[] = [
     icon: "workspaces",
   },
   {
-    id: "team",
-    title: "Team",
+    id: "members",
+    title: "Members",
     description:
       "Invite people with single-use links. Set User or Admin roles. Limit sign-up to the email domains that you allow.",
-    icon: "team",
+    icon: "members",
   },
   {
     id: "tokens",

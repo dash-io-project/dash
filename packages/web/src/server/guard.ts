@@ -29,7 +29,7 @@ export async function requireUser(
 }
 
 /**
- * Team management mints accounts and changes roles, so it needs an admin's
+ * Member management mints accounts and changes roles, so it needs an admin's
  * browser session. An API token, even an admin's, cannot invite or promote.
  */
 export async function requireAdminSession(request: Request): Promise<AuthContext | Response> {
@@ -38,7 +38,7 @@ export async function requireAdminSession(request: Request): Promise<AuthContext
     return auth;
   }
   if (auth.via === "token") {
-    return error(403, "Session authentication required to manage the team", "forbidden");
+    return error(403, "Session authentication required to manage members", "forbidden");
   }
   if (!isAdmin(auth.user)) {
     return error(403, "Admin role required", "forbidden");

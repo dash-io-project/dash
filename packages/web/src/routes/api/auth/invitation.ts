@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { error, json, readJson } from "~/server/http";
 import { ensureSeeded } from "~/server/seed";
-import { previewInvitation } from "~/server/services/team";
+import { previewInvitation } from "~/server/services/members";
 
 // The token travels in the body, not the URL, so it stays out of access logs.
 const bodySchema = z.object({
