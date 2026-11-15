@@ -206,6 +206,8 @@ export function Select<T extends string>({
     }
     if (next !== undefined) {
       event.preventDefault();
+      // A move with an arrow, Page, Home, or End key ends the search, so Space selects again.
+      if (!isTypeaheadKey(event)) search.current = { text: "", time: 0 };
       setActive(next);
     }
   }
