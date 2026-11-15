@@ -3,9 +3,13 @@ import { useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AuthBootstrap } from "~/lib/bootstrap";
 import { api } from "~/lib/api";
+import { safeRedirectPath } from "~/lib/redirect";
 import { AuthCard, Field, PrimaryButton, TextInput } from "~/components/ui";
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
+    redirect: typeof search.redirect === "string" && search.redirect ? search.redirect : undefined,
+  }),
   component: LoginPage,
 });
 
@@ -50,6 +54,7 @@ function SetupPrompt() {
 
 function LoginForm({ allowRegistration }: { allowRegistration: boolean }) {
   const navigate = useNavigate();
+  const { redirect } = Route.useSearch();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -66,6 +71,11 @@ function LoginForm({ allowRegistration }: { allowRegistration: boolean }) {
         body: JSON.stringify({ email, password }),
       });
       await queryClient.invalidateQueries({ queryKey: ["me"] });
+      const target = safeRedirectPath(redirect, window.location.origin);
+      if (target) {
+        window.location.assign(target);
+        return;
+      }
       await navigate({ to: "/dashboards" });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Login failed");
@@ -77,7 +87,11 @@ function LoginForm({ allowRegistration }: { allowRegistration: boolean }) {
   return (
     <AuthCard
       title="Welcome back"
-      subtitle="Sign in with your organization account."
+      subtitle={
+        redirect?.startsWith("/oauth/authorize")
+          ? "Sign in to continue. An agent wants to connect to Dash."
+          : "Sign in with your organization account."
+      }
       onSubmit={(event) => void onSubmit(event)}
       footer={
         allowRegistration ? (

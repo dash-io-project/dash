@@ -34,9 +34,46 @@ export interface ApiTokenDoc {
   tokenHash: string;
   prefix: string;
   scopes: string[];
+  /** The record stops working at this time. For an OAuth agent, each refresh moves it forward. */
   expiresAt: string | null;
   lastUsedAt: string | null;
   revokedAt: string | null;
+  createdAt: string;
+  /** Absent on older documents. Those records are static tokens. */
+  kind?: "token" | "oauth";
+  /** OAuth agents only. The client that received the tokens. */
+  clientId?: string;
+  clientName?: string;
+  /** OAuth agents only. SHA-256 of the current refresh token. */
+  refreshTokenHash?: string;
+  /** OAuth agents only. The current access token stops working at this time. */
+  accessTokenExpiresAt?: string;
+}
+
+/** A client that registered through OAuth dynamic client registration (RFC 7591). */
+export interface OAuthClientDoc {
+  /** The `client_id`. */
+  _id: string;
+  name: string;
+  redirectUris: string[];
+  tokenEndpointAuthMethod: "none" | "client_secret_post" | "client_secret_basic";
+  /** SHA-256 of the client secret. Null for a public client. */
+  secretHash: string | null;
+  createdAt: string;
+}
+
+/** A single-use authorization code. The code itself is never stored. */
+export interface OAuthCodeDoc {
+  _id: string;
+  codeHash: string;
+  clientId: string;
+  /** The agent record that the code gives tokens for. */
+  tokenId: string;
+  redirectUri: string;
+  codeChallenge: string;
+  /** A Date, so that the TTL index can delete old codes. */
+  expiresAt: Date;
+  usedAt: string | null;
   createdAt: string;
 }
 
@@ -109,6 +146,22 @@ async function ensureIndexes(db: Db): Promise<void> {
       { unique: true, name: "api_tokens_token_hash" },
     ),
     db.collection("api_tokens").createIndex({ userId: 1 }, { name: "api_tokens_user" }),
+    db.collection("api_tokens").createIndex(
+      { refreshTokenHash: 1 },
+      {
+        unique: true,
+        name: "api_tokens_refresh_token_hash",
+        partialFilterExpression: { refreshTokenHash: { $type: "string" } },
+      },
+    ),
+    db.collection("oauth_codes").createIndex(
+      { codeHash: 1 },
+      { unique: true, name: "oauth_codes_code_hash" },
+    ),
+    db.collection("oauth_codes").createIndex(
+      { expiresAt: 1 },
+      { expireAfterSeconds: 0, name: "oauth_codes_expiry" },
+    ),
     db.collection("invitations").createIndex(
       { tokenHash: 1 },
       { unique: true, name: "invitations_token_hash" },
@@ -266,6 +319,14 @@ export async function sessions(): Promise<Collection<SessionDoc>> {
 
 export async function apiTokens(): Promise<Collection<ApiTokenDoc>> {
   return (await getDb()).collection<ApiTokenDoc>("api_tokens");
+}
+
+export async function oauthClients(): Promise<Collection<OAuthClientDoc>> {
+  return (await getDb()).collection<OAuthClientDoc>("oauth_clients");
+}
+
+export async function oauthCodes(): Promise<Collection<OAuthCodeDoc>> {
+  return (await getDb()).collection<OAuthCodeDoc>("oauth_codes");
 }
 
 export async function invitations(): Promise<Collection<InvitationDoc>> {

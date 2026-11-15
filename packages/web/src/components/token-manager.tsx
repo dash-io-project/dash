@@ -7,7 +7,7 @@ import { useWorkspace } from "~/components/WorkspaceProvider";
 import { Field, GhostButton, PrimaryButton, TextInput } from "~/components/ui";
 import { McpConnectionBanner } from "~/components/mcp-connection-banner";
 
-export function TokenManager({ agent = false }: { agent?: boolean }) {
+export function TokenManager() {
   const { workspace, workspaces, workspaceApi } = useWorkspace();
   const queryClient = useQueryClient();
   const tokens = useQuery({
@@ -17,7 +17,7 @@ export function TokenManager({ agent = false }: { agent?: boolean }) {
       return payload.tokens;
     },
   });
-  const [name, setName] = useState(agent ? "MCP agent" : "MCP client");
+  const [name, setName] = useState("MCP client");
   const [scopes, setScopes] = useState<ApiTokenScope[]>(["read", "mcp"]);
   const [issued, setIssued] = useState<{ id: string; token: string } | null>(null);
   const [copyStatus, setCopyStatus] = useState("");
@@ -65,20 +65,16 @@ export function TokenManager({ agent = false }: { agent?: boolean }) {
     }
   }
 
-  const visibleTokens = (tokens.data ?? []).filter((token) => !agent || token.scopes.includes("mcp"));
+  // OAuth agents are listed on the Agents page only.
+  const visibleTokens = (tokens.data ?? []).filter((token) => token.kind === "token");
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-3xl font-semibold">{agent ? "Agent tokens" : "API tokens"}</h1>
-      {agent ? (
-        <p className="mt-2 text-sm text-mist">
-          Agent tokens give your agents access to Dash through MCP. This page lists your API tokens with MCP access.
-        </p>
-      ) : null}
+      <h1 className="text-3xl font-semibold">API tokens</h1>
       <p className="mt-2 text-sm text-mist">
         Dash shows each new token once. Use the token as <code>Authorization: Bearer dash_live_…</code>.
       </p>
-      <McpConnectionBanner showTokenLink={!agent} />
+      <McpConnectionBanner />
       <form
         className="mt-8 space-y-4 rounded-2xl border border-line bg-panel p-6"
         onSubmit={(event) => {
@@ -98,7 +94,6 @@ export function TokenManager({ agent = false }: { agent?: boolean }) {
                 <input
                   type="checkbox"
                   checked={scopes.includes(scope)}
-                  disabled={agent && scope !== "write"}
                   onChange={() => toggleScope(scope)}
                 />
                 {scope}
@@ -106,13 +101,8 @@ export function TokenManager({ agent = false }: { agent?: boolean }) {
             ))}
           </div>
         </div>
-        {agent ? (
-          <p className="text-sm text-mist">
-            Read and MCP access are required. Select write to let the agent create dashboards and add charts.
-          </p>
-        ) : null}
         <PrimaryButton type="submit" disabled={create.isPending || !name.trim() || scopes.length === 0}>
-          {create.isPending ? "Please wait…" : agent ? "Issue agent token" : "Issue token"}
+          {create.isPending ? "Please wait…" : "Issue token"}
         </PrimaryButton>
         {create.error ? <p role="alert" className="text-rose-300">{create.error.message}</p> : null}
         {issued ? (
@@ -145,7 +135,7 @@ export function TokenManager({ agent = false }: { agent?: boolean }) {
             {tokens.isSuccess && visibleTokens.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-6 text-mist">
-                  {agent ? "No agent tokens yet. Issue a token to connect your agent." : "No API tokens yet."}
+                  No API tokens yet.
                 </td>
               </tr>
             ) : null}

@@ -55,9 +55,15 @@ export function isApiTokenScope(value: string): value is ApiTokenScope {
 
 export const API_TOKEN_PREFIX = "dash_live_";
 
+/** `token` is a static bearer token. `oauth` is an agent that connected through the MCP OAuth flow. */
+export type ApiTokenKind = "token" | "oauth";
+
 export interface PublicApiToken {
   workspaceId: string;
   id: string;
+  kind: ApiTokenKind;
+  /** The name that the OAuth client registered. Null for a static token. */
+  clientName: string | null;
   name: string;
   prefix: string;
   scopes: ApiTokenScope[];

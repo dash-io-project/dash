@@ -230,14 +230,14 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] REST API
 - [x] Session authentication (httpOnly cookie)
 - [x] API tokens (hashed, scoped, expiring, revocable)
-- [x] Agent tokens page with a full MCP URL and copy controls
+- [x] Agents page: connect an MCP agent with OAuth or with a token
 - [x] MCP server (`POST /mcp`) for charts and dashboards
 - [x] Public health checks (`GET /healthz`, `GET /ping`) that verify the app database
-- [ ] OAuth for MCP clients
+- [x] OAuth for MCP clients (discovery, dynamic client registration, PKCE, refresh rotation)
 
 ## REST surface
 
-All routes except bootstrap, register, login, invitation preview and accept, healthz, and ping require a session cookie or `Authorization: Bearer dash_live_…`.
+Most routes require a session cookie or `Authorization: Bearer dash_live_…`. Bootstrap, register, login, invitation preview and accept, healthz, and ping are public. The OAuth discovery, registration, and token endpoints are also public.
 
 | Method | Path | Notes |
 | --- | --- | --- |
@@ -269,7 +269,13 @@ All routes except bootstrap, register, login, invitation preview and accept, hea
 | GET/PATCH/DELETE | `/api/dashboards/:id` | Selected workspace. PATCH and DELETE require editor access |
 | GET/POST | `/api/tokens` | Session only; token value shown once |
 | DELETE | `/api/tokens/:id` | Revoke |
-| GET/POST | `/mcp` | Bearer token with `mcp` scope |
+| GET/POST | `/mcp` | Bearer token with `mcp` scope. A 401 has a `WWW-Authenticate` challenge that points to the OAuth metadata |
+| GET | `/.well-known/oauth-protected-resource` | Public. RFC 9728 metadata for `/mcp`. Also served at `/.well-known/oauth-protected-resource/mcp` |
+| GET | `/.well-known/oauth-authorization-server` | Public. RFC 8414 metadata |
+| POST | `/oauth/register` | Public. RFC 7591 dynamic client registration |
+| GET | `/oauth/authorize` | Consent page. The signed-in user creates the agent |
+| POST | `/oauth/token` | Public. Exchanges a code (PKCE S256) or a refresh token |
+| GET/POST | `/api/oauth/authorize` | Session only. The consent page checks the request and records the decision |
 
 ## Organizations and workspaces
 
@@ -291,9 +297,21 @@ This change does not migrate existing dashboards or tokens. See [ADR 0009](docs/
 
 ## MCP
 
-Select the target workspace. Open **Agent tokens** (`/agent-tokens`). Issue a token with the required `read` and `mcp` scopes. Select `write` for dashboard changes. New tokens expire after 90 days. Copy the full MCP URL from the banner. The URL uses the current site address and the `/mcp` path. Set the client authorization header to `Authorization: Bearer <token>`.
+Open **Agents** (`/agents`). Connect an agent with OAuth or with a token. Each agent uses one workspace.
 
-The Agent tokens page lists API tokens with the `mcp` scope. You can revoke these tokens from either token page. Tools include `list_data_sources`, `get_schema`, `query_data`, `list_dashboards`, `get_dashboard`, `create_dashboard`, and `add_chart_widget`.
+To connect with OAuth, do these steps:
+
+1. Copy the MCP URL from the Agents page. The URL uses the current site address and the `/mcp` path.
+2. Give the URL to your agent, for example as a ChatGPT connector. Select OAuth as the authentication.
+3. The agent opens Dash in your browser. Sign in if Dash asks.
+4. Set the agent name and the workspace. Select **Create dashboards and add charts** to give the agent `write`.
+5. Select **Create agent**. Dash creates the agent and sends you back to the agent.
+
+The agent finds the OAuth settings itself, and it registers itself as an OAuth client. An OAuth access token expires after one hour, and the agent gets a new one with its refresh token. Each refresh token works once. The agent stops after 90 days without a refresh. An OAuth access token works only at `/mcp`. Dash finds its public address from `X-Forwarded-Proto` and `X-Forwarded-Host`. Set `DASH_PUBLIC_URL` when the reverse proxy does not send these headers. See [ADR 0014](docs/adr/0014-mcp-oauth.md).
+
+To connect with a token, issue an agent token on the Agents page. The token has the `read` and `mcp` scopes. Select **Create dashboards and add charts** to add `write`. New tokens use the selected workspace and expire after 90 days. Set the client authorization header to `Authorization: Bearer <token>`.
+
+The Agents page lists OAuth agents and API tokens with the `mcp` scope. Revoke an agent on the Agents page. The old `/agent-tokens` path opens the Agents page. Tools include `list_data_sources`, `get_schema`, `query_data`, `list_dashboards`, `get_dashboard`, `create_dashboard`, and `add_chart_widget`.
 
 ## Scripts
 

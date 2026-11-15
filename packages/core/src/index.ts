@@ -51,6 +51,7 @@ export type {
 } from "./datasource.ts";
 
 export type {
+  ApiTokenKind,
   ApiTokenScope,
   InvitationPreview,
   OrganizationSettings,

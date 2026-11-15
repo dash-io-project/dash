@@ -1,5 +1,6 @@
 import {
   type ApiTokenScope,
+  type PublicApiToken,
   type PublicUser,
   isApiTokenFormat,
   publicTokenPrefix,
@@ -276,10 +277,12 @@ async function sessionUser(token: string): Promise<PublicUser | undefined> {
   return user && isActiveAccount(user) ? toPublicUser(user) : undefined;
 }
 
-function toPublicToken(row: ApiTokenDoc) {
+function toPublicToken(row: ApiTokenDoc): PublicApiToken {
   return {
     workspaceId: row.workspaceId,
     id: row._id,
+    kind: row.kind ?? "token",
+    clientName: row.clientName ?? null,
     name: row.name,
     prefix: row.prefix,
     scopes: row.scopes as ApiTokenScope[],
@@ -312,6 +315,7 @@ export async function issueApiToken(input: {
   const prefix = publicTokenPrefix(token);
   const record = {
     _id: id,
+    kind: "token" as const,
     workspaceId: input.workspaceId,
     userId: input.userId,
     name: input.name,
@@ -349,6 +353,9 @@ async function tokenAuth(token: string): Promise<AuthContext | undefined> {
   if (row.expiresAt && new Date(row.expiresAt).getTime() <= Date.now()) {
     return undefined;
   }
+  if (row.accessTokenExpiresAt && new Date(row.accessTokenExpiresAt).getTime() <= Date.now()) {
+    return undefined;
+  }
   const presented = hashSecret(token);
   if (!safeEqualHex(presented, row.tokenHash)) {
     return undefined;
@@ -362,6 +369,7 @@ async function tokenAuth(token: string): Promise<AuthContext | undefined> {
     user: toPublicUser(user),
     scopes: row.scopes as ApiTokenScope[],
     via: "token",
+    tokenKind: row.kind ?? "token",
     tokenId: row._id,
     workspaceId: row.workspaceId,
   };
