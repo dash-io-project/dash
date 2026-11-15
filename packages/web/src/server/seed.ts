@@ -58,10 +58,23 @@ async function keepAnotherAdmin(removedId: string): Promise<void> {
 }
 
 /**
+ * Drop a first-admin record whose account is already gone.
+ * A live account keeps the record. A later member stays a member.
+ */
+async function releaseOrphanBootstrap(): Promise<void> {
+  const marker = (await getDb()).collection<{ _id: string; adminUserId?: string }>("settings");
+  const bootstrap = await marker.findOne({ _id: "bootstrap" });
+  if (!bootstrap?.adminUserId) return;
+  if (await (await users()).findOne({ _id: bootstrap.adminUserId })) return;
+  await marker.deleteOne({ _id: "bootstrap", adminUserId: bootstrap.adminUserId });
+}
+
+/**
  * Older installs can still hold admin@dash.dev with the published password.
  * This step runs once. It deletes that account, its sessions, and its tokens
  * when the password still matches. An account with a different password stays.
  * When that account is the only admin, another active member becomes admin first.
+ * The first-admin record goes before the account, so a stopped run can finish.
  */
 async function retireLegacyDemoAdmin(): Promise<void> {
   const db = await getDb();
@@ -75,9 +88,10 @@ async function retireLegacyDemoAdmin(): Promise<void> {
       { userId: user._id, revokedAt: null },
       { $set: { revokedAt: nowIso() } },
     );
-    await (await users()).deleteOne({ _id: user._id });
     await marker.deleteOne({ _id: "bootstrap", adminUserId: user._id });
+    await (await users()).deleteOne({ _id: user._id });
   }
+  await releaseOrphanBootstrap();
   await marker.updateOne({ _id: "demo-admin-retired" }, { $set: { complete: true } }, { upsert: true });
 }
 

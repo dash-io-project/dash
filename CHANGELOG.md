@@ -21,6 +21,7 @@ All notable changes to Dash are documented here.
 - A timeout or a connection reset on a live data source fails that seed step. Only a refused connection, a missing name, or a missing database is skipped.
 - A missing BigQuery project is skipped. The seed run writes the other sources. A missing dataset is still created.
 - Startup gives the admin role to the oldest active member before it deletes `admin@dash.dev`, when that account is the only admin. A pending account is not promoted.
+- Startup clears the first-admin record before it deletes that account. A stopped cleanup still lets the next account become admin. A live administrator keeps the record.
 
 - A table widget fills its dashboard card and scrolls inside it. The header row stays in view during the scroll. Before, a long table ran past the bottom of its card and over the widgets below it.
 - The seeded "First response by priority" chart uses the short series names `median_minutes` and `sla_minutes`, so its legend fits in the card. The `mart_first_response_by_priority` columns have the same new names.

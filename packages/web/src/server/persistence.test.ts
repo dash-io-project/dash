@@ -233,6 +233,50 @@ describe("app database", () => {
     expect(session).toEqual(expect.any(String));
   });
 
+  it("lets the next account become admin when cleanup stopped after the user delete", async () => {
+    const admin = await createUser({
+      email: "admin@dash.dev",
+      name: "Dash Admin",
+      password: "dashadmin",
+      role: "member",
+    });
+    expect(await grantInitialAdmin(admin.id)).toBe(true);
+    await (await users()).deleteOne({ _id: admin.id });
+
+    resetSeedForTests();
+    await ensureSeeded();
+    const next = await createUser({
+      email: "ada@example.com",
+      name: "Ada",
+      password: "password123",
+      role: "member",
+    });
+    expect(await grantInitialAdmin(next.id)).toBe(true);
+    expect((await findUserById(next.id))?.role).toBe("admin");
+  });
+
+  it("keeps the first-admin record when the published account is absent", async () => {
+    const owner = await createUser({
+      email: "owner@example.com",
+      name: "Owner",
+      password: "password123",
+      role: "member",
+    });
+    expect(await grantInitialAdmin(owner.id)).toBe(true);
+
+    resetSeedForTests();
+    await ensureSeeded();
+    const next = await createUser({
+      email: "ada@example.com",
+      name: "Ada",
+      password: "password123",
+      role: "member",
+    });
+    expect(await grantInitialAdmin(next.id)).toBe(false);
+    expect((await findUserById(owner.id))?.role).toBe("admin");
+    expect((await findUserById(next.id))?.role).toBe("member");
+  });
+
   it("gives the admin role to another member before it removes admin@dash.dev", async () => {
     const admin = await createUser({
       email: "admin@dash.dev",
