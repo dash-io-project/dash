@@ -141,6 +141,8 @@ export interface DashboardDoc {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  /** Each update raises this number. A conditional append compares it. Older documents do not have it. */
+  version?: number;
 }
 
 let client: MongoClient | undefined;

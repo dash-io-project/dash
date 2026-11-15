@@ -1,4 +1,4 @@
-import type { AdapterQuery, ChartSpec, DashboardWidget, GridLayout, KpiSpec } from "@dash/core";
+import type { AdapterQuery, ChartSpec, DashboardWidget, GridLayout, KpiSpec, QueryWidget } from "@dash/core";
 import { addMonths, monthLabel, quarterLabel, startOfMonth } from "./calendar.ts";
 import type { SeedDomainKey } from "./table.ts";
 
@@ -33,7 +33,7 @@ export interface SeedDashboard {
   key: string;
   name: string;
   description: string;
-  widgets: DashboardWidget[];
+  widgets: QueryWidget[];
 }
 
 const OPEN_STAGES = ["Prospecting", "Discovery", "Demo", "Proposal", "Negotiation"];
@@ -311,7 +311,7 @@ export function dashboardSpecs(asOf: Date): DashboardSpec[] {
 export function buildDashboards(asOf: Date, resolve: TableResolver): SeedDashboard[] {
   const result: SeedDashboard[] = [];
   for (const spec of dashboardSpecs(asOf)) {
-    const widgets: DashboardWidget[] = [];
+    const widgets: QueryWidget[] = [];
     for (const widget of spec.widgets) {
       const target = resolve(widget.domain, widget.table);
       if (!target) continue;

@@ -166,7 +166,7 @@ describe("development seeding", () => {
     for (const page of pages) {
       for (const widget of page.widgets) {
         expect([postgres.id, support.id], `${page.name}/${widget.title}`).toContain(widget.dataSourceId);
-        const result = await queryDataSource(widget.dataSourceId, widget.query);
+        const result = await queryDataSource(widget.dataSourceId!, widget.query!);
         expect(result.rows.length, `${page.name}/${widget.title}`).toBeGreaterThan(0);
       }
     }

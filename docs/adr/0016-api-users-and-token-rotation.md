@@ -1,4 +1,4 @@
-# ADR 0015: API users and token rotation
+# ADR 0016: API users and token rotation
 
 ## Status
 

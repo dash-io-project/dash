@@ -300,7 +300,7 @@ Workspace privacy protects dashboards; it does not restrict access to data sourc
 
 Session API clients select a workspace with the `X-Dash-Workspace-Id` header. Without that header, dashboard requests use the user's personal workspace.
 New API tokens bind to the workspace selected at creation. Tokens cannot select another workspace. Each request checks current membership and token scopes.
-An API user acts as the person who created it. It can use dashboards only in its workspace. Data sources follow the organization access of that person. See [ADR 0015](docs/adr/0015-api-users-and-token-rotation.md).
+An API user acts as the person who created it. It can use dashboards only in its workspace. Data sources follow the organization access of that person. See [ADR 0016](docs/adr/0016-api-users-and-token-rotation.md).
 This change does not migrate existing dashboards or tokens. See [ADR 0009](docs/adr/0009-organization-workspaces.md).
 
 ## MCP
@@ -320,6 +320,15 @@ The agent finds the OAuth settings itself, and it registers itself as an OAuth c
 To connect with a token, issue an agent token on the Agents page. The token has the `read` and `mcp` scopes. Select **Create dashboards and add charts** to add `write`. New tokens use the selected workspace and expire after 90 days. Set the client authorization header to `Authorization: Bearer <token>`.
 
 The Agents page lists OAuth agents and API tokens with the `mcp` scope. Revoke an agent on the Agents page. The old `/agent-tokens` path opens the Agents page. Tools include `list_data_sources`, `get_schema`, `query_data`, `list_dashboards`, `get_dashboard`, `create_dashboard`, and `add_chart_widget`.
+
+`add_chart_widget` adds a live chart or a snapshot chart:
+
+- A live chart has `dataSourceId` and `resource`. Dash runs its query each time that the chart renders.
+- A snapshot chart has `rows` that the agent calculated, for example 24 hourly averages. Dash saves up to 1,000 rows, or 256 KiB of JSON, with the chart. The snapshots on one dashboard can use 2 MiB in total. The rows do not refresh, and the chart shows a **Snapshot** label with the save date.
+
+`create_dashboard`, `get_dashboard`, and `list_dashboards` return a `dashboardUrl`, and a `widgetUrl` for each widget. `add_chart_widget` also returns `widgetId` and `chartUrl`. The links use the public address of Dash.
+
+A widget link opens a view of the dashboard that shows only that widget. The widget can be a chart, a table, or a KPI. To show more than one widget, put their ids in the `widgets` value of the link, with commas between them. Each widget card has a **Copy link** button. A link opens only for a signed-in member of the workspace. See [ADR 0015](docs/adr/0015-snapshot-charts-and-links.md).
 
 ## Scripts
 

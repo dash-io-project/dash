@@ -77,23 +77,37 @@ export async function updateDashboard(
   }
   const row = await (
     await dashboards()
-  ).findOneAndUpdate({ _id: id, workspaceId }, { $set }, { returnDocument: "after" });
+  ).findOneAndUpdate({ _id: id, workspaceId }, { $set, $inc: { version: 1 } }, { returnDocument: "after" });
   return row ? toDashboard(row) : undefined;
 }
 
+const APPEND_ATTEMPTS = 5;
+
+/**
+ * Add a widget when `fits` accepts the stored widget list. The write applies
+ * only when the dashboard did not change after the check. Thus two calls at
+ * the same time cannot both use the same space in a budget. The result is
+ * "rejected" when `fits` refuses, and undefined when the dashboard is missing.
+ */
 export async function appendDashboardWidget(
   workspaceId: string,
   id: string,
   widget: DashboardWidget,
-): Promise<Dashboard | undefined> {
-  const row = await (
-    await dashboards()
-  ).findOneAndUpdate(
-    { _id: id, workspaceId },
-    { $push: { widgets: widget }, $set: { updatedAt: nowIso() } },
-    { returnDocument: "after" },
-  );
-  return row ? toDashboard(row) : undefined;
+  fits: (widgets: readonly DashboardWidget[]) => boolean = () => true,
+): Promise<Dashboard | "rejected" | undefined> {
+  const collection = await dashboards();
+  for (let attempt = 0; attempt < APPEND_ATTEMPTS; attempt += 1) {
+    const row = await collection.findOne({ _id: id, workspaceId });
+    if (!row) return undefined;
+    if (!fits(row.widgets)) return "rejected";
+    const updated = await collection.findOneAndUpdate(
+      { _id: id, workspaceId, version: row.version === undefined ? { $exists: false } : row.version },
+      { $push: { widgets: widget }, $set: { updatedAt: nowIso() }, $inc: { version: 1 } },
+      { returnDocument: "after" },
+    );
+    if (updated) return toDashboard(updated);
+  }
+  throw new Error("The dashboard changed during the update. Try again.");
 }
 
 export async function deleteDashboard(workspaceId: string, id: string): Promise<boolean> {

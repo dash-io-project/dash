@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type { AdapterSchema, Dashboard, DashboardWidget, DataSourceRecord } from "@dash/core";
@@ -6,8 +6,14 @@ import { useWorkspace } from "~/components/WorkspaceProvider";
 import { WidgetCard } from "~/components/WidgetCard";
 import { WidgetEditor } from "~/components/WidgetEditor";
 import { GhostButton, PrimaryButton, TextInput } from "~/components/ui";
+import { parseWidgetIds, widgetUrl } from "~/lib/dashboard-links";
 
 export const Route = createFileRoute("/_authed/dashboards/$dashboardId")({
+  // `widgets` holds widget ids with commas between them. With it, the page
+  // shows only those widgets. A shared widget link uses this value.
+  validateSearch: (search: Record<string, unknown>): { widgets?: string } => ({
+    widgets: typeof search.widgets === "string" && search.widgets ? search.widgets : undefined,
+  }),
   component: DashboardPage,
 });
 
@@ -19,6 +25,7 @@ function DashboardPage() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
+  const selected = parseWidgetIds(Route.useSearch().widgets);
 
   const dashboardQuery = useQuery({
     queryKey: ["dashboard", workspace.id, dashboardId],
@@ -72,6 +79,9 @@ function DashboardPage() {
   if (!dashboard) {
     return <div className="text-rose-300">Dashboard not found.</div>;
   }
+  // A focused view keeps the dashboard order. One widget fills the width.
+  const shown = selected ? dashboard.widgets.filter((widget) => selected.includes(widget.id)) : dashboard.widgets;
+  const shareUrl = (widgetId: string) => widgetUrl(window.location.origin, dashboard, [widgetId]);
 
   async function addWidget(widget: DashboardWidget) {
     const current = dashboardQuery.data;
@@ -131,7 +141,7 @@ function DashboardPage() {
             </>
           )}
         </div>
-        {canEdit ? <div className="flex flex-wrap gap-2">
+        {canEdit && !selected ? <div className="flex flex-wrap gap-2">
           {editing ? (
             <PrimaryButton
               type="button"
@@ -159,12 +169,33 @@ function DashboardPage() {
         </div> : null}
       </div>
       {save.error ? <p role="alert" className="mt-4 text-rose-300">{save.error.message}</p> : null}
+      {selected ? (
+        <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-line px-4 py-3 text-sm text-mist">
+          <span>
+            {shown.length === 0
+              ? "The linked widgets are not on this dashboard now."
+              : `Showing ${shown.length} of ${dashboard.widgets.length} widgets.`}
+          </span>
+          <Link
+            to="/dashboards/$dashboardId"
+            params={{ dashboardId }}
+            search={(previous) => ({ ...previous, widgets: undefined })}
+          >
+            {/* A global rule sets the color of each link, so the span sets it. */}
+            <span className="text-accent underline">Show all widgets</span>
+          </Link>
+        </div>
+      ) : null}
       <div className="dash-grid mt-8">
-        {dashboard.widgets.map((widget) => (
-          <WidgetCard key={widget.id} widget={widget} />
+        {shown.map((widget) => (
+          <WidgetCard
+            key={widget.id}
+            widget={shown.length === 1 && selected ? { ...widget, layout: { ...widget.layout, w: 12 } } : widget}
+            getShareUrl={() => shareUrl(widget.id)}
+          />
         ))}
       </div>
-      {dashboard.widgets.length === 0 ? (
+      {dashboard.widgets.length === 0 && !selected ? (
         <div className="mt-10 rounded-2xl border border-dashed border-line p-10 text-center text-mist">
           Empty canvas. Add a widget or ask Dash MCP to generate a chart.
         </div>

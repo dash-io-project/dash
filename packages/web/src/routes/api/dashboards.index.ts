@@ -1,72 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { isChartType } from "@dash/core";
 import { isResponse, requireWorkspace } from "~/server/guard";
 import { error, json, readJson } from "~/server/http";
+import { stampSnapshots, widgetListSchema } from "~/server/widget-schema";
+import { nowIso } from "~/server/db";
 import { createDashboard, listDashboards } from "~/server/services/dashboards";
-
-const widgetSchema = z.object({
-  id: z.string(),
-  type: z.enum(["chart", "table", "kpi"]),
-  title: z.string(),
-  layout: z.object({
-    x: z.number(),
-    y: z.number(),
-    w: z.number(),
-    h: z.number(),
-  }),
-  dataSourceId: z.string(),
-  query: z.object({
-    resource: z.string(),
-    columns: z.array(z.string()).optional(),
-    filters: z
-      .array(
-        z.object({
-          column: z.string(),
-          op: z.enum(["eq", "neq", "gt", "gte", "lt", "lte", "in", "like", "ilike"]),
-          value: z.unknown(),
-        }),
-      )
-      .optional(),
-    orderBy: z
-      .array(
-        z.object({
-          column: z.string(),
-          direction: z.enum(["asc", "desc"]),
-        }),
-      )
-      .optional(),
-    limit: z.number().optional(),
-    offset: z.number().optional(),
-  }),
-  chart: z
-    .object({
-      type: z.string().refine((value) => isChartType(value)),
-      title: z.string().optional(),
-      encode: z.object({
-        x: z.string().optional(),
-        y: z.union([z.string(), z.array(z.string())]).optional(),
-        color: z.string().optional(),
-        name: z.string().optional(),
-        value: z.string().optional(),
-      }),
-      stacked: z.boolean().optional(),
-      smooth: z.boolean().optional(),
-    })
-    .optional(),
-  kpi: z
-    .object({
-      aggregation: z.enum(["sum", "avg", "count", "min", "max"]),
-      column: z.string(),
-      format: z.enum(["number", "currency", "percent"]).optional(),
-    })
-    .optional(),
-});
 
 const createSchema = z.object({
   name: z.string().min(1).max(80),
   description: z.string().max(2000).optional(),
-  widgets: z.array(widgetSchema).optional(),
+  widgets: widgetListSchema.optional(),
 });
 
 export const Route = createFileRoute("/api/dashboards/")({
@@ -92,7 +35,7 @@ export const Route = createFileRoute("/api/dashboards/")({
           workspaceId: auth.workspace.id,
           name: parsed.data.name,
           description: parsed.data.description ?? "",
-          widgets: parsed.data.widgets ?? [],
+          widgets: stampSnapshots(parsed.data.widgets ?? [], [], nowIso()),
           createdBy: auth.user.id,
         });
         return json({ dashboard }, { status: 201 });

@@ -1,19 +1,38 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { defaultParseSearch } from "@tanstack/react-router";
+import type { DashboardWidget } from "@dash/core";
 import { createUser } from "./auth.ts";
 import { createDashboard, getDashboard } from "./services/dashboards.ts";
 import { createWorkspace, ensurePersonalWorkspace, setWorkspaceMember } from "./services/workspaces.ts";
 import { mcpHandler } from "./mcp.ts";
 import { destroyAppDatabase, useFreshAppDatabase } from "./test-db.ts";
+import { parseWidgetIds } from "../lib/dashboard-links.ts";
 
-function mcpRequest(body: string): Request {
+function mcpRequest(body: string, headers: Record<string, string> = {}): Request {
   return new Request("http://localhost/mcp", {
     method: "POST",
     headers: {
       "content-type": "application/json",
       accept: "application/json, text/event-stream",
+      ...headers,
     },
     body,
   });
+}
+
+type ToolResult = { isError?: boolean; content: Array<{ text: string }> };
+
+/** Call one tool as a writer in `workspaceId`, behind a proxy at https://dash.example.com. */
+async function callTool(userId: string, workspaceId: string, name: string, args: unknown): Promise<ToolResult> {
+  const response = await mcpHandler.fetch(
+    mcpRequest(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }), {
+      "x-forwarded-proto": "https",
+      "x-forwarded-host": "dash.example.com",
+    }),
+    { authInfo: { token: "test-token", clientId: userId, scopes: ["read", "write", "mcp"], extra: { workspaceId } } },
+  );
+  expect(response.status).toBe(200);
+  return JSON.parse(jsonFromBody(await response.text())).result;
 }
 
 describe("mcp handler", () => {
@@ -134,6 +153,116 @@ describe("mcp handler", () => {
     expect(updated.widgets).toHaveLength(1);
     expect((await getDashboard(personal, privateDashboard.id))?.widgets).toEqual([]);
     expect(JSON.parse((await call("list_dashboards")).content[0].text).map((item: { id: string }) => item.id)).toEqual([dashboard.id]);
+  });
+
+  it("saves a snapshot chart from rows and links to the dashboard and to each widget", async () => {
+    const user = await createUser({ email: "mcp-snapshot@example.com", name: "MCP", password: "password123", role: "admin" });
+    const shared = await createWorkspace(user, "Support");
+    const created = JSON.parse((await callTool(user.id, shared.id, "create_dashboard", { name: "Support load" })).content[0]!.text);
+    const link = new URL(created.dashboardUrl);
+    expect(link.origin).toBe("https://dash.example.com");
+    expect(link.pathname).toBe(`/dashboards/${created.id}`);
+    expect(defaultParseSearch(link.search)).toEqual({ workspace: shared.id });
+
+    const rows = Array.from({ length: 24 }, (_, hour) => ({ hour, weekday_average: hour / 2, weekend_average: hour / 4 }));
+    const result = await callTool(user.id, shared.id, "add_chart_widget", {
+      dashboardId: created.id,
+      title: "Tickets by hour",
+      chartType: "line",
+      x: "hour",
+      y: ["weekday_average", "weekend_average"],
+      rows,
+    });
+    expect(result.isError).toBeUndefined();
+    const added = JSON.parse(result.content[0]!.text);
+    expect(added.dashboardUrl).toBe(created.dashboardUrl);
+    const chart = new URL(added.chartUrl);
+    expect(`${chart.origin}${chart.pathname}`).toBe(`${link.origin}${link.pathname}`);
+    const search: Record<string, unknown> = defaultParseSearch(chart.search);
+    expect([search.workspace, parseWidgetIds(search.widgets)]).toEqual([shared.id, [added.widgetId]]);
+
+    const [widget] = (await getDashboard(shared.id, created.id))!.widgets;
+    expect(widget).toMatchObject({ id: added.widgetId, snapshot: { rows } });
+    expect(widget!.chart).toStrictEqual({ type: "line", encode: { x: "hour", y: ["weekday_average", "weekend_average"] } });
+    expect(widget).not.toHaveProperty("dataSourceId");
+    expect(Date.parse(widget!.snapshot!.savedAt)).not.toBeNaN();
+    const fetched = JSON.parse((await callTool(user.id, shared.id, "get_dashboard", { dashboardId: created.id })).content[0]!.text);
+    const listed = JSON.parse((await callTool(user.id, shared.id, "list_dashboards", {})).content[0]!.text);
+    expect([fetched.dashboardUrl, listed[0].dashboardUrl]).toEqual([created.dashboardUrl, created.dashboardUrl]);
+    expect([added.widgets[0].widgetUrl, fetched.widgets[0].widgetUrl, listed[0].widgets[0].widgetUrl]).toEqual([
+      added.chartUrl,
+      added.chartUrl,
+      added.chartUrl,
+    ]);
+  });
+
+  it("refuses a chart that has no source, two sources, or rows that do not match", async () => {
+    const user = await createUser({ email: "mcp-snapshot-bad@example.com", name: "MCP", password: "password123", role: "admin" });
+    const workspaceId = await ensurePersonalWorkspace(user.id);
+    const dashboard = await createDashboard({ workspaceId, name: "Bad", description: "", widgets: [], createdBy: user.id });
+    const chart = { dashboardId: dashboard.id, title: "Hourly", chartType: "line", x: "hour", y: "weekday_average" };
+    const cases: Array<[unknown, string]> = [
+      [{ ...chart }, "Give `dataSourceId` and `resource`"],
+      [{ ...chart, dataSourceId: "warehouse" }, "Give `dataSourceId` and `resource`"],
+      [{ ...chart, rows: [{ hour: 0, weekday_average: 1 }], dataSourceId: "warehouse" }, "Do not give both"],
+      [{ ...chart, rows: [{ hour: 0, weekend_average: 1 }] }, "weekday_average"],
+      [{ ...chart, rows: [{ hour: 0, weekday_average: { total: 1 } }] }, "rows.0.weekday_average"],
+    ];
+    for (const [args, message] of cases) {
+      const result = await callTool(user.id, workspaceId, "add_chart_widget", args);
+      expect(result.isError, JSON.stringify(args)).toBe(true);
+      expect(result.content[0]!.text).toContain(message);
+    }
+    expect((await getDashboard(workspaceId, dashboard.id))?.widgets).toEqual([]);
+  });
+
+  it("refuses snapshot rows over the size budget of one chart or one dashboard", async () => {
+    const user = await createUser({ email: "mcp-snapshot-size@example.com", name: "MCP", password: "password123", role: "admin" });
+    const workspaceId = await ensurePersonalWorkspace(user.id);
+    const labels = (count: number, length: number) => Array.from({ length: count }, () => ({ label: "x".repeat(length) }));
+    // 8 tables of 253,001 bytes each: the dashboard is just under its 2 MiB budget.
+    const stored = Array.from({ length: 8 }, (_, index): DashboardWidget => ({
+      id: `table-${index}`,
+      type: "table",
+      title: "Labels",
+      layout: { x: 0, y: index * 4, w: 12, h: 4 },
+      snapshot: { rows: labels(1000, 240), savedAt: "2026-11-15T08:00:00.000Z" },
+    }));
+    const dashboard = await createDashboard({ workspaceId, name: "Full", description: "", widgets: stored, createdBy: user.id });
+    const chart = { dashboardId: dashboard.id, title: "Labels", chartType: "bar", x: "label" };
+
+    const oneChart = await callTool(user.id, workspaceId, "add_chart_widget", { ...chart, rows: labels(1000, 300) });
+    expect(oneChart.isError).toBe(true);
+    expect(oneChart.content[0]!.text).toContain("256 KiB");
+    const dashboardFull = await callTool(user.id, workspaceId, "add_chart_widget", { ...chart, rows: labels(150, 700) });
+    expect(dashboardFull.isError).toBe(true);
+    expect(dashboardFull.content[0]!.text).toContain("2 MiB");
+    expect((await getDashboard(workspaceId, dashboard.id))?.widgets).toHaveLength(8);
+  });
+
+  it("keeps the dashboard budget when calls add snapshot charts at the same time", async () => {
+    const user = await createUser({ email: "mcp-snapshot-race@example.com", name: "MCP", password: "password123", role: "admin" });
+    const workspaceId = await ensurePersonalWorkspace(user.id);
+    const labels = (count: number, length: number) => Array.from({ length: count }, () => ({ label: "x".repeat(length) }));
+    // 7 tables of 253,001 bytes. Three charts of 106,951 bytes fit in the rest of the 2 MiB budget. Four do not.
+    const stored = Array.from({ length: 7 }, (_, index): DashboardWidget => ({
+      id: `table-${index}`,
+      type: "table",
+      title: "Labels",
+      layout: { x: 0, y: index * 4, w: 12, h: 4 },
+      snapshot: { rows: labels(1000, 240), savedAt: "2026-11-15T08:00:00.000Z" },
+    }));
+    const dashboard = await createDashboard({ workspaceId, name: "Race", description: "", widgets: stored, createdBy: user.id });
+
+    const results = await Promise.all(
+      Array.from({ length: 8 }, (_, index) =>
+        callTool(user.id, workspaceId, "add_chart_widget", { dashboardId: dashboard.id, title: `Chart ${index}`, chartType: "bar", x: "label", rows: labels(150, 700) }),
+      ),
+    );
+
+    expect(results.filter((result) => !result.isError)).toHaveLength(3);
+    expect(results.filter((result) => result.isError).map((result) => result.content[0]!.text)).toEqual(Array(5).fill(expect.stringContaining("2 MiB")));
+    expect((await getDashboard(workspaceId, dashboard.id))?.widgets).toHaveLength(10);
   });
 
   it("checks MCP membership again after a role change or removal", async () => {
