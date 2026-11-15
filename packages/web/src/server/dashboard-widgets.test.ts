@@ -70,24 +70,27 @@ describe("dashboard widget payloads", () => {
     const session = await createSession(user.id);
     const workspaceId = await ensurePersonalWorkspace(user.id);
     const saved = "2026-11-15T08:00:00.000Z";
-    const table = (id: string, value: number): DashboardWidget => ({
+    const table = (id: string, rows: Record<string, number>[]): DashboardWidget => ({
       id,
       type: "table",
       title: id,
       layout: { x: 0, y: 0, w: 6, h: 4 },
-      snapshot: { rows: [{ value }], savedAt: saved },
+      snapshot: { rows, savedAt: saved },
     });
-    const dashboard = await createDashboard({ workspaceId, name: "Dates", description: "", widgets: [table("same", 1), table("changed", 1)], createdBy: user.id });
+    const stored = [table("same", [{ value: 1 }]), table("reordered", [{ a: 1, b: 2 }]), table("changed", [{ value: 1 }])];
+    const dashboard = await createDashboard({ workspaceId, name: "Dates", description: "", widgets: stored, createdBy: user.id });
     const forged = "2000-01-01T00:00:00.000Z";
     const before = Date.now();
 
-    const widgets = [table("same", 1), table("changed", 2), table("added", 1)].map((widget) => ({ ...widget, snapshot: { ...widget.snapshot!, savedAt: forged } }));
+    // The same rows with a new key order are not a change.
+    const sent = [table("same", [{ value: 1 }]), table("reordered", [{ b: 2, a: 1 }]), table("changed", [{ value: 2 }]), table("added", [{ value: 1 }])];
+    const widgets = sent.map((widget) => ({ ...widget, snapshot: { ...widget.snapshot!, savedAt: forged } }));
     const response = await call("PATCH", session, workspaceId, dashboard.id, { widgets });
 
     expect(response.status).toBe(200);
     const dates = ((await response.json()).dashboard.widgets as DashboardWidget[]).map((widget) => widget.snapshot!.savedAt);
-    expect(dates[0]).toBe(saved);
-    expect(dates.slice(1).every((date) => Date.parse(date) >= before)).toBe(true);
+    expect(dates.slice(0, 2)).toEqual([saved, saved]);
+    expect(dates.slice(2).every((date) => Date.parse(date) >= before)).toBe(true);
   });
 
   it("refuses a widget id with a comma, which a widget link cannot name", async () => {

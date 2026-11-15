@@ -156,6 +156,11 @@ export const widgetSchema = z.union([snapshotWidgetSchema, queryWidgetSchema]);
 
 type ParsedWidget = z.output<typeof widgetSchema>;
 
+/** Rows as JSON with sorted keys. A row is flat, so a new key order is not a change. */
+function canonicalRows(rows: readonly Record<string, unknown>[]): string {
+  return JSON.stringify(rows.map((row) => Object.keys(row).sort().map((key) => [key, row[key]])));
+}
+
 /**
  * Give each snapshot its save date. A snapshot keeps its stored date when its
  * rows did not change. Each other snapshot gets `now`. Thus a client cannot
@@ -170,7 +175,7 @@ export function stampSnapshots(
   return widgets.map((widget) => {
     if (!("snapshot" in widget)) return widget;
     const previous = before.get(widget.id);
-    const unchanged = previous && JSON.stringify(previous.rows) === JSON.stringify(widget.snapshot.rows);
+    const unchanged = previous && canonicalRows(previous.rows) === canonicalRows(widget.snapshot.rows);
     return { ...widget, snapshot: { rows: widget.snapshot.rows, savedAt: unchanged ? previous.savedAt : now } };
   });
 }
