@@ -311,6 +311,12 @@ describe("organization workspaces", () => {
       id,
       body: { userId: member.id, role: "editor" },
     });
+    const noMcp = await call(Tokens, "POST", memberSession, {
+      workspaceId: id,
+      body: { name: "Script", scopes: ["read", "write"] },
+    });
+    expect(noMcp.status).toBe(400);
+    expect((await noMcp.json()).error.code).toBe("invalid_scope");
     const response = await call(Tokens, "POST", memberSession, {
       workspaceId: id,
       body: { name: "MCP", scopes: ["read", "write", "mcp"] },

@@ -6,12 +6,18 @@ All notable changes to Dash are documented here.
 
 ### Added
 
+- API users on the **API tokens** page. An API user is an identity for a script or a service. It can have more than one token, so a service can rotate its token without downtime. To rotate a token, create a new token first. Update the app with the new token. Then revoke the old token. Delete an API user to revoke all of its tokens. See [ADR 0016](docs/adr/0016-api-users-and-token-rotation.md).
+- `GET/POST /api/api-users`, `DELETE /api/api-users/:id`, `POST /api/api-users/:id/tokens`, and `DELETE /api/api-users/:id/tokens/:tokenId`. Only a browser session can use them.
 - `add_chart_widget` accepts `rows` for a snapshot chart. An agent can save data that it calculated, for example average tickets for each hour. Dash keeps up to 1,000 rows, or 256 KiB of JSON, with the widget. The snapshots on one dashboard can use 2 MiB in total. The rows do not refresh. The chart shows a **Snapshot** label with the save date. Give `rows`, or give `dataSourceId` and `resource`. Do not give both.
 - MCP dashboard responses include links. `create_dashboard`, `get_dashboard`, and `list_dashboards` return `dashboardUrl`, and `widgetUrl` for each widget. `add_chart_widget` also returns `widgetId` and `chartUrl`. See [ADR 0015](docs/adr/0015-snapshot-charts-and-links.md).
 - A widget link opens a view of the dashboard that shows only that widget. The link can name more than one widget, for example a chart and a table. Each widget card has a **Copy link** button. The view has a **Show all widgets** link.
 
 ### Changed
 
+- The **API tokens** page is for the REST API only. It does not show the MCP banner or offer the `mcp` scope. Agents stay on the **Agents** page.
+- **Breaking:** `POST /api/tokens` issues agent tokens only. A request without the `mcp` scope gets 400. Use `/api/api-users` for an API token.
+- An older token without the `mcp` scope becomes an API user when its owner opens the API tokens page. The token keeps its access.
+- A token writes its last-use time at most once a minute.
 - The **Agent tokens** page is now **Agents** (`/agents`) in the sidebar and in the page header. Connect an agent with OAuth or with a token on that page. The old `/agent-tokens` path opens the Agents page. The API tokens page does not list OAuth agents.
 - The **Team** page is now **Members** (`/members`) in the sidebar and in the page header. The old `/team` path opens the Members page. The website and the README also use **Members**.
 - Two API error messages use "member" in place of "team". `POST /api/invitations` returns "That email already belongs to a member". An API token request to invite a person or to change a role returns "Session authentication required to manage members".
@@ -26,6 +32,7 @@ All notable changes to Dash are documented here.
 
 ### Fixed
 
+- **Security:** an API token cannot change the profile, the password, or the organization settings. `PATCH /api/users/me` and `PATCH /api/settings` need a browser session. Before, a leaked `write` token could set a new password and take over the account.
 - A signed-out user who opens a Dash link returns to that link after sign-in. Before, Dash opened the dashboard list.
 - `add_chart_widget` reports "Dashboard not found" when the dashboard is deleted during the call. Before, the tool sent an empty result.
 - The dashboard page can save a dashboard after `add_chart_widget` adds a chart to it. Before, MongoDB stored each unset chart field as null, and the save failed with 400. The tool does not store unset fields now, and the save accepts the null fields of earlier charts.

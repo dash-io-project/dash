@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { updateUser } from "~/server/auth";
-import { isResponse, requireUser } from "~/server/guard";
+import { isResponse, requireSession } from "~/server/guard";
 import { error, json, readJson } from "~/server/http";
 
 const bodySchema = z.object({
@@ -13,7 +13,8 @@ export const Route = createFileRoute("/api/users/me")({
   server: {
     handlers: {
       PATCH: async ({ request }) => {
-        const auth = await requireUser(request, "write");
+        // A token cannot change the password, so a leaked token cannot take over the account.
+        const auth = await requireSession(request, "write", "change your profile");
         if (isResponse(auth)) {
           return auth;
         }

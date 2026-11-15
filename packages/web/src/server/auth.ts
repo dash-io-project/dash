@@ -8,7 +8,16 @@ import {
 import { getEnv } from "./env.ts";
 import { getWorkspace } from "./services/workspaces.ts";
 import { MongoServerError } from "mongodb";
-import { apiTokens, getDb, nowIso, sessions, users, type ApiTokenDoc, type UserDoc } from "./db.ts";
+import {
+  apiTokens,
+  apiUsers,
+  getDb,
+  nowIso,
+  sessions,
+  users,
+  type ApiTokenDoc,
+  type UserDoc,
+} from "./db.ts";
 import {
   generateApiToken,
   generateSessionToken,
@@ -277,11 +286,15 @@ async function sessionUser(token: string): Promise<PublicUser | undefined> {
   return user && isActiveAccount(user) ? toPublicUser(user) : undefined;
 }
 
-function toPublicToken(row: ApiTokenDoc): PublicApiToken {
+/** A token write of `lastUsedAt` happens at most once in this interval. */
+const LAST_USED_WRITE_INTERVAL_MS = 60_000;
+
+export function toPublicToken(row: ApiTokenDoc): PublicApiToken {
   return {
     workspaceId: row.workspaceId,
     id: row._id,
     kind: row.kind ?? "token",
+    apiUserId: row.apiUserId ?? null,
     clientName: row.clientName ?? null,
     name: row.name,
     prefix: row.prefix,
@@ -360,11 +373,17 @@ async function tokenAuth(token: string): Promise<AuthContext | undefined> {
   if (!safeEqualHex(presented, row.tokenHash)) {
     return undefined;
   }
+  // A deleted API user stops all of its tokens, also before each token gets `revokedAt`.
+  if (row.apiUserId && !(await (await apiUsers()).findOne({ _id: row.apiUserId, deletedAt: null }))) {
+    return undefined;
+  }
   const user = await findUserById(row.userId);
   if (!user || !isActiveAccount(user)) {
     return undefined;
   }
-  await collection.updateOne({ _id: row._id }, { $set: { lastUsedAt: nowIso() } });
+  if (!row.lastUsedAt || Date.parse(row.lastUsedAt) <= Date.now() - LAST_USED_WRITE_INTERVAL_MS) {
+    await collection.updateOne({ _id: row._id }, { $set: { lastUsedAt: nowIso() } });
+  }
   return {
     user: toPublicUser(user),
     scopes: row.scopes as ApiTokenScope[],

@@ -13,8 +13,9 @@ import {
   revokeApiToken,
 } from "./auth.ts";
 import { ensurePersonalWorkspace } from "./services/workspaces.ts";
+import { createApiUser } from "./services/api-users.ts";
 import { hashSecret } from "./crypto.ts";
-import { apiTokens, dashboards, dataSources, nowIso, organizationSettings, sessions, users, workspaces } from "./db.ts";
+import { apiTokens, apiUsers, dashboards, dataSources, nowIso, organizationSettings, sessions, users, workspaces } from "./db.ts";
 import { SESSION_COOKIE } from "./http.ts";
 import { ensureSeeded, resetSeedForTests } from "./seed.ts";
 import { appendDashboardWidget, createDashboard, listDashboards, updateDashboard } from "./services/dashboards.ts";
@@ -213,6 +214,7 @@ describe("app database", () => {
     const workspaceId = await ensurePersonalWorkspace(admin.id);
     const session = await createSession(admin.id);
     await issueApiToken({ userId: admin.id, workspaceId, name: "ci", scopes: ["read"], expiresAt: null });
+    await createApiUser({ ownerId: admin.id, workspaceId, name: "sync", scopes: ["read"] });
 
     resetSeedForTests();
     await ensureSeeded();
@@ -220,6 +222,7 @@ describe("app database", () => {
     expect(await authenticatePassword("admin@dash.dev", "dashadmin")).toBeUndefined();
     expect(await (await sessions()).countDocuments({ userId: admin.id })).toBe(0);
     expect(await (await apiTokens()).countDocuments({ userId: admin.id, revokedAt: null })).toBe(0);
+    expect(await (await apiUsers()).countDocuments({ ownerId: admin.id, deletedAt: null })).toBe(0);
     expect(await (await users()).countDocuments({ email: "admin@dash.dev" })).toBe(0);
 
     const next = await createUser({

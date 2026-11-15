@@ -42,7 +42,9 @@ The same product-revenue chart, drawn in the session after a Dash MCP query agai
 
 ### API tokens
 
-<img alt="API tokens page for issuing a scoped MCP client token" src="docs/screenshots/api-tokens.png" width="880">
+An API user is an identity for a script or a service that calls the REST API. Each API user can have more than one token, so you can rotate a token without downtime. Revoke a token to stop only that token. Delete the API user to revoke all of its tokens.
+
+<img alt="API tokens page with two API users, one with two active tokens during rotation" src="docs/screenshots/api-tokens.png" width="880">
 
 ### Members
 
@@ -230,6 +232,7 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] REST API
 - [x] Session authentication (httpOnly cookie)
 - [x] API tokens (hashed, scoped, expiring, revocable)
+- [x] API users: more than one token for each API user, for rotation without downtime
 - [x] Agents page: connect an MCP agent with OAuth or with a token
 - [x] MCP server (`POST /mcp`) for charts and dashboards
 - [x] Public health checks (`GET /healthz`, `GET /ping`) that verify the app database
@@ -267,7 +270,11 @@ Most routes require a session cookie or `Authorization: Bearer dash_live_…`. B
 | GET/PUT | `/api/workspaces/:id/members` | Workspace manager session only. PUT sets viewer/editor access or removes access with a null role |
 | GET/POST | `/api/dashboards` | Selected workspace. POST requires editor access |
 | GET/PATCH/DELETE | `/api/dashboards/:id` | Selected workspace. PATCH and DELETE require editor access |
-| GET/POST | `/api/tokens` | Session only; token value shown once |
+| GET/POST | `/api/api-users` | Session only. GET lists your API users and their tokens. POST creates an API user in the selected workspace with its first token, shown once. Scopes are `read` and `write` |
+| DELETE | `/api/api-users/:id` | Session only. Deletes the API user and revokes all of its tokens |
+| POST | `/api/api-users/:id/tokens` | Session only. Issues one more token, shown once. An API user can have 10 active tokens |
+| DELETE | `/api/api-users/:id/tokens/:tokenId` | Session only. Revokes one token |
+| GET/POST | `/api/tokens` | Session only; token value shown once. POST issues agent tokens and requires the `mcp` scope |
 | DELETE | `/api/tokens/:id` | Revoke |
 | GET/POST | `/mcp` | Bearer token with `mcp` scope. A 401 has a `WWW-Authenticate` challenge that points to the OAuth metadata |
 | GET | `/.well-known/oauth-protected-resource` | Public. RFC 9728 metadata for `/mcp`. Also served at `/.well-known/oauth-protected-resource/mcp` |
@@ -293,6 +300,7 @@ Workspace privacy protects dashboards; it does not restrict access to data sourc
 
 Session API clients select a workspace with the `X-Dash-Workspace-Id` header. Without that header, dashboard requests use the user's personal workspace.
 New API tokens bind to the workspace selected at creation. Tokens cannot select another workspace. Each request checks current membership and token scopes.
+An API user acts as the person who created it. It can use dashboards only in its workspace. Data sources follow the organization access of that person. See [ADR 0016](docs/adr/0016-api-users-and-token-rotation.md).
 This change does not migrate existing dashboards or tokens. See [ADR 0009](docs/adr/0009-organization-workspaces.md).
 
 ## MCP

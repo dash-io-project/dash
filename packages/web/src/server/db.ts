@@ -41,6 +41,8 @@ export interface ApiTokenDoc {
   createdAt: string;
   /** Absent on older documents. Those records are static tokens. */
   kind?: "token" | "oauth";
+  /** Only a static token of an API user has this value. The token stops when that API user is deleted. */
+  apiUserId?: string;
   /** OAuth agents only. The client that received the tokens. */
   clientId?: string;
   clientName?: string;
@@ -48,6 +50,25 @@ export interface ApiTokenDoc {
   refreshTokenHash?: string;
   /** OAuth agents only. The current access token stops working at this time. */
   accessTokenExpiresAt?: string;
+}
+
+/**
+ * A named identity for a script or service. It holds one or more `api_tokens`
+ * records, so a service can rotate its token. It acts as its owner, limited to
+ * its scopes and its workspace.
+ */
+export interface ApiUserDoc {
+  /** `legacy-<token id>` for an API user adopted from an older token. */
+  _id: string;
+  /** Null when the adopted token had no workspace. */
+  workspaceId: string | null;
+  ownerId: string;
+  name: string;
+  scopes: Array<"read" | "write">;
+  createdAt: string;
+  updatedAt: string;
+  /** A deleted API user stays in the collection. Its tokens stop at once. */
+  deletedAt: string | null;
 }
 
 /** A client that registered through OAuth dynamic client registration (RFC 7591). */
@@ -148,6 +169,11 @@ async function ensureIndexes(db: Db): Promise<void> {
       { unique: true, name: "api_tokens_token_hash" },
     ),
     db.collection("api_tokens").createIndex({ userId: 1 }, { name: "api_tokens_user" }),
+    db.collection("api_tokens").createIndex(
+      { apiUserId: 1 },
+      { name: "api_tokens_api_user", partialFilterExpression: { apiUserId: { $type: "string" } } },
+    ),
+    db.collection("api_users").createIndex({ ownerId: 1, createdAt: -1 }, { name: "api_users_owner" }),
     db.collection("api_tokens").createIndex(
       { refreshTokenHash: 1 },
       {
@@ -321,6 +347,10 @@ export async function sessions(): Promise<Collection<SessionDoc>> {
 
 export async function apiTokens(): Promise<Collection<ApiTokenDoc>> {
   return (await getDb()).collection<ApiTokenDoc>("api_tokens");
+}
+
+export async function apiUsers(): Promise<Collection<ApiUserDoc>> {
+  return (await getDb()).collection<ApiUserDoc>("api_users");
 }
 
 export async function oauthClients(): Promise<Collection<OAuthClientDoc>> {

@@ -36,6 +36,10 @@ export const Route = createFileRoute("/api/tokens/")({
         if (!parsed.success) {
           return error(400, "Invalid token payload", "invalid_body");
         }
+        // This route issues agent tokens. An API token belongs to an API user, so that it can rotate.
+        if (!parsed.data.scopes.includes("mcp")) {
+          return error(400, "An agent token needs the mcp scope. Use /api/api-users for an API token.", "invalid_scope");
+        }
         const expiresAt = parsed.data.expiresInDays
           ? new Date(Date.now() + parsed.data.expiresInDays * 86_400_000).toISOString()
           : null;
