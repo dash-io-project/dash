@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { ApiTokenScope, PublicUser, Workspace } from "@dash/core";
 import { api, ApiError } from "~/lib/api";
 import { fetchMe } from "~/lib/session";
-import { AuthCard, Field, GhostButton, PrimaryButton, Select, TextInput } from "~/components/ui";
+import { AuthCard, Button, Field, Select, TextInput, FullPageMessage } from "~/components/ui";
 
 interface AuthorizationPreview {
   client?: { name: string; redirectHost: string };
@@ -68,7 +68,7 @@ function AuthorizePage() {
     return <Unavailable message={(preview.error ?? workspaces.error)?.message ?? "Could not load the request."} />;
   }
   if (!me.data || !preview.data || !workspaces.data) {
-    return <p className="grid min-h-screen place-items-center text-sm text-mist">Loading…</p>;
+    return <FullPageMessage>Loading…</FullPageMessage>;
   }
   if (!preview.data.client) {
     return (
@@ -93,11 +93,11 @@ function Unavailable({ message, redirectTo }: { message: string; redirectTo?: st
   return (
     <AuthCard title="Cannot connect the agent" subtitle={message}>
       {redirectTo ? (
-        <GhostButton type="button" className="w-full" onClick={() => window.location.assign(redirectTo)}>
+        <Button type="button" className="w-full" onClick={() => window.location.assign(redirectTo)}>
           Return to the agent
-        </GhostButton>
+        </Button>
       ) : (
-        <p className="text-sm text-mist">Start the connection again from your agent.</p>
+        <p className="text-muted-foreground">Start the connection again from your agent.</p>
       )}
     </AuthCard>
   );
@@ -154,7 +154,7 @@ function ConsentForm({
       footer={
         <>
           You are signed in as {user.email}. After you create the agent, Dash sends you back to{" "}
-          <span className="font-medium text-paper">{client.redirectHost}</span>. Revoke the agent at any time on
+          <span className="font-medium text-foreground">{client.redirectHost}</span>. Revoke the agent at any time on
           the Agents page.
         </>
       }
@@ -171,13 +171,13 @@ function ConsentForm({
           ))}
         </Select>
       </Field>
-      <fieldset className="space-y-2 text-sm">
-        <legend className="mb-1.5 text-mist">Access</legend>
-        <label className="flex items-center gap-2">
+      <fieldset className="space-y-2">
+        <legend className="field-label">Access</legend>
+        <label className="check-row flex items-center gap-2">
           <input type="checkbox" checked disabled />
           Read data sources and dashboards
         </label>
-        <label className="flex items-center gap-2">
+        <label className="check-row flex items-center gap-2">
           <input
             type="checkbox"
             checked={write && canWrite}
@@ -187,17 +187,17 @@ function ConsentForm({
           Create dashboards and add charts
         </label>
         {!canWrite ? (
-          <p className="text-mist">You have viewer access to this workspace, so the agent can only read.</p>
+          <p className="text-muted-foreground">You have viewer access to this workspace, so the agent can only read.</p>
         ) : null}
       </fieldset>
-      {error ? <p role="alert" className="text-sm text-rose-300">{error}</p> : null}
+      {error ? <p role="alert" className="text-negative">{error}</p> : null}
       <div className="flex gap-3">
-        <PrimaryButton type="submit" className="flex-1" disabled={pending !== null || !name.trim() || !workspaceId}>
+        <Button variant="primary" type="submit" className="flex-1" disabled={pending !== null || !name.trim() || !workspaceId}>
           {pending === "approve" ? "Please wait…" : "Create agent"}
-        </PrimaryButton>
-        <GhostButton type="button" disabled={pending !== null} onClick={() => void decide("deny")}>
+        </Button>
+        <Button type="button" disabled={pending !== null} onClick={() => void decide("deny")}>
           Cancel
-        </GhostButton>
+        </Button>
       </div>
     </AuthCard>
   );

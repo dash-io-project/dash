@@ -1,103 +1,830 @@
 @import "tailwindcss" source("../");
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap");
 
-@theme {
-  --font-sans: "Outfit", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
-  --color-ink: #070b14;
-  --color-ink-2: #0e1524;
-  --color-panel: #121a2b;
-  --color-panel-2: #182236;
-  --color-line: rgb(255 255 255 / 0.08);
-  --color-mist: #93a0b8;
-  --color-paper: #eef3fb;
-  --color-accent: #5eead4;
-  --color-accent-2: #818cf8;
-  --color-warn: #fbbf24;
+/* Dash web app. The names and the values of the colors follow Ember
+   (https://github.com/NYLLON-SOFTWARE/ember-cloudflare, MIT), the same as Soldock.
+   The `dark` class on <html> selects the dark colors. src/lib/appearance.ts sets it
+   from the Light, Dark or System choice. docs/adr/0017 records the decision. */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #171717;
+  --surface: #fafafa;
+  --hover: #f2f2f2;
+  --row-hover: #f8f8f8;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --border: #e5e5e5;
+  --input: #d4d4d4;
+  --muted-foreground: #6b6b6b;
+  --primary: #171717;
+  --primary-hover: #2e2e2e;
+  --primary-foreground: #fafafa;
+  --ring: #737373;
+  --focus: #171717;
+  --link: #0066ef;
+  --positive: #166534;
+  --negative: #b91c1c;
+  --destructive: #b91c1c;
+  --destructive-hover: #a01818;
+  --destructive-foreground: #ffffff;
+  --warning: #daa038;
+  --control: var(--background);
+  --control-hover: var(--hover);
+  --control-border: var(--border);
+  --field: transparent;
+  --positive-soft: color-mix(in srgb, var(--positive) 12%, var(--background));
+  --negative-soft: color-mix(in srgb, var(--negative) 10%, var(--background));
+  --negative-border: color-mix(in srgb, var(--negative) 25%, var(--border));
+  --warning-soft: color-mix(in srgb, var(--warning) 10%, var(--background));
+  --warning-border: color-mix(in srgb, var(--warning) 55%, var(--border));
+  --backdrop: rgb(0 0 0 / 0.5);
+  --drawer-backdrop: rgb(0 0 0 / 0.4);
+  --sidebar-width: 256px;
+  --header-height: 60px;
+
+  /* The colors of chart series, in a fixed sequence. The `dataviz` palette validator
+     accepted the light values on #ffffff and the dark values on #1c1c1c. */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+  --chart-7: #6250d6;
+  --chart-8: #e34948;
+  --chart-grid: #ececec;
 }
 
-html,
-body,
-#app {
-  min-height: 100%;
+/* The dark colors. */
+:root.dark {
+  color-scheme: dark;
+  --background: #171717;
+  --foreground: #f5f5f5;
+  --surface: #1c1c1c;
+  --hover: #282828;
+  --row-hover: #202020;
+  --card: #1c1c1c;
+  --popover: #1c1c1c;
+  --border: #343434;
+  --input: #404040;
+  --muted-foreground: #a3a3a3;
+  --primary: #f5f5f5;
+  --primary-hover: #dedede;
+  --primary-foreground: #171717;
+  --ring: #a3a3a3;
+  --focus: #f5f5f5;
+  --link: #43abff;
+  --positive: #4ade80;
+  --negative: #fca5a5;
+  --warning: #efb146;
+  --control: rgb(64 64 64 / 0.3);
+  --control-hover: rgb(64 64 64 / 0.5);
+  --control-border: var(--input);
+  --field: rgb(64 64 64 / 0.3);
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #0ca30c;
+  --chart-7: #9085e9;
+  --chart-8: #e66767;
+  --chart-grid: #2a2a2a;
 }
 
-body {
-  margin: 0;
-  font-family: var(--font-sans);
-  background:
-    radial-gradient(1200px 500px at 10% -10%, rgb(94 234 212 / 0.12), transparent 50%),
-    radial-gradient(900px 400px at 100% 0%, rgb(129 140 248 / 0.16), transparent 45%),
-    var(--color-ink);
-  color: var(--color-paper);
+/* Tailwind reads the tokens from here. `--color-*: initial` removes the default
+   palette, so a class such as `text-rose-300` makes no CSS. */
+@theme inline {
+  --color-*: initial;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-hover: var(--hover);
+  --color-row-hover: var(--row-hover);
+  --color-card: var(--card);
+  --color-popover: var(--popover);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-focus: var(--focus);
+  --color-link: var(--link);
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+  --color-negative-border: var(--negative-border);
+  --color-destructive: var(--destructive);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-border: var(--warning-border);
+  --color-control: var(--control);
+  --color-control-hover: var(--control-hover);
+  --color-control-border: var(--control-border);
+  --color-field: var(--field);
+  --color-backdrop: var(--backdrop);
 }
 
-input,
-select,
-textarea,
-button {
-  font: inherit;
+/* The radii, the shadows and the fonts have the same value in the two modes. */
+@theme static {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-menu: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-dialog: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
 
-.dash-chart {
-  color: var(--color-paper);
-  --ts-chart-tooltip-background: #121a2b;
-  --ts-chart-tooltip-color: #eef3fb;
-  --ts-chart-tooltip-border: 1px solid rgb(255 255 255 / 0.08);
-  --ts-chart-tooltip-shadow: 0 12px 40px rgb(0 0 0 / 0.35);
-  --ts-chart-tooltip-font: 500 0.75rem/1.35 Outfit, "IBM Plex Sans", sans-serif;
-}
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font: 14px / 1.5 var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
 
-.sidebar-link {
-  position: relative;
-  transition: background-color 150ms ease, color 150ms ease;
-}
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.015em;
+  }
 
-.sidebar-link-selected {
-  background-color: rgb(96 165 250 / 0.12);
-  font-weight: 500;
-}
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
 
-.sidebar-link-selected::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 25%;
-  bottom: 25%;
-  width: 3px;
-  border-radius: 999px;
-  background-color: #60a5fa;
-}
+  button,
+  [role="button"],
+  summary {
+    cursor: pointer;
+  }
 
-.sidebar-link-selected > svg {
-  color: #93c5fd;
-}
+  button:disabled {
+    cursor: not-allowed;
+  }
 
-.sidebar-link:focus-visible {
-  outline: 2px solid #60a5fa;
-  outline-offset: -2px;
-}
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 
-@media (prefers-reduced-motion: reduce) {
-  .sidebar-link {
-    transition: none;
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.93em;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    flex: none;
+    accent-color: var(--primary);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
-.dash-grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-auto-rows: 4.5rem;
-  gap: 1rem;
-}
+@layer components {
+  /* Buttons */
 
-@media (max-width: 900px) {
-  .dash-grid > * {
-    grid-column: 1 / -1 !important;
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1px solid var(--control-border);
+    border-radius: var(--radius-md);
+    background: var(--control);
+    color: var(--foreground);
+    font-weight: 500;
+    line-height: 1.25;
+    white-space: nowrap;
+    box-shadow: var(--shadow-xs);
+  }
+
+  .btn:hover:not(:disabled) {
+    background: var(--control-hover);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+  }
+
+  .btn-primary {
+    border-color: transparent;
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+  }
+
+  .btn-ghost {
+    border-color: transparent;
+    background: none;
+    box-shadow: none;
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--hover);
+  }
+
+  .btn-destructive {
+    border-color: transparent;
+    background: var(--destructive);
+    color: var(--destructive-foreground);
+    box-shadow: none;
+  }
+
+  .btn-destructive:hover:not(:disabled) {
+    background: var(--destructive-hover);
+  }
+
+  .btn-sm {
+    min-height: 32px;
+    padding: 0 10px;
+    gap: 6px;
+    font-size: 13px;
+  }
+
+  .btn-lg {
+    min-height: 40px;
+    padding: 0 20px;
+  }
+
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--muted-foreground);
+  }
+
+  .icon-btn:hover:not(:disabled) {
+    background: var(--hover);
+    color: var(--foreground);
+  }
+
+  .icon-btn:disabled {
+    opacity: 0.5;
+  }
+
+  .icon-btn-sm {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+  }
+
+  .link {
+    color: var(--link);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  button.link {
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  /* Fields */
+
+  .field-label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--foreground);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .input {
+    display: block;
+    width: 100%;
+    min-height: 36px;
+    padding: 6px 12px;
+    border: 1px solid var(--input);
+    border-radius: var(--radius-md);
+    background: var(--field);
+    color: var(--foreground);
+    box-shadow: var(--shadow-xs);
+  }
+
+  .input::placeholder {
+    color: var(--muted-foreground);
+  }
+
+  /* A text field with the focus: a darker border and a soft ring. */
+  .input:focus-visible {
+    border-color: var(--ring);
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 50%, transparent);
+  }
+
+  .input:disabled {
+    background: var(--surface);
+    color: var(--muted-foreground);
+    cursor: not-allowed;
+  }
+
+  .input[aria-invalid="true"] {
+    border-color: var(--negative);
+  }
+
+  /* The dark mode gives `--field` an alpha value. A list of options needs a solid fill. */
+  select.input option {
+    background: var(--popover);
+    color: var(--foreground);
+  }
+
+  textarea.input {
+    min-height: 80px;
+    resize: vertical;
+  }
+
+  /* Badges */
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 22px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted-foreground);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  .badge-positive {
+    border-color: transparent;
+    background: var(--positive-soft);
+    color: var(--positive);
+  }
+
+  .badge-negative {
+    border-color: transparent;
+    background: var(--negative-soft);
+    color: var(--negative);
+  }
+
+  /* The text of a warning is the text color. Only the fill shows the warning. */
+  .badge-warning {
+    border-color: var(--warning-border);
+    background: var(--warning-soft);
+    color: var(--foreground);
+  }
+
+  /* The shell */
+
+  .skip-link {
+    position: absolute;
+    top: -100px;
+    left: 8px;
+    z-index: 100;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-weight: 600;
+  }
+
+  .skip-link:focus {
+    top: 8px;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .shell-topbar {
+    display: none;
+  }
+
+  /* The account panel is wider than the sidebar, so the sidebar is above the page. */
+  .sidebar {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .sidebar-close {
+    display: none;
+  }
+
+  .shell-main {
+    min-width: 0;
+    overflow-y: auto;
+    background: var(--background);
+  }
+
+  .shell-main:focus {
+    outline: none;
+  }
+
+  .shell-backdrop {
+    display: none;
+  }
+
+  .brand-mark {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  .nav-heading {
+    padding: 0 10px;
+    margin-bottom: 4px;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 36px;
+    padding: 0 10px;
+    border-radius: var(--radius-md);
+    color: var(--muted-foreground);
+    white-space: nowrap;
+  }
+
+  .nav-item:hover {
+    background: var(--hover);
+    color: var(--foreground);
+  }
+
+  .nav-item[aria-current="page"] {
+    background: var(--hover);
+    color: var(--foreground);
+    font-weight: 500;
+  }
+
+  .avatar {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .avatar-lg {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+  }
+
+  /* Menus: the account panel and the workspace menu. */
+
+  .menu-panel {
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--popover);
+    color: var(--foreground);
+    box-shadow: var(--shadow-menu);
+  }
+
+  .menu-separator {
+    height: 1px;
+    margin: 4px -6px;
+    background: var(--border);
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 32px;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--foreground);
+    text-align: left;
+  }
+
+  .menu-item:hover,
+  .menu-item:focus-visible {
+    background: var(--hover);
+  }
+
+  .menu-item:focus-visible {
+    outline-offset: -2px;
+  }
+
+  /* The Appearance choice: Light, Dark or System. The radio buttons are in the page,
+     but they do not show. */
+
+  .appearance-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2px;
+    margin: 0 2px 4px;
+    padding: 3px;
+    border-radius: var(--radius-md);
+    background: var(--hover);
+  }
+
+  .appearance-option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 30px;
+    border-radius: var(--radius-sm);
+    color: var(--muted-foreground);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .appearance-option input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+
+  .appearance-option:has(input:checked) {
+    background: var(--background);
+    color: var(--foreground);
+    box-shadow: var(--shadow-xs);
+  }
+
+  .appearance-option:has(input:focus-visible) {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+
+  /* Pages */
+
+  .page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    min-height: var(--header-height);
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-body {
+    padding: 24px;
+  }
+
+  /* A page of panels: Settings, Profile and the pages of the organization. */
+  .page-column {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    max-width: 768px;
+  }
+
+  .page-column-wide {
+    max-width: 1040px;
+  }
+
+  .panel-title {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .panel-note {
+    margin-top: 2px;
+    color: var(--muted-foreground);
+    font-size: 13px;
+  }
+
+  .card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--card);
+  }
+
+  /* A list in a card: one line between the rows. */
+  .card-list > * + * {
+    border-top: 1px solid var(--border);
+  }
+
+  /* A table of records: members, tokens, data sources. */
+
+  .table-scroll {
+    overflow-x: auto;
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  .table th {
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted-foreground);
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .table td {
+    padding: 10px 16px;
+    vertical-align: middle;
+  }
+
+  .table tbody tr + tr td {
+    border-top: 1px solid var(--border);
+  }
+
+  .table tbody tr:hover td {
+    background: var(--row-hover);
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Dashboards */
+
+  .dash-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    /* A widget keeps its stored height in rows. A row of 56px gives a KPI card of two
+       rows a height of 128px. A chart fills its card. */
+    grid-auto-rows: 56px;
+    gap: 16px;
+  }
+
+  .dash-chart {
+    color: var(--foreground);
+    --ts-chart-tooltip-background: var(--popover);
+    --ts-chart-tooltip-color: var(--foreground);
+    --ts-chart-tooltip-border: 1px solid var(--border);
+    --ts-chart-tooltip-border-radius: var(--radius-md);
+    --ts-chart-tooltip-shadow: var(--shadow-menu);
+    --ts-chart-tooltip-font: 500 12px/1.4 var(--font-sans);
+    --ts-chart-focus-fill: var(--card);
+    --ts-chart-crosshair-marker-fill: var(--card);
+    --ts-chart-crosshair-label-halo: var(--card);
+  }
+
+  /* The drawer layout */
+
+  @media (max-width: 900px) {
+    .shell {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .shell-topbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 56px;
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    /* A closed drawer is not visible, so the Tab key does not go into it. */
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 30;
+      width: min(300px, 86vw);
+      visibility: hidden;
+      transform: translateX(-100%);
+      transition:
+        transform 180ms ease,
+        visibility 0s linear 180ms;
+      overscroll-behavior: contain;
+    }
+
+    .sidebar-open {
+      visibility: visible;
+      transform: none;
+      transition: transform 180ms ease;
+    }
+
+    .sidebar-close {
+      display: inline-flex;
+    }
+
+    .shell-backdrop {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      border: 0;
+      background: var(--drawer-backdrop);
+    }
+
+    .page-header {
+      min-height: 56px;
+      padding: 10px 16px;
+    }
+
+    .page-body {
+      padding: 16px;
+    }
+
+    .dash-grid > * {
+      grid-column: 1 / -1 !important;
+    }
+  }
+
+  /* A small screen and a touch screen: each control is 44px or more, and a text field
+     has 16px text, so that iOS does not zoom the page. */
+  @media (max-width: 900px), (pointer: coarse) {
+    .btn,
+    .input,
+    .nav-item,
+    .menu-item,
+    .appearance-option {
+      min-height: 44px;
+    }
+
+    .icon-btn {
+      width: 44px;
+      height: 44px;
+    }
+
+    .input {
+      font-size: 16px;
+    }
+
+    /* The label of a checkbox is the 44px target. The checkbox keeps its size. */
+    .check-row {
+      min-height: 44px;
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { KeyRound, Plus } from "lucide-react";
 import {
   API_TOKEN_EXPIRY_DAYS,
@@ -12,7 +12,19 @@ import {
 import { api } from "~/lib/api";
 import { cn } from "~/lib/cn";
 import { useWorkspace } from "~/components/WorkspaceProvider";
-import { DangerButton, Field, GhostButton, PrimaryButton, Select, TextInput } from "~/components/ui";
+import { PageBody, PageHeader } from "~/components/PageHeader";
+import {
+  Badge,
+  type BadgeTone,
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  ICON_STROKE,
+  Panel,
+  Select,
+  TextInput,
+} from "~/components/ui";
 import { SecretReveal } from "~/components/secret-reveal";
 
 const DAY_MS = 86_400_000;
@@ -54,26 +66,10 @@ function invalidate(queryClient: ReturnType<typeof useQueryClient>) {
   ]);
 }
 
-function Badge({ tone = "neutral", children }: { tone?: "neutral" | "accent" | "warn" | "danger"; children: ReactNode }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full border px-2 py-0.5 text-xs",
-        tone === "neutral" && "border-line text-mist",
-        tone === "accent" && "border-accent/40 text-accent",
-        tone === "warn" && "border-amber-400/40 text-amber-200",
-        tone === "danger" && "border-rose-400/40 text-rose-200",
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
-const STATE_BADGE: Record<TokenState, { tone: "accent" | "warn" | "danger"; label: string }> = {
-  active: { tone: "accent", label: "Active" },
-  soon: { tone: "warn", label: "Expires soon" },
-  expired: { tone: "danger", label: "Expired" },
+const STATE_BADGE: Record<TokenState, { tone: BadgeTone; label: string }> = {
+  active: { tone: "positive", label: "Active" },
+  soon: { tone: "warning", label: "Expires soon" },
+  expired: { tone: "negative", label: "Expired" },
 };
 
 /** A button that asks for a second click. Escape or Cancel closes the question. */
@@ -95,7 +91,7 @@ function ConfirmAction({
   /** Smaller buttons for a table row. The question stays as the name of the group. */
   compact?: boolean;
 }) {
-  const size = compact ? "px-3 py-1.5" : undefined;
+  const size = compact ? "sm" : undefined;
   const [open, setOpen] = useState(false);
   const confirmRef = useRef<HTMLButtonElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -117,9 +113,9 @@ function ConfirmAction({
 
   if (!open) {
     return (
-      <GhostButton ref={triggerRef} type="button" className={size} aria-label={ariaLabel} onClick={() => setOpen(true)}>
+      <Button ref={triggerRef} type="button" size={size} aria-label={ariaLabel} onClick={() => setOpen(true)}>
         {label}
-      </GhostButton>
+      </Button>
     );
   }
   return (
@@ -134,13 +130,13 @@ function ConfirmAction({
         }
       }}
     >
-      {compact ? null : <span className="text-xs text-mist">{question}</span>}
-      <DangerButton ref={confirmRef} type="button" className={size} disabled={pending} onClick={onConfirm}>
+      {compact ? null : <span className="text-xs text-muted-foreground">{question}</span>}
+      <Button variant="destructive" ref={confirmRef} type="button" size={size} disabled={pending} onClick={onConfirm}>
         {pending ? "Please wait…" : confirmLabel}
-      </DangerButton>
-      <GhostButton type="button" className={size} onClick={cancel}>
+      </Button>
+      <Button type="button" size={size} onClick={cancel}>
         Cancel
-      </GhostButton>
+      </Button>
     </span>
   );
 }
@@ -196,15 +192,25 @@ function CreateApiUserForm({ onIssued }: { onIssued: (issued: IssuedToken) => vo
   }, [created, resetCreate]);
 
   return (
+    <Panel
+      title={<span id="create-api-user">Create an API user</span>}
+      note={
+        <>
+          The API user acts as you. It can use dashboards only in the{" "}
+          <strong className="font-medium text-foreground">{workspace.name}</strong> workspace. Data sources follow
+          your organization access.
+        </>
+      }
+    >
+    <Card className="p-5">
     <form
       aria-labelledby="create-api-user"
-      className="mt-8 space-y-4 rounded-2xl border border-line bg-panel p-6"
+      className="space-y-4"
       onSubmit={(event) => {
         event.preventDefault();
         create.mutate();
       }}
     >
-      <h2 id="create-api-user" className="text-lg font-semibold">Create an API user</h2>
       <Field label="Name">
         <TextInput
           required
@@ -215,9 +221,9 @@ function CreateApiUserForm({ onIssued }: { onIssued: (issued: IssuedToken) => vo
         />
       </Field>
       <fieldset>
-        <legend className="mb-2 text-sm text-mist">Access</legend>
+        <legend className="field-label">Access</legend>
         <div className="grid gap-2 sm:grid-cols-2">
-          <label className="flex items-start gap-3 rounded-xl border border-line p-3 text-sm has-[:checked]:border-accent/60">
+          <label className="flex items-start gap-3 rounded-md border border-input p-3 has-[:checked]:border-ring has-[:checked]:bg-surface">
             <input
               type="radio"
               name="api-user-access"
@@ -227,12 +233,12 @@ function CreateApiUserForm({ onIssued }: { onIssued: (issued: IssuedToken) => vo
             />
             <span>
               <span className="block font-medium">Read</span>
-              <span className="block text-mist">Read dashboards and query data sources.</span>
+              <span className="block text-[13px] text-muted-foreground">Read dashboards and query data sources.</span>
             </span>
           </label>
           <label
             className={cn(
-              "flex items-start gap-3 rounded-xl border border-line p-3 text-sm has-[:checked]:border-accent/60",
+              "flex items-start gap-3 rounded-md border border-input p-3 has-[:checked]:border-ring has-[:checked]:bg-surface",
               !canWrite && "opacity-60",
             )}
           >
@@ -246,7 +252,7 @@ function CreateApiUserForm({ onIssued }: { onIssued: (issued: IssuedToken) => vo
             />
             <span>
               <span className="block font-medium">Read and write</span>
-              <span className="block text-mist">
+              <span className="block text-[13px] text-muted-foreground">
                 {canWrite ? "Also create and change dashboards." : "You have viewer access to this workspace."}
               </span>
             </span>
@@ -254,15 +260,13 @@ function CreateApiUserForm({ onIssued }: { onIssued: (issued: IssuedToken) => vo
         </div>
       </fieldset>
       <ExpirySelect label="First token expires after" value={expiresInDays} onChange={setExpiresInDays} />
-      <p className="text-sm text-mist">
-        The API user acts as you. It can use dashboards only in the <strong>{workspace.name}</strong> workspace. Data
-        sources follow your organization access.
-      </p>
-      <PrimaryButton type="submit" disabled={create.isPending || !name.trim()}>
+      <Button variant="primary" type="submit" disabled={create.isPending || !name.trim()}>
         {create.isPending ? "Please wait…" : "Create API user"}
-      </PrimaryButton>
-      {create.error ? <p role="alert" className="text-sm text-rose-300">{create.error.message}</p> : null}
+      </Button>
+      {create.error ? <p role="alert" className="text-negative">{create.error.message}</p> : null}
     </form>
+    </Card>
+    </Panel>
   );
 }
 
@@ -302,7 +306,7 @@ function NewTokenForm({
   return (
     <form
       aria-label={`New token for ${apiUser.name}`}
-      className="mt-4 grid gap-3 rounded-xl border border-line bg-ink/40 p-4 sm:grid-cols-[1fr_12rem_auto] sm:items-end"
+      className="mt-4 grid gap-3 rounded-md border border-border bg-surface p-4 sm:grid-cols-[1fr_12rem_auto] sm:items-end"
       onSubmit={(event) => {
         event.preventDefault();
         issue.mutate();
@@ -319,14 +323,14 @@ function NewTokenForm({
       </Field>
       <ExpirySelect label="Expires after" value={expiresInDays} onChange={setExpiresInDays} />
       <div className="flex gap-2">
-        <PrimaryButton type="submit" disabled={issue.isPending || !label.trim()}>
+        <Button variant="primary" type="submit" disabled={issue.isPending || !label.trim()}>
           {issue.isPending ? "Please wait…" : "Create token"}
-        </PrimaryButton>
-        <GhostButton type="button" onClick={onCancel}>
+        </Button>
+        <Button type="button" onClick={onCancel}>
           Cancel
-        </GhostButton>
+        </Button>
       </div>
-      {issue.error ? <p role="alert" className="text-sm text-rose-300 sm:col-span-3">{issue.error.message}</p> : null}
+      {issue.error ? <p role="alert" className="text-negative sm:col-span-3">{issue.error.message}</p> : null}
     </form>
   );
 }
@@ -386,17 +390,17 @@ function ApiUserCard({
   });
 
   return (
-    <li className="rounded-2xl border border-line bg-panel p-5">
+    <li className="card p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="flex items-center gap-2 text-base font-semibold">
-            <KeyRound size={16} aria-hidden="true" className="text-accent" />
+          <h3 className="flex items-center gap-2 font-semibold">
+            <KeyRound size={16} strokeWidth={ICON_STROKE} aria-hidden="true" className="text-muted-foreground" />
             <span className="truncate">{apiUser.name}</span>
           </h3>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Badge tone="accent">{apiUser.scopes.includes("write") ? "Read and write" : "Read"}</Badge>
+            <Badge>{apiUser.scopes.includes("write") ? "Read and write" : "Read"}</Badge>
             <Badge>{workspaceName}</Badge>
-            <span className="text-xs text-mist">
+            <span className="tabular text-xs text-muted-foreground">
               Created {formatDate(apiUser.createdAt, "")} · Last used {formatDate(apiUser.lastUsedAt, "never")} ·
               Acts as you
             </span>
@@ -404,17 +408,16 @@ function ApiUserCard({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {!adding ? (
-            <GhostButton
+            <Button
               ref={newTokenRef}
               type="button"
-              className="inline-flex items-center gap-1.5"
               disabled={!canAdd}
               aria-label={`New token for ${apiUser.name}`}
               onClick={() => setAdding(true)}
             >
-              <Plus size={14} aria-hidden="true" />
+              <Plus size={15} strokeWidth={ICON_STROKE} aria-hidden="true" />
               New token
-            </GhostButton>
+            </Button>
           ) : null}
           <ConfirmAction
             label="Delete"
@@ -435,41 +438,41 @@ function ApiUserCard({
           onCancel={() => closeForm(true)}
         />
       ) : null}
-      {remove.error ? <p role="alert" className="mt-3 text-sm text-rose-300">{remove.error.message}</p> : null}
-      {revoke.error ? <p role="alert" className="mt-3 text-sm text-rose-300">{revoke.error.message}</p> : null}
+      {remove.error ? <p role="alert" className="mt-3 text-negative">{remove.error.message}</p> : null}
+      {revoke.error ? <p role="alert" className="mt-3 text-negative">{revoke.error.message}</p> : null}
 
       {apiUser.tokens.length === 0 ? (
-        <p className="mt-4 text-sm text-mist">This API user has no tokens. Create a token to use it.</p>
+        <p className="mt-4 text-muted-foreground">This API user has no tokens. Create a token to use it.</p>
       ) : (
-        <div className="relative mt-4 overflow-x-auto rounded-xl border border-line">
-          <table className="min-w-full text-left text-sm">
+        <div className="table-scroll relative mt-4 rounded-md border border-border">
+          <table className="table">
             <caption className="sr-only">Tokens of {apiUser.name}</caption>
-            <thead className="bg-white/4 text-mist">
+            <thead>
               <tr>
-                <th scope="col" className="px-3 py-2 font-medium">Label</th>
-                <th scope="col" className="px-3 py-2 font-medium">Token</th>
-                <th scope="col" className="px-3 py-2 font-medium">Created</th>
-                <th scope="col" className="px-3 py-2 font-medium">Last used</th>
-                <th scope="col" className="px-3 py-2 font-medium">Expires</th>
-                <th scope="col" className="px-3 py-2 font-medium"><span className="sr-only">Actions</span></th>
+                <th scope="col">Label</th>
+                <th scope="col">Token</th>
+                <th scope="col">Created</th>
+                <th scope="col">Last used</th>
+                <th scope="col">Expires</th>
+                <th scope="col"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
               {apiUser.tokens.map((token) => {
                 const state = STATE_BADGE[tokenState(token, now)];
                 return (
-                  <tr key={token.id} className="border-t border-line align-middle">
-                    <td className="px-3 py-2">{token.name}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-mist">{token.prefix}…</td>
-                    <td className="px-3 py-2 text-mist">{formatDate(token.createdAt, "")}</td>
-                    <td className="px-3 py-2 text-mist">{formatDate(token.lastUsedAt, "Never")}</td>
-                    <td className="px-3 py-2">
+                  <tr key={token.id} className="align-middle">
+                    <td>{token.name}</td>
+                    <td className="text-muted-foreground"><code className="text-xs">{token.prefix}…</code></td>
+                    <td className="tabular whitespace-nowrap text-muted-foreground">{formatDate(token.createdAt, "")}</td>
+                    <td className="tabular whitespace-nowrap text-muted-foreground">{formatDate(token.lastUsedAt, "Never")}</td>
+                    <td>
                       <span className="flex items-center gap-2 whitespace-nowrap">
-                        <span className="text-mist">{formatDate(token.expiresAt, "Never")}</span>
+                        <span className="tabular text-muted-foreground">{formatDate(token.expiresAt, "Never")}</span>
                         <Badge tone={state.tone}>{state.label}</Badge>
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="text-right">
                       <ConfirmAction
                         label="Revoke"
                         ariaLabel={`Revoke token ${token.name} of ${apiUser.name}`}
@@ -487,7 +490,7 @@ function ApiUserCard({
           </table>
         </div>
       )}
-      <p className="mt-3 text-xs text-mist">
+      <p className="tabular mt-3 text-xs text-muted-foreground">
         {apiUser.workspaceId
           ? `${activeCount} of ${MAX_ACTIVE_API_USER_TOKENS} active tokens.`
           : "This API user has no workspace. Create a new API user to get a new token."}
@@ -525,48 +528,53 @@ export function TokenManager() {
   const origin = typeof window === "undefined" ? "" : window.location.origin;
 
   return (
-    <div className="max-w-5xl">
-      <h1 className="text-3xl font-semibold">API tokens</h1>
-      <p className="mt-2 text-sm text-mist">
-        An API user is an identity for a script, a service, or an integration that calls the Dash REST API. Each API
-        user can have more than one token. To rotate a token, create a new token first. Update your app with the new
-        token. Then revoke the old token.
+    <>
+      <PageHeader
+        title="API tokens"
+        description="An API user is an identity for a script, a service, or an integration that calls the Dash REST API."
+      />
+      <PageBody column="wide">
+      <p className="text-muted-foreground">
+        Each API user can have more than one token. To rotate a token, create a new token first. Update your app
+        with the new token. Then revoke the old token.
       </p>
 
       {issued ? (
-        <div className="mt-6">
-          <SecretReveal
-            secret={issued.token}
-            title={`New token for ${issued.apiUserName}: ${issued.label}`}
-            onDismiss={() => setIssued(null)}
-          >
-            <div className="mt-3 text-mist">Test the token:</div>
-            <code className="mt-1 block break-all rounded-lg bg-ink px-3 py-2 font-mono text-xs select-all">
-              curl -H "Authorization: Bearer {issued.token}" {origin}/api/auth/me
-            </code>
-          </SecretReveal>
-        </div>
+        <SecretReveal
+          secret={issued.token}
+          title={`New token for ${issued.apiUserName}: ${issued.label}`}
+          onDismiss={() => setIssued(null)}
+        >
+          <div className="mt-3 text-[13px]">Test the token:</div>
+          <code className="mt-1 block break-all rounded-md border border-border bg-background px-3 py-2 text-xs select-all">
+            curl -H "Authorization: Bearer {issued.token}" {origin}/api/auth/me
+          </code>
+        </SecretReveal>
       ) : null}
 
       <CreateApiUserForm onIssued={setIssued} />
 
-      <section aria-labelledby="api-users-heading" className="mt-10">
-        <h2 id="api-users-heading" className="text-lg font-semibold">
-          API users{" "}
-          {apiUsers.data ? <span className="ml-1 text-sm font-normal text-mist">{apiUsers.data.length}</span> : null}
-        </h2>
-        <p ref={statusRef} tabIndex={-1} role="status" className={announcement ? "mt-2 text-sm text-mist outline-none" : "sr-only"}>
+      <Panel
+        aria-labelledby="api-users-heading"
+        title={
+          <span id="api-users-heading">
+            API users{" "}
+            {apiUsers.data ? (
+              <span className="tabular ml-1 font-normal text-muted-foreground">{apiUsers.data.length}</span>
+            ) : null}
+          </span>
+        }
+      >
+        <p ref={statusRef} tabIndex={-1} role="status" className={announcement ? "mb-3 text-muted-foreground outline-none" : "sr-only"}>
           {announcement}
         </p>
-        {apiUsers.isPending ? <p role="status" className="mt-4 text-sm text-mist">Please wait for the API users.</p> : null}
-        {apiUsers.error ? <p role="alert" className="mt-4 text-sm text-rose-300">{apiUsers.error.message}</p> : null}
+        {apiUsers.isPending ? <p role="status" className="text-muted-foreground">Please wait for the API users.</p> : null}
+        {apiUsers.error ? <p role="alert" className="text-negative">{apiUsers.error.message}</p> : null}
         {apiUsers.isSuccess && apiUsers.data.length === 0 ? (
-          <p className="mt-4 rounded-2xl border border-dashed border-line px-4 py-6 text-sm text-mist">
-            No API users yet. Create an API user to get a token.
-          </p>
+          <EmptyState title="No API users yet.">Create an API user to get a token.</EmptyState>
         ) : null}
         {apiUsers.data && apiUsers.data.length > 0 ? (
-          <ul className="mt-4 space-y-4">
+          <ul className="space-y-4">
             {apiUsers.data.map((apiUser) => (
               <ApiUserCard
                 key={apiUser.id}
@@ -579,7 +587,8 @@ export function TokenManager() {
             ))}
           </ul>
         ) : null}
-      </section>
-    </div>
+      </Panel>
+      </PageBody>
+    </>
   );
 }

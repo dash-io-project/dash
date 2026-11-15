@@ -5,10 +5,10 @@ import { Check, Copy, UserPlus } from "lucide-react";
 import type { PublicInvitation, PublicUser, UserRole } from "@dash/core";
 import { USER_ROLE_LABELS, USER_ROLES } from "@dash/core";
 import { api } from "~/lib/api";
-import { cn } from "~/lib/cn";
 import { invitationUrl } from "~/lib/invitation";
 import { fetchMe } from "~/lib/session";
-import { Field, GhostButton, PrimaryButton, Select, TextInput } from "~/components/ui";
+import { PageBody, PageHeader } from "~/components/PageHeader";
+import { Badge, Button, Card, Field, ICON_STROKE, Panel, Select, TextInput } from "~/components/ui";
 
 export const Route = createFileRoute("/_authed/members")({
   component: MembersPage,
@@ -55,57 +55,57 @@ function MembersPage() {
   const [issued, setIssued] = useState<IssuedInvitation | null>(null);
 
   return (
-    <div className="max-w-4xl">
-      <p className="text-xs uppercase tracking-[0.2em] text-mist">Workspace</p>
-      <h1 className="mt-1 text-3xl font-semibold">Members</h1>
-      <p className="mt-2 text-sm text-mist">
-        Everyone with access to this organization. Admins can invite people, change roles, and
-        manage data sources and settings. Users can build dashboards and issue their own API
-        tokens.
-      </p>
+    <>
+      <PageHeader title="Members" description="Everyone with access to this organization." />
+      <PageBody column="wide">
+        <p className="text-muted-foreground">
+          Admins can invite people, change roles, and manage data sources and settings. Users can build
+          dashboards and issue their own API tokens.
+        </p>
 
-      {isAdmin ? <InviteForm onIssued={setIssued} /> : null}
-      {issued ? <IssuedLink issued={issued} onDismiss={() => setIssued(null)} /> : null}
+        {isAdmin ? <InviteForm onIssued={setIssued} /> : null}
+        {issued ? <IssuedLink issued={issued} onDismiss={() => setIssued(null)} /> : null}
 
-      <section className="mt-8">
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 className="text-lg font-medium">Active members</h2>
-          {members.data ? (
-            <span className="text-sm text-mist">
-              {members.data.length} {members.data.length === 1 ? "person" : "people"}
-            </span>
-          ) : null}
-        </div>
-        {members.isError ? (
-          <p className="mt-3 text-sm text-rose-300">
-            {members.error instanceof Error ? members.error.message : "Could not load members"}
-          </p>
-        ) : members.data && me.data ? (
-          <MembersTable members={members.data} me={me.data} canManage={isAdmin} />
-        ) : (
-          <p className="mt-3 text-sm text-mist">Loading members…</p>
-        )}
-      </section>
-
-      {isAdmin ? (
-        <section className="mt-10">
-          <h2 className="text-lg font-medium">Pending invitations</h2>
-          {invitations.data && invitations.data.length > 0 ? (
-            <InvitationsTable invitations={invitations.data} onIssued={setIssued} />
-          ) : invitations.isError ? (
-            <p className="mt-3 text-sm text-rose-300">
-              {invitations.error instanceof Error
-                ? invitations.error.message
-                : "Could not load invitations"}
+        <Panel
+          title="Active members"
+          actions={
+            members.data ? (
+              <span className="tabular text-[13px] text-muted-foreground">
+                {members.data.length} {members.data.length === 1 ? "person" : "people"}
+              </span>
+            ) : null
+          }
+        >
+          {members.isError ? (
+            <p className="text-negative">
+              {members.error instanceof Error ? members.error.message : "Could not load members"}
             </p>
+          ) : members.data && me.data ? (
+            <MembersTable members={members.data} me={me.data} canManage={isAdmin} />
           ) : (
-            <p className="mt-3 text-sm text-mist">
-              {invitations.isPending ? "Loading invitations…" : "No open invitations."}
-            </p>
+            <p className="text-muted-foreground">Loading members…</p>
           )}
-        </section>
-      ) : null}
-    </div>
+        </Panel>
+
+        {isAdmin ? (
+          <Panel title="Pending invitations">
+            {invitations.data && invitations.data.length > 0 ? (
+              <InvitationsTable invitations={invitations.data} onIssued={setIssued} />
+            ) : invitations.isError ? (
+              <p className="text-negative">
+                {invitations.error instanceof Error
+                  ? invitations.error.message
+                  : "Could not load invitations"}
+              </p>
+            ) : (
+              <p className="text-muted-foreground">
+                {invitations.isPending ? "Loading invitations…" : "No open invitations."}
+              </p>
+            )}
+          </Panel>
+        ) : null}
+      </PageBody>
+    </>
   );
 }
 
@@ -118,19 +118,18 @@ function InviteForm({ onIssued }: { onIssued: (issued: IssuedInvitation) => void
   });
 
   return (
+    <Panel
+      title="Invite someone"
+      note="Dash creates a sign-up link for you to share. It works once, even while open registration is off, and expires in 7 days."
+    >
+    <Card className="p-5">
     <form
-      className="mt-8 rounded-2xl border border-line bg-panel p-6"
       onSubmit={(event) => {
         event.preventDefault();
         invite.mutate({ email, role });
       }}
     >
-      <h2 className="text-base font-medium">Invite someone</h2>
-      <p className="mt-1 text-sm text-mist">
-        Dash creates a sign-up link for you to share. It works once, even while open
-        registration is off, and expires in 7 days.
-      </p>
-      <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
+      <div className="grid gap-4 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
         <Field label="Email">
           <TextInput
             type="email"
@@ -150,19 +149,19 @@ function InviteForm({ onIssued }: { onIssued: (issued: IssuedInvitation) => void
             ))}
           </Select>
         </Field>
-        <PrimaryButton type="submit" disabled={invite.isPending}>
-          <span className="inline-flex items-center gap-2">
-            <UserPlus size={16} />
-            {invite.isPending ? "Creating…" : "Create invite link"}
-          </span>
-        </PrimaryButton>
+        <Button variant="primary" type="submit" disabled={invite.isPending}>
+          <UserPlus size={16} strokeWidth={ICON_STROKE} aria-hidden="true" />
+          {invite.isPending ? "Creating…" : "Create invite link"}
+        </Button>
       </div>
       {invite.isError ? (
-        <p className="mt-3 text-sm text-rose-300">
+        <p className="mt-3 text-negative">
           {invite.error instanceof Error ? invite.error.message : "Could not create the invitation"}
         </p>
       ) : null}
     </form>
+    </Card>
+    </Panel>
   );
 }
 
@@ -181,9 +180,9 @@ function IssuedLink({ issued, onDismiss }: { issued: IssuedInvitation; onDismiss
   return (
     <div
       role="status"
-      className="mt-4 rounded-2xl border border-accent/30 bg-accent/10 p-4 text-sm"
+      className="rounded-md border border-warning-border bg-warning-soft p-4"
     >
-      <p className="text-paper">
+      <p>
         Invite link for <span className="font-medium">{issued.email}</span> as{" "}
         {USER_ROLE_LABELS[issued.role]}. Copy it now: it cannot be shown again.
       </p>
@@ -193,18 +192,20 @@ function IssuedLink({ issued, onDismiss }: { issued: IssuedInvitation; onDismiss
           value={issued.url}
           aria-label="Invite link"
           onFocus={(event) => event.currentTarget.select()}
-          className="font-mono text-xs"
+          className="bg-background font-mono text-xs"
         />
         <div className="flex gap-2">
-          <GhostButton type="button" onClick={() => void copy()} className="whitespace-nowrap">
-            <span className="inline-flex items-center gap-2">
-              {copied ? <Check size={16} /> : <Copy size={16} />}
-              {copied ? "Copied" : "Copy link"}
-            </span>
-          </GhostButton>
-          <GhostButton type="button" onClick={onDismiss}>
+          <Button type="button" onClick={() => void copy()}>
+            {copied ? (
+              <Check size={16} strokeWidth={ICON_STROKE} aria-hidden="true" />
+            ) : (
+              <Copy size={16} strokeWidth={ICON_STROKE} aria-hidden="true" />
+            )}
+            {copied ? "Copied" : "Copy link"}
+          </Button>
+          <Button type="button" onClick={onDismiss}>
             Done
-          </GhostButton>
+          </Button>
         </div>
       </div>
     </div>
@@ -212,18 +213,7 @@ function IssuedLink({ issued, onDismiss }: { issued: IssuedInvitation; onDismiss
 }
 
 function RoleBadge({ role }: { role: UserRole }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex rounded-full border px-2.5 py-0.5 text-xs",
-        role === "admin"
-          ? "border-accent/40 bg-accent/10 text-accent"
-          : "border-line bg-white/5 text-mist",
-      )}
-    >
-      {USER_ROLE_LABELS[role]}
-    </span>
-  );
+  return <Badge>{USER_ROLE_LABELS[role]}</Badge>;
 }
 
 function MembersTable({
@@ -254,18 +244,18 @@ function MembersTable({
   return (
     <>
       {changeRole.isError ? (
-        <p className="mt-3 text-sm text-rose-300">
+        <p className="mb-3 text-negative">
           {changeRole.error instanceof Error ? changeRole.error.message : "Could not change role"}
         </p>
       ) : null}
-      <div className="mt-3 overflow-x-auto rounded-2xl border border-line">
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-white/4 text-mist">
+      <div className="card table-scroll">
+        <table className="table">
+          <thead>
             <tr>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium">Role</th>
-              <th className="px-4 py-3 font-medium">Joined</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Joined</th>
             </tr>
           </thead>
           <tbody>
@@ -276,15 +266,15 @@ function MembersTable({
                   ? changeRole.variables.role
                   : undefined;
               return (
-                <tr key={member.id} className="border-t border-line">
-                  <td className="px-4 py-3">
+                <tr key={member.id}>
+                  <td className="whitespace-nowrap">
                     <span className="font-medium">{member.name}</span>
                     {member.id === me.id ? (
-                      <span className="ml-2 text-xs text-mist">(you)</span>
+                      <span className="ml-2 text-xs text-muted-foreground">(you)</span>
                     ) : null}
                   </td>
-                  <td className="px-4 py-3 text-mist">{member.email}</td>
-                  <td className="px-4 py-3">
+                  <td className="text-muted-foreground">{member.email}</td>
+                  <td>
                     {canManage ? (
                       <Select
                         aria-label={`Role for ${member.name}`}
@@ -297,7 +287,7 @@ function MembersTable({
                             role: event.target.value as UserRole,
                           })
                         }
-                        className="w-28 py-1.5"
+                        className="w-28"
                       >
                         {USER_ROLES.map((value) => (
                           <option key={value} value={value}>
@@ -309,7 +299,7 @@ function MembersTable({
                       <RoleBadge role={member.role} />
                     )}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-mist">
+                  <td className="tabular whitespace-nowrap text-muted-foreground">
                     {new Date(member.createdAt).toLocaleDateString()}
                   </td>
                 </tr>
@@ -342,58 +332,58 @@ function InvitationsTable({
   return (
     <>
       {failure ? (
-        <p className="mt-3 text-sm text-rose-300">
+        <p className="mb-3 text-negative">
           {failure instanceof Error ? failure.message : "Could not update the invitation"}
         </p>
       ) : null}
-      <div className="mt-3 overflow-x-auto rounded-2xl border border-line">
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-white/4 text-mist">
+      <div className="card table-scroll">
+        <table className="table">
+          <thead>
             <tr>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium">Role</th>
-              <th className="px-4 py-3 font-medium">Invited by</th>
-              <th className="px-4 py-3 font-medium">Expires</th>
-              <th className="px-4 py-3 font-medium" />
+              <th>Email</th>
+              <th>Role</th>
+              <th>Invited by</th>
+              <th>Expires</th>
+              <th />
             </tr>
           </thead>
           <tbody>
             {invitations.map((invitation) => (
-              <tr key={invitation.id} className="border-t border-line">
-                <td className="px-4 py-3">{invitation.email}</td>
-                <td className="px-4 py-3">
+              <tr key={invitation.id}>
+                <td>{invitation.email}</td>
+                <td>
                   <RoleBadge role={invitation.role} />
                 </td>
-                <td className="px-4 py-3 text-mist">{invitation.invitedBy?.name ?? "—"}</td>
-                <td className="px-4 py-3 whitespace-nowrap">
+                <td className="text-muted-foreground">{invitation.invitedBy?.name ?? "—"}</td>
+                <td className="whitespace-nowrap">
                   {invitation.status === "expired" ? (
-                    <span className="text-warn">Expired</span>
+                    <Badge tone="warning">Expired</Badge>
                   ) : (
-                    <span className="text-mist">
+                    <span className="tabular text-muted-foreground">
                       {new Date(invitation.expiresAt).toLocaleDateString()}
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3">
+                <td>
                   <div className="flex justify-end gap-2">
-                    <GhostButton
+                    <Button
                       type="button"
-                      className="px-3 py-1.5 whitespace-nowrap"
+                      size="sm"
                       disabled={reissue.isPending}
                       onClick={() =>
                         reissue.mutate({ email: invitation.email, role: invitation.role })
                       }
                     >
                       New link
-                    </GhostButton>
-                    <GhostButton
+                    </Button>
+                    <Button
                       type="button"
-                      className="px-3 py-1.5"
+                      size="sm"
                       disabled={revoke.isPending}
                       onClick={() => revoke.mutate(invitation.id)}
                     >
                       Revoke
-                    </GhostButton>
+                    </Button>
                   </div>
                 </td>
               </tr>

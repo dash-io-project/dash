@@ -3,8 +3,9 @@ import { useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AuthBootstrap } from "~/lib/bootstrap";
 import { api } from "~/lib/api";
+import { cn } from "~/lib/cn";
 import { safeRedirectPath } from "~/lib/redirect";
-import { AuthCard, Field, PrimaryButton, TextInput } from "~/components/ui";
+import { AuthCard, Button, Field, TextInput, FullPageMessage, buttonClass } from "~/components/ui";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
@@ -20,14 +21,14 @@ function LoginPage() {
   });
 
   if (bootstrap.isPending) {
-    return <p className="grid min-h-screen place-items-center text-sm text-mist">Loading…</p>;
+    return <FullPageMessage>Loading…</FullPageMessage>;
   }
   if (bootstrap.isError || !bootstrap.data) {
     const detail = bootstrap.error instanceof Error ? bootstrap.error.message : null;
     return (
-      <p className="mx-auto grid min-h-screen max-w-lg place-items-center px-6 text-center text-sm text-rose-300">
+      <FullPageMessage tone="error">
         {detail ?? "Could not load sign-in."}
-      </p>
+      </FullPageMessage>
     );
   }
   if (bootstrap.data.needsSetup) {
@@ -44,7 +45,7 @@ function SetupPrompt() {
     >
       <Link
         to="/register"
-        className="inline-flex w-full justify-center rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-ink"
+        className={cn(buttonClass("primary"), "w-full")}
       >
         Create administrator
       </Link>
@@ -97,7 +98,7 @@ function LoginForm({ allowRegistration }: { allowRegistration: boolean }) {
         allowRegistration ? (
           <>
             New here?{" "}
-            <Link to="/register" className="text-accent">
+            <Link to="/register" className="link">
               Create an account
             </Link>
           </>
@@ -124,10 +125,10 @@ function LoginForm({ allowRegistration }: { allowRegistration: boolean }) {
           required
         />
       </Field>
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-      <PrimaryButton type="submit" disabled={pending} className="w-full">
+      {error ? <p className="text-negative">{error}</p> : null}
+      <Button variant="primary" type="submit" disabled={pending} className="w-full">
         {pending ? "Signing in…" : "Log in"}
-      </PrimaryButton>
+      </Button>
     </AuthCard>
   );
 }

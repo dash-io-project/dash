@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Copy } from "lucide-react";
-import { GhostButton } from "~/components/ui";
+import { ICON_STROKE, IconButton } from "~/components/ui";
 
 /** The full MCP URL for this site, with a copy button. */
 export function McpUrlField() {
@@ -24,21 +24,14 @@ export function McpUrlField() {
   return (
     <>
       <div className="flex items-center gap-3">
-        <code className="block min-w-0 flex-1 break-all rounded-lg bg-ink px-3 py-2 text-sm select-all text-accent">
+        <code className="block min-w-0 flex-1 break-all rounded-md border border-border bg-background px-3 py-2 select-all">
           {url || "Please wait for the MCP URL…"}
         </code>
-        <GhostButton
-          className="inline-flex h-10 w-10 shrink-0 items-center justify-center p-0"
-          type="button"
-          aria-label="Copy MCP URL"
-          title="Copy MCP URL"
-          disabled={!url}
-          onClick={() => void copyUrl()}
-        >
-          <Copy size={16} aria-hidden="true" />
-        </GhostButton>
+        <IconButton label="Copy MCP URL" disabled={!url} onClick={() => void copyUrl()}>
+          <Copy size={16} strokeWidth={ICON_STROKE} aria-hidden="true" />
+        </IconButton>
       </div>
-      <p role="status" className={copyStatus ? "text-sm text-mist" : "sr-only"}>{copyStatus}</p>
+      <p role="status" className={copyStatus ? "mt-2 text-[13px] text-muted-foreground" : "sr-only"}>{copyStatus}</p>
     </>
   );
 }
@@ -47,11 +40,11 @@ export function McpConnectionBanner() {
   return (
     <section
       aria-label="Connect your agent"
-      className="mt-8 space-y-3 rounded-2xl border border-accent/30 bg-accent/10 px-4 py-3"
+      className="card space-y-3 bg-surface p-4"
     >
-      <h2 className="text-sm font-semibold">Connect your agent to Dash MCP</h2>
+      <h2 className="panel-title">Connect your agent to Dash MCP</h2>
       <McpUrlField />
-      <Link to="/agents" className="inline-block text-sm font-medium text-accent underline underline-offset-4">
+      <Link to="/agents" className="link inline-block">
         Agents
       </Link>
     </section>

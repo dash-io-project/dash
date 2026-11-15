@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AuthBootstrap } from "~/lib/bootstrap";
 import { api } from "~/lib/api";
-import { AuthCard, Field, PrimaryButton, TextInput } from "~/components/ui";
+import { AuthCard, Button, Field, TextInput, FullPageMessage } from "~/components/ui";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
@@ -16,14 +16,14 @@ function RegisterPage() {
   });
 
   if (bootstrap.isPending) {
-    return <p className="grid min-h-screen place-items-center text-sm text-mist">Loading…</p>;
+    return <FullPageMessage>Loading…</FullPageMessage>;
   }
   if (bootstrap.isError || !bootstrap.data) {
     const detail = bootstrap.error instanceof Error ? bootstrap.error.message : null;
     return (
-      <p className="mx-auto grid min-h-screen max-w-lg place-items-center px-6 text-center text-sm text-rose-300">
+      <FullPageMessage tone="error">
         {detail ?? "Could not load registration."}
-      </p>
+      </FullPageMessage>
     );
   }
   if (!bootstrap.data.allowRegistration) {
@@ -32,12 +32,12 @@ function RegisterPage() {
         title="Registration is closed"
         subtitle="An administrator has turned off new accounts."
         footer={
-          <Link to="/login" className="text-accent">
+          <Link to="/login" className="link">
             Log in
           </Link>
         }
       >
-        <p className="text-sm text-mist">Ask an administrator for an invite link if you need access to this organization.</p>
+        <p className="text-muted-foreground">Ask an administrator for an invite link if you need access to this organization.</p>
       </AuthCard>
     );
   }
@@ -110,7 +110,7 @@ function RegisterForm({
       footer={
         <>
           Already have an account?{" "}
-          <Link to="/login" className="text-accent">
+          <Link to="/login" className="link">
             Log in
           </Link>
         </>
@@ -128,7 +128,7 @@ function RegisterForm({
           required
         />
       </Field>
-      {hint ? <p className="text-sm text-mist">{hint}</p> : null}
+      {hint ? <p className="text-muted-foreground">{hint}</p> : null}
       <Field label="Password">
         <TextInput
           type="password"
@@ -139,10 +139,10 @@ function RegisterForm({
           required
         />
       </Field>
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-      <PrimaryButton type="submit" disabled={pending} className="w-full">
+      {error ? <p className="text-negative">{error}</p> : null}
+      <Button variant="primary" type="submit" disabled={pending} className="w-full">
         {pending ? "Creating…" : needsSetup ? "Create administrator" : "Create account"}
-      </PrimaryButton>
+      </Button>
     </AuthCard>
   );
 }
