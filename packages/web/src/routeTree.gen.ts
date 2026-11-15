@@ -22,6 +22,7 @@ import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes
 import { Route as AuthedAgentTokensRouteImport } from './routes/_authed/agent-tokens'
 import { Route as AuthedAgentsRouteImport } from './routes/_authed/agents'
 import { Route as AuthedDataSourcesRouteImport } from './routes/_authed/data-sources'
+import { Route as AuthedMembersRouteImport } from './routes/_authed/members'
 import { Route as AuthedProfileRouteImport } from './routes/_authed/profile'
 import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
 import { Route as AuthedTeamRouteImport } from './routes/_authed/team'
@@ -125,6 +126,11 @@ const AuthedAgentsRoute = AuthedAgentsRouteImport.update({
 const AuthedDataSourcesRoute = AuthedDataSourcesRouteImport.update({
   id: '/data-sources',
   path: '/data-sources',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedMembersRoute = AuthedMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedProfileRoute = AuthedProfileRouteImport.update({
@@ -333,6 +339,7 @@ export interface FileRoutesByFullPath {
   '/agent-tokens': typeof AuthedAgentTokensRoute
   '/agents': typeof AuthedAgentsRoute
   '/data-sources': typeof AuthedDataSourcesRoute
+  '/members': typeof AuthedMembersRoute
   '/profile': typeof AuthedProfileRoute
   '/settings': typeof AuthedSettingsRoute
   '/team': typeof AuthedTeamRoute
@@ -385,6 +392,7 @@ export interface FileRoutesByTo {
   '/agent-tokens': typeof AuthedAgentTokensRoute
   '/agents': typeof AuthedAgentsRoute
   '/data-sources': typeof AuthedDataSourcesRoute
+  '/members': typeof AuthedMembersRoute
   '/profile': typeof AuthedProfileRoute
   '/settings': typeof AuthedSettingsRoute
   '/team': typeof AuthedTeamRoute
@@ -439,6 +447,7 @@ export interface FileRoutesById {
   '/_authed/agent-tokens': typeof AuthedAgentTokensRoute
   '/_authed/agents': typeof AuthedAgentsRoute
   '/_authed/data-sources': typeof AuthedDataSourcesRoute
+  '/_authed/members': typeof AuthedMembersRoute
   '/_authed/profile': typeof AuthedProfileRoute
   '/_authed/settings': typeof AuthedSettingsRoute
   '/_authed/team': typeof AuthedTeamRoute
@@ -493,6 +502,7 @@ export interface FileRouteTypes {
     | '/agent-tokens'
     | '/agents'
     | '/data-sources'
+    | '/members'
     | '/profile'
     | '/settings'
     | '/team'
@@ -545,6 +555,7 @@ export interface FileRouteTypes {
     | '/agent-tokens'
     | '/agents'
     | '/data-sources'
+    | '/members'
     | '/profile'
     | '/settings'
     | '/team'
@@ -598,6 +609,7 @@ export interface FileRouteTypes {
     | '/_authed/agent-tokens'
     | '/_authed/agents'
     | '/_authed/data-sources'
+    | '/_authed/members'
     | '/_authed/profile'
     | '/_authed/settings'
     | '/_authed/team'
@@ -767,6 +779,13 @@ declare module '@tanstack/react-router' {
       path: '/data-sources'
       fullPath: '/data-sources'
       preLoaderRoute: typeof AuthedDataSourcesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/members': {
+      id: '/_authed/members'
+      path: '/members'
+      fullPath: '/members'
+      preLoaderRoute: typeof AuthedMembersRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/profile': {
@@ -1042,6 +1061,7 @@ interface AuthedRouteChildren {
   AuthedAgentTokensRoute: typeof AuthedAgentTokensRoute
   AuthedAgentsRoute: typeof AuthedAgentsRoute
   AuthedDataSourcesRoute: typeof AuthedDataSourcesRoute
+  AuthedMembersRoute: typeof AuthedMembersRoute
   AuthedProfileRoute: typeof AuthedProfileRoute
   AuthedSettingsRoute: typeof AuthedSettingsRoute
   AuthedTeamRoute: typeof AuthedTeamRoute
@@ -1055,6 +1075,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAgentTokensRoute: AuthedAgentTokensRoute,
   AuthedAgentsRoute: AuthedAgentsRoute,
   AuthedDataSourcesRoute: AuthedDataSourcesRoute,
+  AuthedMembersRoute: AuthedMembersRoute,
   AuthedProfileRoute: AuthedProfileRoute,
   AuthedSettingsRoute: AuthedSettingsRoute,
   AuthedTeamRoute: AuthedTeamRoute,

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { isResponse, requireAdminSession } from "~/server/guard";
 import { error, json } from "~/server/http";
-import { revokeInvitation } from "~/server/services/team";
+import { revokeInvitation } from "~/server/services/members";
 
 export const Route = createFileRoute("/api/invitations/$id")({
   server: {

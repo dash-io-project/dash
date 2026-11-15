@@ -5,7 +5,7 @@ import { getEnv } from "~/server/env";
 import { error, json, readJson, sessionCookie } from "~/server/http";
 import { ensureSeeded } from "~/server/seed";
 import { EmailDomainNotAllowedError } from "~/server/services/account-policy";
-import { acceptInvitation } from "~/server/services/team";
+import { acceptInvitation } from "~/server/services/members";
 
 const bodySchema = z.object({
   token: z.string().min(1).max(200),

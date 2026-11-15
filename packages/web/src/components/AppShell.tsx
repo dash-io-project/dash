@@ -21,7 +21,7 @@ const NAV = [
   { to: "/dashboards", label: "Dashboards", icon: LayoutDashboard },
   { to: "/workspaces", label: "Workspaces", icon: Users },
   { to: "/data-sources", label: "Data sources", icon: Database, admin: true },
-  { to: "/team", label: "Team", icon: Users },
+  { to: "/members", label: "Members", icon: Users },
   { to: "/tokens", label: "API tokens", icon: KeyRound },
   { to: "/agents", label: "Agents", icon: Bot },
   { to: "/settings", label: "Settings", icon: Settings },
