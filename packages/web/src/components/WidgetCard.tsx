@@ -91,6 +91,8 @@ export function WidgetCard({ widget, getShareUrl }: { widget: DashboardWidget; g
     gridRow: `span ${widget.layout.h} / span ${widget.layout.h}`,
   };
   const isKpi = widget.type === "kpi";
+  // Only a KPI card that shows its value has the Snapshot label in the body.
+  const kpiValue = isKpi && widget.kpi;
 
   return (
     // A KPI card is a size container: its value gets smaller when the card is narrow.
@@ -113,7 +115,7 @@ export function WidgetCard({ widget, getShareUrl }: { widget: DashboardWidget; g
         <div className="flex shrink-0 items-center gap-1">
           {/* A KPI card shows the Snapshot label above its value. The header row of a
               narrow KPI card has no room for it. */}
-          {snapshot && !isKpi ? <SnapshotLabel savedAt={snapshot.savedAt} className="shrink-0" /> : null}
+          {snapshot && !kpiValue ? <SnapshotLabel savedAt={snapshot.savedAt} className="shrink-0" /> : null}
           {getShareUrl ? <CopyLinkButton getUrl={getShareUrl} /> : null}
         </div>
       </div>
@@ -125,12 +127,12 @@ export function WidgetCard({ widget, getShareUrl }: { widget: DashboardWidget; g
           <div className="grid h-full place-items-center text-center text-negative">
             {(query.error as Error).message}
           </div>
-        ) : widget.type === "kpi" && widget.kpi ? (
+        ) : kpiValue ? (
           <>
             {snapshot ? (
               <SnapshotLabel savedAt={snapshot.savedAt} className="mb-2 max-w-full self-start" />
             ) : null}
-            <KpiCard rows={rows} spec={widget.kpi} />
+            <KpiCard rows={rows} spec={kpiValue} />
           </>
         ) : widget.type === "table" ? (
           <DataTable rows={rows} />
