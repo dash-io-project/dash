@@ -64,4 +64,40 @@ describe("dashboard widget payloads", () => {
     expect((await call("PATCH", session, workspaceId, dashboard.id, { widgets: widgets.slice(0, 8) })).status).toBe(200);
     expect((await getDashboard(workspaceId, dashboard.id))?.widgets).toHaveLength(8);
   });
+
+  it("sets the snapshot save date on the server, and keeps it while the rows stay the same", async () => {
+    const user = await createUser({ email: "snapshot-date@example.com", name: "Snapshot", password: "password123", role: "admin" });
+    const session = await createSession(user.id);
+    const workspaceId = await ensurePersonalWorkspace(user.id);
+    const saved = "2026-11-15T08:00:00.000Z";
+    const table = (id: string, value: number): DashboardWidget => ({
+      id,
+      type: "table",
+      title: id,
+      layout: { x: 0, y: 0, w: 6, h: 4 },
+      snapshot: { rows: [{ value }], savedAt: saved },
+    });
+    const dashboard = await createDashboard({ workspaceId, name: "Dates", description: "", widgets: [table("same", 1), table("changed", 1)], createdBy: user.id });
+    const forged = "2000-01-01T00:00:00.000Z";
+    const before = Date.now();
+
+    const widgets = [table("same", 1), table("changed", 2), table("added", 1)].map((widget) => ({ ...widget, snapshot: { ...widget.snapshot!, savedAt: forged } }));
+    const response = await call("PATCH", session, workspaceId, dashboard.id, { widgets });
+
+    expect(response.status).toBe(200);
+    const dates = ((await response.json()).dashboard.widgets as DashboardWidget[]).map((widget) => widget.snapshot!.savedAt);
+    expect(dates[0]).toBe(saved);
+    expect(dates.slice(1).every((date) => Date.parse(date) >= before)).toBe(true);
+  });
+
+  it("refuses a widget id with a comma, which a widget link cannot name", async () => {
+    const user = await createUser({ email: "widget-id@example.com", name: "Widget", password: "password123", role: "admin" });
+    const session = await createSession(user.id);
+    const workspaceId = await ensurePersonalWorkspace(user.id);
+    const dashboard = await createDashboard({ workspaceId, name: "Ids", description: "", widgets: [], createdBy: user.id });
+    const widget = { id: "orders,refunds", type: "table", title: "Orders", layout: { x: 0, y: 0, w: 6, h: 4 }, dataSourceId: "warehouse", query: { resource: "orders" } };
+
+    expect((await call("PATCH", session, workspaceId, dashboard.id, { widgets: [widget] })).status).toBe(400);
+    expect((await getDashboard(workspaceId, dashboard.id))?.widgets).toEqual([]);
+  });
 });

@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { isResponse, requireWorkspace } from "~/server/guard";
 import { error, json, readJson } from "~/server/http";
-import { widgetListSchema } from "~/server/widget-schema";
+import { stampSnapshots, widgetListSchema } from "~/server/widget-schema";
+import { nowIso } from "~/server/db";
 import { createDashboard, listDashboards } from "~/server/services/dashboards";
 
 const createSchema = z.object({
@@ -34,7 +35,7 @@ export const Route = createFileRoute("/api/dashboards/")({
           workspaceId: auth.workspace.id,
           name: parsed.data.name,
           description: parsed.data.description ?? "",
-          widgets: parsed.data.widgets ?? [],
+          widgets: stampSnapshots(parsed.data.widgets ?? [], [], nowIso()),
           createdBy: auth.user.id,
         });
         return json({ dashboard }, { status: 201 });

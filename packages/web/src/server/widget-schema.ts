@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { FILTER_OPERATORS, isChartType, MAX_SNAPSHOT_COLUMNS, MAX_SNAPSHOT_ROWS } from "@dash/core";
+import {
+  type DashboardWidget,
+  FILTER_OPERATORS,
+  isChartType,
+  MAX_SNAPSHOT_COLUMNS,
+  MAX_SNAPSHOT_ROWS,
+} from "@dash/core";
 
 /** The longest text value that a snapshot cell can hold. */
 const MAX_SNAPSHOT_TEXT = 1_000;
@@ -120,7 +126,8 @@ const kpiSchema = z.object({
 });
 
 const widgetBase = {
-  id: z.string(),
+  // A widget link puts ids in one search value, with commas between them.
+  id: z.string().regex(/^[^,\s]+$/, "A widget id cannot contain a comma or whitespace"),
   type: z.enum(["chart", "table", "kpi"]),
   title: z.string(),
   layout: layoutSchema,
@@ -128,12 +135,11 @@ const widgetBase = {
   kpi: kpiSchema.optional(),
 };
 
+// Dash owns `savedAt`. The schema drops the value that a client sends, and
+// `stampSnapshots` sets it.
 const snapshotWidgetSchema = z.object({
   ...widgetBase,
-  snapshot: z.object({
-    rows: snapshotRowsSchema,
-    savedAt: z.iso.datetime(),
-  }),
+  snapshot: z.object({ rows: snapshotRowsSchema }),
 });
 
 const queryWidgetSchema = z.object({
@@ -147,6 +153,27 @@ const queryWidgetSchema = z.object({
  * a widget with saved rows keeps them, and Dash drops its query fields.
  */
 export const widgetSchema = z.union([snapshotWidgetSchema, queryWidgetSchema]);
+
+type ParsedWidget = z.output<typeof widgetSchema>;
+
+/**
+ * Give each snapshot its save date. A snapshot keeps its stored date when its
+ * rows did not change. Each other snapshot gets `now`. Thus a client cannot
+ * make the rows look older or newer than they are.
+ */
+export function stampSnapshots(
+  widgets: readonly ParsedWidget[],
+  stored: readonly DashboardWidget[],
+  now: string,
+): DashboardWidget[] {
+  const before = new Map(stored.flatMap((widget) => (widget.snapshot ? [[widget.id, widget.snapshot] as const] : [])));
+  return widgets.map((widget) => {
+    if (!("snapshot" in widget)) return widget;
+    const previous = before.get(widget.id);
+    const unchanged = previous && JSON.stringify(previous.rows) === JSON.stringify(widget.snapshot.rows);
+    return { ...widget, snapshot: { rows: widget.snapshot.rows, savedAt: unchanged ? previous.savedAt : now } };
+  });
+}
 
 /** The widget list of one dashboard in a REST request body. */
 export const widgetListSchema = z

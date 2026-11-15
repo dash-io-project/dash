@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { isResponse, requireWorkspace } from "~/server/guard";
 import { error, json, readJson } from "~/server/http";
-import { widgetListSchema } from "~/server/widget-schema";
+import { stampSnapshots, widgetListSchema } from "~/server/widget-schema";
+import { nowIso } from "~/server/db";
 import {
   deleteDashboard,
   getDashboard,
@@ -38,7 +39,12 @@ export const Route = createFileRoute("/api/dashboards/$id")({
         if (!parsed.success) {
           return error(400, "Invalid dashboard payload", "invalid_body");
         }
-        const dashboard = await updateDashboard(auth.workspace.id, params.id, parsed.data);
+        const { widgets, ...fields } = parsed.data;
+        const current = widgets ? await getDashboard(auth.workspace.id, params.id) : undefined;
+        const dashboard = await updateDashboard(auth.workspace.id, params.id, {
+          ...fields,
+          ...(widgets ? { widgets: stampSnapshots(widgets, current?.widgets ?? [], nowIso()) } : {}),
+        });
         if (!dashboard) {
           return error(404, "Dashboard not found", "not_found");
         }
