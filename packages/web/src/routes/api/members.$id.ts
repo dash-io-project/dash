@@ -3,7 +3,7 @@ import { z } from "zod";
 import { USER_ROLES } from "@dash/core";
 import { isResponse, requireAdminSession } from "~/server/guard";
 import { error, json, readJson } from "~/server/http";
-import { LastAdminError, setMemberRole } from "~/server/services/team";
+import { LastAdminError, setMemberRole } from "~/server/services/members";
 
 const bodySchema = z.object({
   role: z.enum(USER_ROLES),

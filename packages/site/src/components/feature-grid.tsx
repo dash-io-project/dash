@@ -9,7 +9,7 @@ const icons: Record<FeatureIcon, IconComponent> = {
   dashboards: LayoutDashboard,
   "data-sources": Database,
   workspaces: Layers3,
-  team: Users,
+  members: Users,
   tokens: KeyRound,
   api: Braces,
 };

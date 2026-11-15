@@ -4,7 +4,7 @@ import { getDb, type UserDoc } from "../db.ts";
 import { destroyAppDatabase, useFreshAppDatabase } from "../test-db.ts";
 import { RegistrationDeniedError, registerAccount, registrationPolicy } from "./account-policy.ts";
 import { updateSettings } from "./settings.ts";
-import { listMembers } from "./team.ts";
+import { listMembers } from "./members.ts";
 
 describe("registration policy", () => {
   beforeEach(async () => {
