@@ -21,17 +21,18 @@ A `write` token could also call `PATCH /api/users/me` and set a new password wit
 - To rotate a token, the user creates a new token, updates the app, and then revokes the old token. Both tokens work between these steps.
 - An API user can have 10 active tokens. An expired token does not count. Dash counts the tokens before it inserts a token, so the limit is soft.
 - A new token expires after 90 days when the request gives no lifetime. The maximum is 365 days. `POST /api/tokens` keeps its old rule: a request with no lifetime gives a token with no expiry.
-- An API user acts as its owner. Each request checks the current membership and role of the owner. If the owner loses access, the tokens stop. Dashboards are limited to the workspace of the API user. Data sources follow the organization access of the owner, as [ADR 0009](0009-organization-workspaces.md) says.
+- An API user acts as its owner. Each request checks the current membership and role of the owner. If the owner loses access, the tokens stop. The API user can use dashboards only in its workspace. Data sources follow the organization access of the owner, as [ADR 0009](0009-organization-workspaces.md) says.
 - A workspace viewer can create a `read` API user. A `write` API user needs editor access when Dash creates it.
 - A delete sets `deletedAt` and then revokes each token. Token authentication refuses a token when its API user has `deletedAt`. Thus, one write stops all tokens of the API user. A second delete revokes tokens that a stopped delete left.
-- Token authentication writes `lastUsedAt` at most once a minute.
+- Token authentication writes `lastUsedAt` at most once a minute. The last use of an API user includes its revoked tokens, so a rotation does not hide a recent use.
 - Only a browser session can list, create, or delete API users and their tokens. An API token cannot.
 - `PATCH /api/users/me` and `PATCH /api/settings` need a browser session. A token cannot change the profile, the password, or the organization settings.
 - An admin's `write` token can still add, change, and remove data sources. Automation can need this.
 - `POST /api/tokens` issues agent tokens only. A request without the `mcp` scope gets 400.
-- An older standalone token without `mcp` becomes an API user. `GET /api/api-users` does this for the caller on each request. The new API user has the ID `legacy-<token id>`, so a second or concurrent run adds nothing. The token keeps its scopes.
+- An older standalone token without `mcp` becomes an API user, also when it is expired. Dash does not adopt a revoked token. `GET /api/api-users` does this for the caller on each request. The new API user has the ID `legacy-<token id>`, so a second or concurrent run adds nothing.
+- The adopted token keeps its scopes. If the token has `write`, the API user gets `read` and `write`, so its new tokens can read.
 - A token from before workspaces gives an API user with no workspace. That token continues to work, and the user can revoke it. That API user cannot get a new token.
-- A static token with the `mcp` scope still works on the REST API. Only an OAuth agent token is limited to `/mcp`, as [ADR 0014](0014-mcp-oauth.md) says. The split between the two pages is for presentation. It is not a security boundary.
+- A static token with the `mcp` scope still works on the REST API. An OAuth agent token works only at `/mcp`, as [ADR 0014](0014-mcp-oauth.md) says. The split between the two pages is for presentation. It is not a security boundary.
 
 ## Consequences
 

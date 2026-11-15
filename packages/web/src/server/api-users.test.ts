@@ -94,6 +94,8 @@ describe("API users", () => {
     const revoke = () =>
       call(ApiUserToken, "DELETE", { session }, { id: first.apiUser.id, tokenId: first.record.id });
     expect((await revoke()).status).toBe(200);
+    // Only the revoked token has a use, and the API user still shows it.
+    expect((await list())[0]?.lastUsedAt).toEqual(expect.any(String));
     expect(await me(first.token)).toBe(401);
     expect(await me(second.token)).toBe(200);
     expect((await revoke()).status).toBe(404);
@@ -169,14 +171,24 @@ describe("API users", () => {
     expect(write.status).toBe(403);
     const read = await call(ApiUserIndex, "POST", viewer, { workspaceId, body: { name: "R", scopes: ["read"] } });
     expect(read.status).toBe(201);
-    expect(((await read.json()) as Created).apiUser.workspaceId).toBe(workspaceId);
+    const created = (await read.json()) as Created;
+    expect(created.apiUser.workspaceId).toBe(workspaceId);
+
+    await call(WorkspaceMembers, "PUT", { session }, { id: workspaceId, body: { userId: grace.id, role: null } });
+    const lost = await issue(created.apiUser.id, {}, viewer);
+    expect(lost.status).toBe(404);
+    expect((await lost.json()).error.code).toBe("workspace_access");
   });
 
-  it("refuses the mcp scope, which belongs to agents", async () => {
+  it("refuses the mcp scope, which belongs to agents, and lifetimes outside 1 to 365 days", async () => {
     const response = await create({ name: "Agent", scopes: ["read", "mcp"] });
     expect(response.status).toBe(400);
     expect((await response.json()).error.code).toBe("invalid_scope");
+    expect((await create({ name: "Long", scopes: ["read"], token: { expiresInDays: 366 } })).status).toBe(400);
     expect(await (await apiUsers()).countDocuments()).toBe(0);
+    const { apiUser } = (await (await create({ name: "Short", scopes: ["read"] })).json()) as Created;
+    expect((await issue(apiUser.id, { expiresInDays: 0 })).status).toBe(400);
+    expect((await issue(apiUser.id, { expiresInDays: 365 })).status).toBe(201);
   });
 
   it("adopts older tokens without the mcp scope, also a token from before workspaces", async () => {
@@ -188,6 +200,7 @@ describe("API users", () => {
       scopes: ["read", "write"],
       expiresAt: null,
     });
+    const writeOnly = await issueApiToken({ userId: ada.id, workspaceId, name: "Writer", scopes: ["write"], expiresAt: null });
     const agent = await issueApiToken({ userId: ada.id, workspaceId, name: "Agent", scopes: ["read", "mcp"], expiresAt: null });
     const noWorkspace = generateApiToken();
     await (await apiTokens()).insertOne({
@@ -204,12 +217,19 @@ describe("API users", () => {
     } as never);
 
     const adopted = await list();
-    expect(adopted.map((apiUser) => [apiUser.id, apiUser.workspaceId, apiUser.scopes])).toEqual([
-      [`legacy-${standalone.record.id}`, workspaceId, ["read", "write"]],
-      ["legacy-pre-workspace", null, ["read"]],
-    ]);
+    const summary = Object.fromEntries(adopted.map((apiUser) => [apiUser.id, [apiUser.workspaceId, apiUser.scopes]]));
+    expect(summary).toEqual({
+      [`legacy-${standalone.record.id}`]: [workspaceId, ["read", "write"]],
+      [`legacy-${writeOnly.record.id}`]: [workspaceId, ["read", "write"]],
+      "legacy-pre-workspace": [null, ["read"]],
+    });
     expect(await list()).toEqual(adopted);
-    expect(await (await apiUsers()).countDocuments()).toBe(2);
+    expect(await (await apiUsers()).countDocuments()).toBe(3);
+    // The older token keeps its scopes. A new token of that API user can read.
+    expect((await (await apiTokens()).findOne({ _id: writeOnly.record.id }))?.scopes).toEqual(["write"]);
+    const fresh = (await (await issue(`legacy-${writeOnly.record.id}`)).json()) as Issued;
+    expect(fresh.record.scopes).toEqual(["read", "write"]);
+    expect(await me(fresh.token)).toBe(200);
     expect((await (await apiTokens()).findOne({ _id: agent.record.id }))?.apiUserId).toBeUndefined();
 
     expect(await me(standalone.token)).toBe(200);
@@ -247,5 +267,6 @@ describe("API users", () => {
     const settings = await call(Settings, "PATCH", { token }, { body: { allowRegistration: false } });
     expect(settings.status).toBe(403);
     expect((await call(Profile, "PATCH", { session }, { body: { name: "Ada L." } })).status).toBe(200);
+    expect((await call(Settings, "PATCH", { session }, { body: { allowRegistration: false } })).status).toBe(200);
   });
 });

@@ -66,7 +66,7 @@ export type ApiUserScope = (typeof API_USER_SCOPES)[number];
 export const API_TOKEN_EXPIRY_DAYS = [7, 30, 90, 180, 365] as const;
 export const DEFAULT_API_TOKEN_EXPIRY_DAYS = 90;
 
-/** A soft limit. It keeps old tokens from piling up during rotation. */
+/** A soft limit. It stops a collection of old tokens during rotation. */
 export const MAX_ACTIVE_API_USER_TOKENS = 10;
 
 /** A named identity for a script or service. It holds one or more tokens, so a token can rotate. */
@@ -77,7 +77,7 @@ export interface PublicApiUser {
   name: string;
   scopes: ApiUserScope[];
   createdAt: string;
-  /** The most recent use of any token of this API user. */
+  /** The most recent use of a token of this API user. Revoked tokens count. */
   lastUsedAt: string | null;
   /** Tokens that are not revoked. Expired tokens are included. Newest first. */
   tokens: PublicApiToken[];

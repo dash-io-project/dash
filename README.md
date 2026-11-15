@@ -300,7 +300,7 @@ Workspace privacy protects dashboards; it does not restrict access to data sourc
 
 Session API clients select a workspace with the `X-Dash-Workspace-Id` header. Without that header, dashboard requests use the user's personal workspace.
 New API tokens bind to the workspace selected at creation. Tokens cannot select another workspace. Each request checks current membership and token scopes.
-An API user acts as the person who created it. Its dashboards are limited to its workspace. Data sources follow the organization access of that person. See [ADR 0015](docs/adr/0015-api-users-and-token-rotation.md).
+An API user acts as the person who created it. It can use dashboards only in its workspace. Data sources follow the organization access of that person. See [ADR 0015](docs/adr/0015-api-users-and-token-rotation.md).
 This change does not migrate existing dashboards or tokens. See [ADR 0009](docs/adr/0009-organization-workspaces.md).
 
 ## MCP

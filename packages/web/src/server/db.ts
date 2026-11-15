@@ -41,7 +41,7 @@ export interface ApiTokenDoc {
   createdAt: string;
   /** Absent on older documents. Those records are static tokens. */
   kind?: "token" | "oauth";
-  /** Static tokens of an API user only. The token works only while that API user is not deleted. */
+  /** Only a static token of an API user has this value. The token stops when that API user is deleted. */
   apiUserId?: string;
   /** OAuth agents only. The client that received the tokens. */
   clientId?: string;

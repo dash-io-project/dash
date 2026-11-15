@@ -43,11 +43,7 @@ function normalizeScopes(scopes: readonly ApiUserScope[]): ApiUserScope[] {
   return API_USER_SCOPES.filter((scope) => wanted.has(scope));
 }
 
-function toPublicApiUser(row: ApiUserDoc, tokens: ApiTokenDoc[]): PublicApiUser {
-  let lastUsedAt: string | null = null;
-  for (const token of tokens) {
-    if (token.lastUsedAt && (!lastUsedAt || token.lastUsedAt > lastUsedAt)) lastUsedAt = token.lastUsedAt;
-  }
+function toPublicApiUser(row: ApiUserDoc, tokens: ApiTokenDoc[], lastUsedAt: string | null): PublicApiUser {
   return {
     id: row._id,
     workspaceId: row.workspaceId,
@@ -94,8 +90,9 @@ async function insertToken(
 }
 
 /**
- * Before API users, each static token stood alone. Give each live older token
- * without the `mcp` scope its own API user, so the API tokens page lists it.
+ * Before API users, each static token stood alone. Give each older token that
+ * is not revoked and has no `mcp` scope its own API user, so the API tokens
+ * page lists it.
  * Agent tokens with `mcp` stay on the Agents page. The ID comes from the token,
  * so a second or concurrent run adds nothing.
  */
@@ -123,8 +120,8 @@ async function adoptLegacyTokens(ownerId: string): Promise<void> {
             workspaceId: (row.workspaceId as string | undefined) ?? null,
             ownerId,
             name: row.name,
-            // Keep the scopes of the token as they are, so its access does not change.
-            scopes: row.scopes.filter(isApiUserScope),
+            // The adopted token keeps its own scopes. New tokens get `read` with `write`.
+            scopes: normalizeScopes(row.scopes.filter(isApiUserScope)),
             createdAt: row.createdAt,
             updatedAt: nowIso(),
             deletedAt: null,
@@ -145,11 +142,27 @@ export async function listApiUsers(ownerId: string): Promise<PublicApiUser[]> {
   await adoptLegacyTokens(ownerId);
   const rows = await (await apiUsers()).find({ ownerId, deletedAt: null }).sort({ createdAt: -1 }).toArray();
   if (rows.length === 0) return [];
-  const tokens = await (await apiTokens())
-    .find({ userId: ownerId, apiUserId: { $in: rows.map((row) => row._id) }, revokedAt: null })
-    .sort({ createdAt: -1 })
+  const ids = rows.map((row) => row._id);
+  const collection = await apiTokens();
+  const tokens = await collection
+    .find({ userId: ownerId, apiUserId: { $in: ids }, revokedAt: null })
+    .sort({ createdAt: -1, _id: -1 })
     .toArray();
-  return rows.map((row) => toPublicApiUser(row, tokens.filter((token) => token.apiUserId === row._id)));
+  // Revoked tokens count too. After a rotation, the old token holds the last use.
+  const lastUse = new Map<string, string | null>();
+  for await (const group of collection.aggregate<{ _id: string; lastUsedAt: string | null }>([
+    { $match: { userId: ownerId, apiUserId: { $in: ids } } },
+    { $group: { _id: "$apiUserId", lastUsedAt: { $max: "$lastUsedAt" } } },
+  ])) {
+    lastUse.set(group._id, group.lastUsedAt);
+  }
+  return rows.map((row) =>
+    toPublicApiUser(
+      row,
+      tokens.filter((token) => token.apiUserId === row._id),
+      lastUse.get(row._id) ?? null,
+    ),
+  );
 }
 
 /** Create an API user in a workspace that the caller already has access to, with its first token. */
@@ -174,7 +187,7 @@ export async function createApiUser(input: {
   await (await apiUsers()).insertOne(row);
   const issued = await insertToken(row, { name: "Initial token", ...input.token });
   return {
-    apiUser: toPublicApiUser(row, [issued.row]),
+    apiUser: toPublicApiUser(row, [issued.row], null),
     token: issued.token,
     record: toPublicToken(issued.row),
   };

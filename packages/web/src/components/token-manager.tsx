@@ -174,6 +174,7 @@ function CreateApiUserForm({ onIssued }: { onIssued: (issued: IssuedToken) => vo
         body: JSON.stringify({ name: name.trim(), scopes, token: { name: "Initial token", expiresInDays } }),
       });
     },
+    gcTime: 0,
     onSuccess: async (payload) => {
       onIssued({
         apiUserName: payload.apiUser.name,
@@ -186,6 +187,12 @@ function CreateApiUserForm({ onIssued }: { onIssued: (issued: IssuedToken) => vo
       await invalidate(queryClient);
     },
   });
+
+  // The reveal panel holds the token. Do not keep a second copy in the mutation state.
+  const { isSuccess: created, reset: resetCreate } = create;
+  useEffect(() => {
+    if (created) resetCreate();
+  }, [created, resetCreate]);
 
   return (
     <form
@@ -247,7 +254,7 @@ function CreateApiUserForm({ onIssued }: { onIssued: (issued: IssuedToken) => vo
       </fieldset>
       <ExpirySelect label="First token expires after" value={expiresInDays} onChange={setExpiresInDays} />
       <p className="text-sm text-mist">
-        The API user acts as you. Its dashboards are limited to the <strong>{workspace.name}</strong> workspace. Data
+        The API user acts as you. It can use dashboards only in the <strong>{workspace.name}</strong> workspace. Data
         sources follow your organization access.
       </p>
       <PrimaryButton type="submit" disabled={create.isPending || !name.trim()}>
@@ -261,14 +268,21 @@ function CreateApiUserForm({ onIssued }: { onIssued: (issued: IssuedToken) => vo
 function NewTokenForm({
   apiUser,
   onIssued,
-  onClose,
+  onCreated,
+  onCancel,
 }: {
   apiUser: PublicApiUser;
   onIssued: (issued: IssuedToken) => void;
-  onClose: () => void;
+  /** The reveal panel takes the focus after a new token. */
+  onCreated: () => void;
+  onCancel: () => void;
 }) {
   const queryClient = useQueryClient();
+  const labelRef = useRef<HTMLInputElement>(null);
   const [label, setLabel] = useState(`Token ${today()}`);
+  useEffect(() => {
+    labelRef.current?.select();
+  }, []);
   const [expiresInDays, setExpiresInDays] = useState<number>(DEFAULT_API_TOKEN_EXPIRY_DAYS);
   const issue = useMutation({
     mutationFn: async () =>
@@ -276,9 +290,10 @@ function NewTokenForm({
         method: "POST",
         body: JSON.stringify({ name: label.trim(), expiresInDays }),
       }),
+    gcTime: 0,
     onSuccess: async (payload) => {
       onIssued({ apiUserName: apiUser.name, tokenId: payload.record.id, label: payload.record.name, token: payload.token });
-      onClose();
+      onCreated();
       await invalidate(queryClient);
     },
   });
@@ -293,14 +308,20 @@ function NewTokenForm({
       }}
     >
       <Field label="Token label">
-        <TextInput required maxLength={80} value={label} onChange={(event) => setLabel(event.target.value)} />
+        <TextInput
+          ref={labelRef}
+          required
+          maxLength={80}
+          value={label}
+          onChange={(event) => setLabel(event.target.value)}
+        />
       </Field>
       <ExpirySelect label="Expires after" value={expiresInDays} onChange={setExpiresInDays} />
       <div className="flex gap-2">
         <PrimaryButton type="submit" disabled={issue.isPending || !label.trim()}>
           {issue.isPending ? "Please wait…" : "Create token"}
         </PrimaryButton>
-        <GhostButton type="button" onClick={onClose}>
+        <GhostButton type="button" onClick={onCancel}>
           Cancel
         </GhostButton>
       </div>
@@ -325,6 +346,18 @@ function ApiUserCard({
   const { workspaces } = useWorkspace();
   const queryClient = useQueryClient();
   const [adding, setAdding] = useState(false);
+  const newTokenRef = useRef<HTMLButtonElement>(null);
+  const returnFocus = useRef(false);
+  useEffect(() => {
+    if (!adding && returnFocus.current) {
+      returnFocus.current = false;
+      newTokenRef.current?.focus();
+    }
+  }, [adding]);
+  function closeForm(restoreFocus: boolean) {
+    returnFocus.current = restoreFocus;
+    setAdding(false);
+  }
   const workspaceName =
     workspaces.find((item) => item.id === apiUser.workspaceId)?.name ??
     (apiUser.workspaceId ? "No access" : "No workspace");
@@ -337,7 +370,7 @@ function ApiUserCard({
       api(`/api/api-users/${apiUser.id}/tokens/${token.id}`, { method: "DELETE" }),
     onSuccess: async (_, token) => {
       onRevoked([token.id]);
-      onAnnounce(`Token ${token.name} of ${apiUser.name} is revoked.`);
+      onAnnounce(`You revoked token ${token.name} of ${apiUser.name}.`);
       await invalidate(queryClient);
     },
   });
@@ -346,7 +379,7 @@ function ApiUserCard({
     mutationFn: async () => api(`/api/api-users/${apiUser.id}`, { method: "DELETE" }),
     onSuccess: async () => {
       onRevoked(apiUser.tokens.map((token) => token.id));
-      onAnnounce(`API user ${apiUser.name} is deleted. Its tokens are revoked.`);
+      onAnnounce(`You deleted API user ${apiUser.name} and revoked its tokens.`);
       await invalidate(queryClient);
     },
   });
@@ -371,6 +404,7 @@ function ApiUserCard({
         <div className="flex flex-wrap items-center gap-2">
           {!adding ? (
             <GhostButton
+              ref={newTokenRef}
               type="button"
               className="inline-flex items-center gap-1.5"
               disabled={!canAdd}
@@ -392,7 +426,14 @@ function ApiUserCard({
         </div>
       </div>
 
-      {adding ? <NewTokenForm apiUser={apiUser} onIssued={onIssued} onClose={() => setAdding(false)} /> : null}
+      {adding ? (
+        <NewTokenForm
+          apiUser={apiUser}
+          onIssued={onIssued}
+          onCreated={() => closeForm(false)}
+          onCancel={() => closeForm(true)}
+        />
+      ) : null}
       {remove.error ? <p role="alert" className="mt-3 text-sm text-rose-300">{remove.error.message}</p> : null}
       {revoke.error ? <p role="alert" className="mt-3 text-sm text-rose-300">{revoke.error.message}</p> : null}
 
@@ -505,7 +546,8 @@ export function TokenManager() {
 
       <section aria-labelledby="api-users-heading" className="mt-10">
         <h2 id="api-users-heading" className="text-lg font-semibold">
-          API users{apiUsers.data ? <span className="ml-2 text-sm font-normal text-mist">{apiUsers.data.length}</span> : null}
+          API users{" "}
+          {apiUsers.data ? <span className="ml-1 text-sm font-normal text-mist">{apiUsers.data.length}</span> : null}
         </h2>
         <p ref={statusRef} tabIndex={-1} role="status" className={announcement ? "mt-2 text-sm text-mist outline-none" : "sr-only"}>
           {announcement}
