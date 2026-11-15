@@ -16,6 +16,8 @@ All notable changes to Dash are documented here.
 
 ### Fixed
 
+- A domain that finished before its database dropped does not hide a failed domain on another source.
+
 - A table widget fills its dashboard card and scrolls inside it. The header row stays in view during the scroll. Before, a long table ran past the bottom of its card and over the widgets below it.
 - The seeded "First response by priority" chart uses the short series names `median_minutes` and `sla_minutes`, so its legend fits in the card. The `mart_first_response_by_priority` columns have the same new names.
 - A concurrent first registration does not keep an account when its email domain is not on the list. Only the account that claims the first user skips the list.

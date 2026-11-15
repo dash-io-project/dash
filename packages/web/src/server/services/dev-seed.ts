@@ -355,6 +355,21 @@ function isDatabaseUnavailable(error: unknown): boolean {
 
 const UNAVAILABLE_STEP = "This database is not available.";
 
+/**
+ * A run fails when an attempted domain did not finish, or when a write failed.
+ * A domain that finished before its database dropped stays in `done`, but it
+ * leaves the attempted set. That success must not hide a failure on another source.
+ */
+export function seedRunFailed(
+  assignments: readonly { domain: string; sourceId: string }[],
+  unavailable: ReadonlySet<string>,
+  done: ReadonlySet<string>,
+  writeFailures: ReadonlySet<string>,
+): boolean {
+  if (writeFailures.size > 0) return true;
+  return assignments.some((item) => !unavailable.has(item.sourceId) && !done.has(item.domain));
+}
+
 function launch(runId: string, task: (signal: AbortSignal, update: Update) => Promise<void>): void {
   const controller = new AbortController();
   const update = updater(runId, () => controller.abort(new Error("Another seed run took over. This run stopped.")));
@@ -444,6 +459,7 @@ export async function startDevSeed(user: PublicUser, planId: string, size: SeedS
 
       const owned = [...claimed.owned];
       const done = new Set<SeedDomainKey>();
+      const writeFailures = new Set<SeedDomainKey>();
       for (const [index, item] of plan.assignments.entries()) {
         if (signal.aborted) throw signal.reason;
         if (unavailable.has(item.sourceId)) continue;
@@ -481,6 +497,7 @@ export async function startDevSeed(user: PublicUser, planId: string, size: SeedS
             }
             continue;
           }
+          writeFailures.add(item.domain);
           await update({ [`steps.${index}.status`]: "failed", [`steps.${index}.error`]: message(error) });
         }
       }
@@ -514,8 +531,7 @@ export async function startDevSeed(user: PublicUser, planId: string, size: SeedS
         dashboardIds.push(created.id);
         await update({ dashboardIds });
       }
-      const attempted = plan.assignments.filter((item) => !unavailable.has(item.sourceId));
-      const failed = done.size < attempted.length;
+      const failed = seedRunFailed(plan.assignments, unavailable, done, writeFailures);
       await update({
         status: failed ? "failed" : "succeeded",
         error: failed ? "Some domains failed. The dashboards show the domains that were written." : null,
