@@ -23,7 +23,7 @@ const NAV = [
   { to: "/data-sources", label: "Data sources", icon: Database, admin: true },
   { to: "/team", label: "Team", icon: Users },
   { to: "/tokens", label: "API tokens", icon: KeyRound },
-  { to: "/agent-tokens", label: "Agent tokens", icon: Bot },
+  { to: "/agents", label: "Agents", icon: Bot },
   { to: "/settings", label: "Settings", icon: Settings },
   { to: "/profile", label: "Profile", icon: UserRound },
 ] as const;

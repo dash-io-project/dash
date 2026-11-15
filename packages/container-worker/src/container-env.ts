@@ -10,10 +10,18 @@ export const DEV_INSTANCE = "dev";
  */
 const CONTAINER_PORT_HEADER = "cf-container-target-port";
 
-/** Force the container port so a client cannot choose a different one. */
+/**
+ * Force the container port so a client cannot choose a different one.
+ * The container receives the request over plain http. Send the public scheme
+ * and host, so that the server can write the URLs that clients use, for
+ * example in the OAuth metadata. Replace a value that the client sent.
+ */
 export function forwardToContainer(request: Request): Request {
+  const url = new URL(request.url);
   const headers = new Headers(request.headers);
   headers.set(CONTAINER_PORT_HEADER, String(CONTAINER_PORT));
+  headers.set("x-forwarded-proto", url.protocol.slice(0, -1));
+  headers.set("x-forwarded-host", url.host);
   return new Request(request, { headers });
 }
 

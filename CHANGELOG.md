@@ -6,6 +6,8 @@ All notable changes to Dash are documented here.
 
 ### Changed
 
+- The **Agent tokens** page is now **Agents** (`/agents`) in the sidebar and in the page header. Connect an agent with OAuth or with a token on that page. The old `/agent-tokens` path opens the Agents page. The API tokens page does not list OAuth agents.
+- The `demo.dash.io` Worker sends `X-Forwarded-Proto` and `X-Forwarded-Host` to the container. It replaces values that the client sent.
 - `DEMO_ENVIRONMENT` replaces `DASH_SEED_DEMO` and `DASH_SEED_DEV_SOURCES`. Set it to `true` to show **Sample company data**. `demo.dash.io` sets this value. The flag works in production.
 - A seed run skips a data source when its database is not available. The run writes the other sources.
 
@@ -38,6 +40,7 @@ All notable changes to Dash are documented here.
 
 ### Added
 
+- OAuth for MCP clients. Give an agent, for example a ChatGPT connector, the MCP URL and select OAuth. The agent opens Dash in the browser. The signed-in user sets the name, workspace, and access, then selects **Create agent**. Dash creates the agent at that time. Before, ChatGPT showed "Couldn't discover OAuth settings" because Dash served no OAuth metadata. New endpoints: `/.well-known/oauth-protected-resource` (RFC 9728), `/.well-known/oauth-authorization-server` (RFC 8414), `POST /oauth/register` (RFC 7591), the `/oauth/authorize` consent page, and `POST /oauth/token`. Dash accepts only the authorization code grant with PKCE S256. Access tokens expire after one hour and work only at `/mcp`. Each refresh token works once, and an agent stops after 90 days without a refresh. A second use of a code revokes its agent. `/mcp` answers 401 with a `WWW-Authenticate` challenge. New optional variable: `DASH_PUBLIC_URL`. See [ADR 0014](docs/adr/0014-mcp-oauth.md).
 - Deploy of the public website (`@dash/site`) to [dev.dash.io](https://dev.dash.io). A second Cloudflare Worker, `dash-site-development`, sends each request to one container. The container runs the standalone Next.js server from the new `Dockerfile.site`. The config is `wrangler.site.jsonc`. The workflow `deploy-dev` and the script `pnpm deploy:dev` now deploy the website. `DASH_CLOUD_MONGODB_URI` is a Worker secret (`wrangler secret put DASH_CLOUD_MONGODB_URI --config wrangler.site.jsonc`). The marketing pages work without it. The Worker adds `X-Robots-Tag: noindex, nofollow` to each response. See [ADR 0013](docs/adr/0013-demo-host-and-dev-website.md).
 
 - Dash Cloud accounts in `@dash/site`. `/register/` creates an account and an organization on the Cloud plan. `/login/` signs in, and `/account/` shows the account and its organization. Accounts, organizations, and sessions live in the MongoDB database that `DASH_CLOUD_MONGODB_URI` names. Passwords use scrypt, and a session lasts 30 days in an `HttpOnly` cookie. After 10 failed sign-ins for one email, sign-in for that email stops for 15 minutes. The website now runs as a Node.js server (`pnpm --filter @dash/site start`), not as a static export. The marketing pages stay static. New dependencies of `@dash/site`: `mongodb` 7.7.0 and `zod` 4.6.7, the versions that `@dash/web` uses. See [ADR 0012](docs/adr/0012-dash-cloud-accounts.md).

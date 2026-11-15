@@ -18,6 +18,10 @@ export async function requireUser(
   if (!auth) {
     return error(401, "Authentication required", "unauthenticated");
   }
+  // The MCP spec binds an OAuth access token to the MCP endpoint, its audience.
+  if (auth.tokenKind === "oauth" && scope !== "mcp") {
+    return error(403, "An OAuth agent token works only at the MCP endpoint", "forbidden");
+  }
   if (!hasScope(auth, scope)) {
     return error(403, `Missing scope: ${scope}`, "forbidden");
   }

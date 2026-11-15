@@ -42,12 +42,18 @@ describe("containerEnv", () => {
 });
 
 describe("forwardToContainer", () => {
-  it("overwrites a client-supplied container port", () => {
+  it("overwrites a client-supplied container port and forwarded address", () => {
     const request = new Request("https://dev.dash.io/api/auth/me", {
-      headers: { "cf-container-target-port": "22" },
+      headers: {
+        "cf-container-target-port": "22",
+        "x-forwarded-proto": "http",
+        "x-forwarded-host": "evil.example",
+      },
     });
     const forwarded = forwardToContainer(request);
     expect(forwarded.headers.get("cf-container-target-port")).toBe(String(CONTAINER_PORT));
+    expect(forwarded.headers.get("x-forwarded-proto")).toBe("https");
+    expect(forwarded.headers.get("x-forwarded-host")).toBe("dev.dash.io");
     expect(new URL(forwarded.url).pathname).toBe("/api/auth/me");
   });
 });

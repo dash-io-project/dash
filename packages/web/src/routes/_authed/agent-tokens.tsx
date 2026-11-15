@@ -1,10 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { TokenManager } from "~/components/token-manager";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+/** The Agent tokens page is now the Agents page. Keep old links working. */
 export const Route = createFileRoute("/_authed/agent-tokens")({
-  component: AgentTokensPage,
+  beforeLoad: ({ search }) => {
+    throw redirect({ to: "/agents", search, replace: true });
+  },
 });
-
-function AgentTokensPage() {
-  return <TokenManager agent />;
-}

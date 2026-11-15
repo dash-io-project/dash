@@ -61,7 +61,7 @@ function SettingsPage() {
     <div className="max-w-xl">
       <h1 className="text-3xl font-semibold">Settings</h1>
       <p className="mt-2 text-sm text-mist">
-        Set your organization preferences here. Use the API tokens and Agent tokens pages to manage tokens.
+        Set your organization preferences here. Use the API tokens page to manage tokens. Use the Agents page to manage agents.
       </p>
       {current ? (
         <div className="mt-8 space-y-4 rounded-2xl border border-line bg-panel p-6">
