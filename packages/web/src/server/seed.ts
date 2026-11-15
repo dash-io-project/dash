@@ -22,7 +22,7 @@ async function retireDemoSources(): Promise<void> {
   if (ids.length > 0) {
     const boards = await dashboards();
     for (const board of await boards.find({ "widgets.dataSourceId": { $in: ids } }).toArray()) {
-      const widgets = board.widgets.filter((widget) => !ids.includes(widget.dataSourceId));
+      const widgets = board.widgets.filter((widget) => !widget.dataSourceId || !ids.includes(widget.dataSourceId));
       if (widgets.length === 0) {
         await boards.deleteOne({ _id: board._id });
       } else {

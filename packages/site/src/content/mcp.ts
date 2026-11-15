@@ -10,8 +10,11 @@ export const mcpTools: readonly McpTool[] = [
   { name: "query_data", description: "Run a structured query and get rows back." },
   { name: "list_dashboards", description: "List the dashboards in the workspace." },
   { name: "get_dashboard", description: "Read one dashboard and its widgets." },
-  { name: "create_dashboard", description: "Create a new dashboard." },
-  { name: "add_chart_widget", description: "Add a chart widget to a dashboard." },
+  { name: "create_dashboard", description: "Create a new dashboard and get its link." },
+  {
+    name: "add_chart_widget",
+    description: "Add a live chart, or a chart from rows that the agent calculated. Get its link.",
+  },
 ];
 
 export const mcpEndpoint = "POST /mcp";

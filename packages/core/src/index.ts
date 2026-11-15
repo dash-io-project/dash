@@ -34,8 +34,13 @@ export type {
   DashboardWidget,
   GridLayout,
   KpiSpec,
+  QueryWidget,
+  SnapshotCell,
+  SnapshotWidget,
+  WidgetSnapshot,
   WidgetType,
 } from "./dashboard.ts";
+export { MAX_SNAPSHOT_COLUMNS, MAX_SNAPSHOT_ROWS } from "./dashboard.ts";
 
 export type {
   ConnectionConfig,
