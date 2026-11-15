@@ -44,11 +44,11 @@ The same product-revenue chart, drawn in the session after a Dash MCP query agai
 
 <img alt="API tokens page for issuing a scoped MCP client token" src="docs/screenshots/api-tokens.png" width="880">
 
-### Team
+### Members
 
 Everyone in the organization with their role. Administrators invite people with a single-use link and switch members between **User** and **Admin**.
 
-<img alt="Team page with members, roles, an invite form, and a pending invitation" src="docs/screenshots/team.png" width="880">
+<img alt="Members page with members, roles, an invite form, and a pending invitation" src="docs/screenshots/members.png" width="880">
 
 ### Settings
 
@@ -129,7 +129,7 @@ There is no separate user-admin CLI. Accounts are created in the product:
 1. Open the app. With no users, sign-in points at `/register`. The first account becomes the administrator.
 2. Later people use the same registration form while **Settings → Allow new account registration** is on.
 3. An administrator turns that setting off to keep the organization closed. Registration stays available while there are no users, so a fresh database can always create its first admin.
-4. With registration closed, an administrator adds people from **Team**: enter an email, pick **User** or **Admin**, and share the sign-up link. Dash does not send email. A link works once and expires after 7 days.
+4. With registration closed, an administrator adds people from **Members**: enter an email, pick **User** or **Admin**, and share the sign-up link. Dash does not send email. A link works once and expires after 7 days.
 
 `GET /api/auth/bootstrap` is public. It reports whether the organization still needs that first account, and whether registration is open.
 
@@ -215,7 +215,7 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] Personal workspaces, private by default, with access for selected organization members
 - [x] Shared workspaces that organization admins create and manage
 - [x] Viewer and editor access, with workspace checks for dashboard API and MCP requests
-- [x] Team members: member list, User / Admin roles, invitation links
+- [x] Members: member list, User / Admin roles, invitation links
 - [x] Settings
 - [x] Dynamic dashboard pages
 - [x] Chart widgets (TanStack Charts)
@@ -364,7 +364,7 @@ Override the Postgres endpoint with `DASH_TEST_POSTGRES_HOST`, `DASH_TEST_POSTGR
 - [ADR 0005](docs/adr/0005-adapter-test-clusters.md) — adapter tests use local clusters
 - [ADR 0006](docs/adr/0006-dev-workers-container.md) — app Worker and container
 - [ADR 0007](docs/adr/0007-mongodb-app-state.md) — app state in MongoDB
-- [ADR 0008](docs/adr/0008-team-invitations.md) — team members and invitations
+- [ADR 0008](docs/adr/0008-team-invitations.md) — members and invitations
 - [ADR 0011](docs/adr/0011-public-website.md) — public website (Next.js)
 - [ADR 0012](docs/adr/0012-dash-cloud-accounts.md) — Dash Cloud accounts in the public website
 - [ADR 0013](docs/adr/0013-demo-host-and-dev-website.md) — the app on demo.dash.io, the website on dev.dash.io

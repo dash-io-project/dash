@@ -35,7 +35,7 @@ export const whatYouGet: readonly string[] = [
   `${adapterCount} data source adapters, with more on the way`,
   `Built-in MCP server with ${mcpTools.length} tools`,
   "REST API for every action in the UI",
-  "Workspaces, team roles, and single-use invitation links",
+  "Workspaces, member roles, and single-use invitation links",
   "Scoped API tokens and encrypted data source credentials",
   "Health endpoints for your load balancer",
 ];
