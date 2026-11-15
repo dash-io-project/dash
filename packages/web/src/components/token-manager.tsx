@@ -17,6 +17,7 @@ import { SecretReveal } from "~/components/secret-reveal";
 
 const DAY_MS = 86_400_000;
 const SOON_MS = 7 * DAY_MS;
+const CLOCK_INTERVAL_MS = 60_000;
 
 interface IssuedToken {
   apiUserName: string;
@@ -504,7 +505,12 @@ export function TokenManager() {
   const [issued, setIssued] = useState<IssuedToken | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const statusRef = useRef<HTMLParagraphElement>(null);
-  const now = Date.now();
+  // A token can expire while the page is open. Update the clock, so the badges and the limit follow.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), CLOCK_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, []);
 
   function announce(message: string) {
     setAnnouncement(message);
@@ -523,8 +529,8 @@ export function TokenManager() {
       <h1 className="text-3xl font-semibold">API tokens</h1>
       <p className="mt-2 text-sm text-mist">
         An API user is an identity for a script, a service, or an integration that calls the Dash REST API. Each API
-        user can have more than one token. To rotate a token, create a new token, update your app, and then revoke the
-        old token.
+        user can have more than one token. To rotate a token, create a new token first. Update your app with the new
+        token. Then revoke the old token.
       </p>
 
       {issued ? (

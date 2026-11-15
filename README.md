@@ -42,7 +42,7 @@ The same product-revenue chart, drawn in the session after a Dash MCP query agai
 
 ### API tokens
 
-An API user is an identity for a script or a service that calls the REST API. Each API user can have more than one token, so you can rotate a token without downtime. Revoke one token, or delete the API user to revoke all of its tokens.
+An API user is an identity for a script or a service that calls the REST API. Each API user can have more than one token, so you can rotate a token without downtime. Revoke a token to stop only that token. Delete the API user to revoke all of its tokens.
 
 <img alt="API tokens page with two API users, one with two active tokens during rotation" src="docs/screenshots/api-tokens.png" width="880">
 

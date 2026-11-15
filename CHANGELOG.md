@@ -6,7 +6,7 @@ All notable changes to Dash are documented here.
 
 ### Added
 
-- API users on the **API tokens** page. An API user is an identity for a script or a service. It can have more than one token, so a service can rotate its token without downtime. Create a new token, update the app, and then revoke the old token. Delete an API user to revoke all of its tokens. See [ADR 0015](docs/adr/0015-api-users-and-token-rotation.md).
+- API users on the **API tokens** page. An API user is an identity for a script or a service. It can have more than one token, so a service can rotate its token without downtime. To rotate a token, create a new token first. Update the app with the new token. Then revoke the old token. Delete an API user to revoke all of its tokens. See [ADR 0015](docs/adr/0015-api-users-and-token-rotation.md).
 - `GET/POST /api/api-users`, `DELETE /api/api-users/:id`, `POST /api/api-users/:id/tokens`, and `DELETE /api/api-users/:id/tokens/:tokenId`. Only a browser session can use them.
 
 ### Changed
