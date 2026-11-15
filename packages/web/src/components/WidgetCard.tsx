@@ -3,9 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Check, Link2 } from "lucide-react";
 import type { DashboardWidget } from "@dash/core";
 import { api } from "~/lib/api";
+import { cn } from "~/lib/cn";
 import { Chart } from "./Chart";
 import { DataTable } from "./DataTable";
 import { KpiCard } from "./KpiCard";
+import { Badge, ICON_STROKE, IconButton } from "./ui";
 
 const savedDate = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
 
@@ -13,10 +15,7 @@ const savedDate = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
 function SnapshotLabel({ savedAt }: { savedAt: string }) {
   const saved = new Date(savedAt);
   return (
-    <span
-      className="shrink-0 rounded-full border border-line px-2 py-0.5 text-xs text-mist"
-      title="Saved data. It does not refresh."
-    >
+    <Badge className="shrink-0" title="Saved data. It does not refresh.">
       Snapshot
       {Number.isNaN(saved.getTime()) ? null : (
         <>
@@ -24,7 +23,7 @@ function SnapshotLabel({ savedAt }: { savedAt: string }) {
           <time dateTime={savedAt}>{savedDate.format(saved)}</time>
         </>
       )}
-    </span>
+    </Badge>
   );
 }
 
@@ -49,18 +48,23 @@ function CopyLinkButton({ getUrl }: { getUrl: () => string }) {
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => void copy()}
-      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-line px-2 py-0.5 text-mist hover:border-accent/40 hover:text-paper"
-      title="Copy a link that opens only this widget"
-    >
-      {copied ? <Check size={12} aria-hidden /> : <Link2 size={12} aria-hidden />}
-      {copied ? "Copied" : "Copy link"}
+    <>
+      <IconButton
+        size="sm"
+        label="Copy link"
+        title="Copy a link that opens only this widget"
+        onClick={() => void copy()}
+      >
+        {copied ? (
+          <Check size={15} strokeWidth={ICON_STROKE} aria-hidden className="text-positive" />
+        ) : (
+          <Link2 size={15} strokeWidth={ICON_STROKE} aria-hidden />
+        )}
+      </IconButton>
       <span role="status" className="sr-only">
         {copied ? "Widget link copied" : ""}
       </span>
-    </button>
+    </>
   );
 }
 
@@ -83,42 +87,39 @@ export function WidgetCard({ widget, getShareUrl }: { widget: DashboardWidget; g
     gridColumn: `span ${widget.layout.w} / span ${widget.layout.w}`,
     gridRow: `span ${widget.layout.h} / span ${widget.layout.h}`,
   };
+  const isKpi = widget.type === "kpi";
 
   return (
-    <section
-      style={style}
-      className="flex min-h-0 flex-col rounded-2xl border border-line bg-panel/90 p-4 shadow-[0_20px_60px_rgb(0_0_0_/0.25)]"
-    >
-      {widget.type !== "kpi" || snapshot || getShareUrl ? (
-        <div className="mb-3 flex items-start justify-between gap-2">
-          {widget.type !== "kpi" ? <h2 className="text-sm font-medium text-paper">{widget.title}</h2> : <span />}
-          {/* A global rule gives each button `font: inherit`, so the button takes this size. */}
-          <div className="flex shrink-0 items-center gap-2 text-xs">
-            {snapshot ? <SnapshotLabel savedAt={snapshot.savedAt} /> : null}
-            {getShareUrl ? <CopyLinkButton getUrl={getShareUrl} /> : null}
-          </div>
+    <section style={style} className="card flex min-h-0 min-w-0 flex-col overflow-hidden">
+      {/* The header row: the title at the left, the actions at the right. */}
+      <div className="flex min-h-11 shrink-0 items-center justify-between gap-2 pl-4 pr-2 pt-1">
+        <h2
+          className={cn("min-w-0 truncate", isKpi ? "text-[13px] text-muted-foreground" : "font-medium")}
+          title={widget.title}
+        >
+          {widget.title}
+        </h2>
+        <div className="flex shrink-0 items-center gap-1">
+          {snapshot ? <SnapshotLabel savedAt={snapshot.savedAt} /> : null}
+          {getShareUrl ? <CopyLinkButton getUrl={getShareUrl} /> : null}
         </div>
-      ) : null}
-      <div className="flex min-h-0 flex-1 flex-col">
+      </div>
+      {/* A KPI value is at the bottom of its card, so a tall card looks deliberate. */}
+      <div className={cn("flex min-h-0 flex-1 flex-col px-4 pb-4", isKpi && "justify-end")}>
         {query.isLoading ? (
-          <div className="grid h-full place-items-center text-sm text-mist">Loading…</div>
+          <div className="grid h-full place-items-center text-muted-foreground">Loading…</div>
         ) : query.isError ? (
-          <div className="grid h-full place-items-center text-sm text-rose-300">
+          <div className="grid h-full place-items-center text-center text-negative">
             {(query.error as Error).message}
           </div>
         ) : widget.type === "kpi" && widget.kpi ? (
-          <KpiCard title={widget.title} rows={rows} spec={widget.kpi} />
+          <KpiCard rows={rows} spec={widget.kpi} />
         ) : widget.type === "table" ? (
           <DataTable rows={rows} />
         ) : widget.chart ? (
-          <Chart
-            spec={widget.chart}
-            rows={rows}
-            height={widget.layout.h * 52}
-            label={widget.title}
-          />
+          <Chart spec={widget.chart} rows={rows} label={widget.title} />
         ) : (
-          <div className="text-sm text-mist">This widget is missing a chart spec.</div>
+          <div className="text-muted-foreground">This widget is missing a chart spec.</div>
         )}
       </div>
     </section>

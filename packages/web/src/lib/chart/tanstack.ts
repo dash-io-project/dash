@@ -21,21 +21,25 @@ import { scalePoint } from "@tanstack/charts/scales/point";
 import { tooltip } from "@tanstack/charts/tooltip";
 import { curveMonotoneX } from "d3-shape";
 
+// The colors are CSS custom properties of styles/app.css, so a chart follows the
+// Light or Dark appearance with no new render. TanStack Charts writes each value to
+// the SVG as it is. The `dataviz` palette validator accepted the series colors, in
+// this sequence, in the two modes. Do not change the sequence.
 const PALETTE = [
-  "#5eead4",
-  "#818cf8",
-  "#f472b6",
-  "#fbbf24",
-  "#34d399",
-  "#38bdf8",
-  "#fb7185",
-  "#c4b5fd",
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--chart-6)",
+  "var(--chart-7)",
+  "var(--chart-8)",
 ] as const;
 
 const theme = {
-  foreground: "#eef3fb",
-  muted: "#93a0b8",
-  grid: "rgba(255,255,255,0.06)",
+  foreground: "var(--foreground)",
+  muted: "var(--muted-foreground)",
+  grid: "var(--chart-grid)",
   background: "transparent",
   palette: PALETTE,
 };
@@ -349,7 +353,8 @@ function pieChart(spec: ChartSpec, rows: Record<string, unknown>[]) {
             innerRadius: spec.type === "donut" ? ({ radius }) => radius * 0.58 : 0,
             color: "name",
             key: "name",
-            stroke: "#121a2b",
+            // The gap between two segments has the color of the widget card.
+            stroke: "var(--card)",
             strokeWidth: 2,
           }),
         ],
