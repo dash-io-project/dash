@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Circle, Loader2, MinusCircle, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ApiError, api } from "~/lib/api";
-import { DangerButton, Field, GhostButton, PrimaryButton, Select } from "~/components/ui";
+import { Badge, Button, Card, Field, Panel, Select } from "~/components/ui";
 
 type Size = "small" | "standard";
 type StepStatus = "pending" | "running" | "done" | "failed" | "skipped";
@@ -45,11 +45,11 @@ const DOMAIN_LABELS: Record<string, string> = {
 };
 
 function StepIcon({ status }: { status: StepStatus }) {
-  if (status === "running") return <Loader2 aria-hidden className="size-4 animate-spin text-accent" />;
-  if (status === "done") return <CheckCircle2 aria-hidden className="size-4 text-emerald-300" />;
-  if (status === "failed") return <XCircle aria-hidden className="size-4 text-rose-300" />;
-  if (status === "skipped") return <MinusCircle aria-hidden className="size-4 text-mist" />;
-  return <Circle aria-hidden className="size-4 text-mist" />;
+  if (status === "running") return <Loader2 aria-hidden className="size-4 animate-spin text-muted-foreground" />;
+  if (status === "done") return <CheckCircle2 aria-hidden className="size-4 text-positive" />;
+  if (status === "failed") return <XCircle aria-hidden className="size-4 text-negative" />;
+  if (status === "skipped") return <MinusCircle aria-hidden className="size-4 text-muted-foreground" />;
+  return <Circle aria-hidden className="size-4 text-muted-foreground" />;
 }
 
 function errorText(error: unknown, fallback: string): string {
@@ -106,10 +106,9 @@ export function DevSeedPanel() {
   if (query.data === null) return null;
   if (query.isError) {
     return (
-      <section className="mt-8 rounded-2xl border border-line bg-panel p-6">
-        <h2 className="text-lg font-semibold">Sample company data</h2>
-        <p role="alert" className="mt-2 text-sm text-rose-300">{errorText(query.error, "Could not load the seed plan.")}</p>
-      </section>
+      <Panel title="Sample company data">
+        <p role="alert" className="text-negative">{errorText(query.error, "Could not load the seed plan.")}</p>
+      </Panel>
     );
   }
   if (!query.data) return null;
@@ -119,56 +118,61 @@ export function DevSeedPanel() {
   const hasTargets = plan.assignments.length > 0;
 
   return (
-    <section aria-labelledby="dev-seed-title" className="mt-8 space-y-5 rounded-2xl border border-line bg-panel p-6">
-      <div>
-        <div className="flex items-center gap-2">
-          <h2 id="dev-seed-title" className="text-lg font-semibold">Sample company data</h2>
-          <span className="rounded-full border border-amber-300/30 bg-amber-300/10 px-2 py-0.5 text-xs text-amber-200">Demo</span>
-        </div>
-        <p className="mt-2 text-sm text-mist">
+    <Panel
+      aria-labelledby="dev-seed-title"
+      title={
+        <span className="flex items-center gap-2">
+          <span id="dev-seed-title">Sample company data</span>
+          <Badge tone="warning">Demo</Badge>
+        </span>
+      }
+      note={
+        <>
           Fernway, Inc. is a fictional B2B SaaS company. Seeding writes 36 months of its data into your data sources
-          and adds six dashboards in the shared <strong className="text-paper">Fernway</strong> workspace. The numbers
+          and adds six dashboards in the shared <strong className="font-medium text-foreground">Fernway</strong> workspace. The numbers
           agree across sources. For example, finance MRR equals the subscriptions in the product database.
-        </p>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        </>
+      }
+    >
+      <Card className="overflow-hidden">
+      <div className="table-scroll">
+        <table className="table">
           <caption className="sr-only">Where each part of the dataset goes</caption>
-          <thead className="text-xs uppercase tracking-wide text-mist">
+          <thead>
             <tr>
-              <th scope="col" className="py-2 pr-4 font-medium">Data source</th>
-              <th scope="col" className="py-2 pr-4 font-medium">Kind</th>
-              <th scope="col" className="py-2 font-medium">Receives</th>
+              <th scope="col">Data source</th>
+              <th scope="col">Kind</th>
+              <th scope="col">Receives</th>
             </tr>
           </thead>
           <tbody>
             {plan.sources.map((source) => (
-              <tr key={source.id} className="border-t border-line align-top">
-                <td className="py-2 pr-4">{source.name}</td>
-                <td className="py-2 pr-4 text-mist">{source.kind}</td>
-                <td className="py-2">
+              <tr key={source.id} className="align-top">
+                <td>{source.name}</td>
+                <td className="text-muted-foreground">{source.kind}</td>
+                <td>
                   {source.status === "target" ? (
                     source.domains.map((domain) => DOMAIN_LABELS[domain] ?? domain).join(", ")
                   ) : (
-                    <span className={source.status === "refused" ? "text-rose-300" : "text-mist"}>{source.reason}</span>
+                    <span className={source.status === "refused" ? "text-negative" : "text-muted-foreground"}>{source.reason}</span>
                   )}
                 </td>
               </tr>
             ))}
             {plan.sources.length === 0 ? (
-              <tr className="border-t border-line">
-                <td colSpan={3} className="py-3 text-mist">No data sources yet.</td>
+              <tr>
+                <td colSpan={3} className="text-muted-foreground">No data sources yet.</td>
               </tr>
             ) : null}
           </tbody>
         </table>
       </div>
+      <div className="space-y-5 border-t border-border p-5">
 
       {!hasTargets ? (
-        <p className="text-sm text-mist">
+        <p className="text-muted-foreground">
           Add a Postgres, MongoDB, or BigQuery data source on the{" "}
-          <Link to="/data-sources" className="text-accent hover:underline">Data sources</Link> page first.
+          <Link to="/data-sources" className="link">Data sources</Link> page first.
         </p>
       ) : null}
 
@@ -181,79 +185,79 @@ export function DevSeedPanel() {
       </Field>
 
       {confirming === "seed" ? (
-        <div className="space-y-3 rounded-xl border border-accent/30 bg-accent/5 p-4" role="group" aria-label="Confirm seed">
-          <p className="text-sm">Dash will create or replace these targets. It refuses any target that holds data it did not create.</p>
-          <ul className="list-disc space-y-1 pl-5 text-sm text-mist">
+        <div className="space-y-3 rounded-md border border-border bg-surface p-4" role="group" aria-label="Confirm seed">
+          <p>Dash will create or replace these targets. It refuses any target that holds data it did not create.</p>
+          <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
             {plan.assignments.map((item) => (
               <li key={item.domain}>
-                <span className="text-paper">{item.label}</span>: <code>{item.namespace}</code> in {item.sourceName}
+                <span className="text-foreground">{item.label}</span>: <code>{item.namespace}</code> in {item.sourceName}
               </li>
             ))}
           </ul>
           <div className="flex gap-2">
-            <PrimaryButton type="button" onClick={() => start.mutate()} disabled={start.isPending}>
+            <Button variant="primary" type="button" onClick={() => start.mutate()} disabled={start.isPending}>
               {start.isPending ? "Starting…" : "Seed data sources"}
-            </PrimaryButton>
-            <GhostButton type="button" onClick={() => setConfirming(null)}>Cancel</GhostButton>
+            </Button>
+            <Button type="button" onClick={() => setConfirming(null)}>Cancel</Button>
           </div>
         </div>
       ) : confirming === "remove" ? (
-        <div className="space-y-3 rounded-xl border border-rose-400/30 bg-rose-500/5 p-4" role="group" aria-label="Confirm removal">
-          <p className="text-sm">Dash will drop the seeded schemas, datasets, and collections, and delete the seeded dashboards.</p>
+        <div className="space-y-3 rounded-md border border-negative-border bg-negative-soft p-4" role="group" aria-label="Confirm removal">
+          <p>Dash will drop the seeded schemas, datasets, and collections, and delete the seeded dashboards.</p>
           <div className="flex gap-2">
-            <DangerButton type="button" onClick={() => remove.mutate()} disabled={remove.isPending}>
+            <Button variant="destructive" type="button" onClick={() => remove.mutate()} disabled={remove.isPending}>
               {remove.isPending ? "Starting…" : "Remove sample data"}
-            </DangerButton>
-            <GhostButton type="button" onClick={() => setConfirming(null)}>Cancel</GhostButton>
+            </Button>
+            <Button type="button" onClick={() => setConfirming(null)}>Cancel</Button>
           </div>
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
-          <PrimaryButton type="button" onClick={() => setConfirming("seed")} disabled={!hasTargets || running}>
+          <Button variant="primary" type="button" onClick={() => setConfirming("seed")} disabled={!hasTargets || running}>
             Seed data sources
-          </PrimaryButton>
+          </Button>
           {state.hasSeedData ? (
-            <GhostButton type="button" onClick={() => setConfirming("remove")} disabled={running}>
+            <Button type="button" onClick={() => setConfirming("remove")} disabled={running}>
               Remove sample data
-            </GhostButton>
+            </Button>
           ) : null}
         </div>
       )}
 
       {start.isError || remove.isError ? (
-        <p role="alert" className="text-sm text-rose-300">
+        <p role="alert" className="text-negative">
           {errorText(start.error ?? remove.error, "Could not start the run.")}
         </p>
       ) : null}
 
       {state.steps.length > 0 ? (
         <div role="status" aria-live="polite" className="space-y-2">
-          <h3 className="text-sm font-medium">
+          <h3 className="font-medium">
             {state.action === "remove" ? "Removal" : "Seed run"}
             {running ? " in progress" : state.status === "succeeded" ? " finished" : state.status === "failed" ? " failed" : ""}
           </h3>
-          <ul className="space-y-1.5 text-sm">
+          <ul className="space-y-1.5">
             {state.steps.map((step) => (
               <li key={`${step.domain}-${step.namespace}`} className="flex items-start gap-2">
                 <span className="mt-0.5"><StepIcon status={step.status} /></span>
                 <span>
-                  <span className="text-paper">{step.label}</span>
-                  <span className="text-mist"> → {step.namespace} in {step.sourceName}</span>
-                  {step.rows > 0 ? <span className="text-mist"> · {step.rows.toLocaleString()} rows</span> : null}
+                  <span className="text-foreground">{step.label}</span>
+                  <span className="text-muted-foreground"> → {step.namespace} in {step.sourceName}</span>
+                  {step.rows > 0 ? <span className="tabular text-muted-foreground"> · {step.rows.toLocaleString()} rows</span> : null}
                   {step.error ? (
-                    <span className={step.status === "skipped" ? "block text-mist" : "block text-rose-300"}>{step.error}</span>
+                    <span className={step.status === "skipped" ? "block text-muted-foreground" : "block text-negative"}>{step.error}</span>
                   ) : null}
                 </span>
               </li>
             ))}
           </ul>
-          {state.error ? <p className="text-sm text-rose-300">{state.error}</p> : null}
+          {state.error ? <p className="text-negative">{state.error}</p> : null}
         </div>
       ) : null}
 
       {!running && state.dashboards.length > 0 && state.workspaceId ? (
         <div className="space-y-2">
-          <h3 className="text-sm font-medium">Dashboards</h3>
+          <h3 className="font-medium">Dashboards</h3>
           <ul className="flex flex-wrap gap-2">
             {state.dashboards.map((dashboard) => (
               <li key={dashboard.id}>
@@ -261,7 +265,7 @@ export function DevSeedPanel() {
                   to="/dashboards/$dashboardId"
                   params={{ dashboardId: dashboard.id }}
                   search={{ workspace: state.workspaceId ?? undefined }}
-                  className="inline-block rounded-lg border border-line px-3 py-1.5 text-sm hover:border-accent/50"
+                  className="btn btn-sm"
                 >
                   {dashboard.name}
                 </Link>
@@ -270,6 +274,8 @@ export function DevSeedPanel() {
           </ul>
         </div>
       ) : null}
-    </section>
+      </div>
+      </Card>
+    </Panel>
   );
 }

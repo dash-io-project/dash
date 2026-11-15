@@ -8,7 +8,8 @@ import {
 } from "@dash/core";
 import { api } from "~/lib/api";
 import { fetchMe } from "~/lib/session";
-import { Field, PrimaryButton, TextArea, TextInput } from "~/components/ui";
+import { PageBody, PageHeader } from "~/components/PageHeader";
+import { Button, Card, CheckRow, Field, Panel, TextArea, TextInput } from "~/components/ui";
 import { McpConnectionBanner } from "~/components/mcp-connection-banner";
 import { DevSeedPanel } from "~/components/dev-seed-panel";
 
@@ -58,65 +59,72 @@ function SettingsPage() {
   const isAdmin = me.data?.role === "admin";
 
   return (
-    <div className="max-w-xl">
-      <h1 className="text-3xl font-semibold">Settings</h1>
-      <p className="mt-2 text-sm text-mist">
-        Set your organization preferences here. Use the API tokens page to manage tokens. Use the Agents page to manage agents.
-      </p>
-      {current ? (
-        <div className="mt-8 space-y-4 rounded-2xl border border-line bg-panel p-6">
-          <Field label="Organization name">
-            <TextInput
-              value={name ?? current.name}
-              onChange={(event) => setName(event.target.value)}
-              disabled={!isAdmin}
-            />
-          </Field>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={allowRegistration ?? current.allowRegistration}
-              onChange={(event) => setAllowRegistration(event.target.checked)}
-              disabled={!isAdmin}
-            />
-            Allow new account registration
-          </label>
-          <Field label="Email domains that can create accounts">
-            <TextArea
-              value={domainsText ?? current.allowedEmailDomains.join("\n")}
-              onChange={(event) => setDomainsText(event.target.value)}
-              disabled={!isAdmin}
-              spellCheck={false}
-              autoComplete="off"
-              placeholder="example.com"
-              rows={4}
-              aria-describedby="allowed-email-domains-hint"
-            />
-          </Field>
-          <p id="allowed-email-domains-hint" className="text-sm text-mist">
-            Use one domain on each line, such as example.com. A domain matches only that domain.
-            An empty list allows every domain. Invitations use this list too.
-          </p>
-          {isAdmin ? (
-            <>
-              <PrimaryButton type="button" onClick={() => save.mutate()} disabled={save.isPending}>
-                {save.isPending ? "Saving…" : "Save settings"}
-              </PrimaryButton>
-              {save.isError ? (
-                <p className="text-sm text-rose-300">
-                  {save.error instanceof Error ? save.error.message : "Could not save settings."}
-                </p>
+    <>
+      <PageHeader
+        title="Settings"
+        description="Set your organization preferences here. Use the API tokens page to manage tokens. Use the Agents page to manage agents."
+      />
+      <PageBody column="narrow">
+        <Panel
+          title="Organization"
+          note={
+            isAdmin
+              ? "The name of the organization, and who can create an account."
+              : "Only administrators can change these settings."
+          }
+        >
+          {current ? (
+            <Card className="space-y-4 p-5">
+              <Field label="Organization name">
+                <TextInput
+                  value={name ?? current.name}
+                  onChange={(event) => setName(event.target.value)}
+                  disabled={!isAdmin}
+                />
+              </Field>
+              <CheckRow
+                checked={allowRegistration ?? current.allowRegistration}
+                onChange={(event) => setAllowRegistration(event.target.checked)}
+                disabled={!isAdmin}
+              >
+                Allow new account registration
+              </CheckRow>
+              <Field label="Email domains that can create accounts">
+                <TextArea
+                  value={domainsText ?? current.allowedEmailDomains.join("\n")}
+                  onChange={(event) => setDomainsText(event.target.value)}
+                  disabled={!isAdmin}
+                  spellCheck={false}
+                  autoComplete="off"
+                  placeholder="example.com"
+                  rows={4}
+                  aria-describedby="allowed-email-domains-hint"
+                />
+              </Field>
+              <p id="allowed-email-domains-hint" className="text-[13px] text-muted-foreground">
+                Use one domain on each line, such as example.com. A domain matches only that domain.
+                An empty list allows every domain. Invitations use this list too.
+              </p>
+              {isAdmin ? (
+                <>
+                  {save.isError ? (
+                    <p className="text-negative">
+                      {save.error instanceof Error ? save.error.message : "Could not save settings."}
+                    </p>
+                  ) : null}
+                  <Button variant="primary" type="button" onClick={() => save.mutate()} disabled={save.isPending}>
+                    {save.isPending ? "Saving…" : "Save settings"}
+                  </Button>
+                </>
               ) : null}
-            </>
+            </Card>
           ) : (
-            <p className="text-sm text-mist">Only administrators can change these settings.</p>
+            <p className="text-muted-foreground">Loading settings…</p>
           )}
-        </div>
-      ) : (
-        <p className="mt-8 text-mist">Loading settings…</p>
-      )}
-      {isAdmin ? <DevSeedPanel /> : null}
-      <McpConnectionBanner />
-    </div>
+        </Panel>
+        {isAdmin ? <DevSeedPanel /> : null}
+        <McpConnectionBanner />
+      </PageBody>
+    </>
   );
 }

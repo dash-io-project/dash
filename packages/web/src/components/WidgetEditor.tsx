@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import type { AdapterSchema, ChartType, DashboardWidget, DataSourceRecord } from "@dash/core";
 import { CHART_TYPES } from "@dash/core";
 import { randomId } from "~/lib/id";
-import { Field, GhostButton, PrimaryButton, Select, TextInput } from "./ui";
+import { Button, Field, Select, TextInput } from "./ui";
 
 export function WidgetEditor({
   dataSources,
@@ -23,6 +23,7 @@ export function WidgetEditor({
   const [x, setX] = useState("");
   const [y, setY] = useState("");
   const [color, setColor] = useState("");
+  const headingId = useId();
 
   const resources = schemas[dataSourceId]?.resources ?? [];
   const columns = useMemo(
@@ -63,9 +64,16 @@ export function WidgetEditor({
   }
 
   return (
-    <div className="fixed inset-0 z-20 grid place-items-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-3xl border border-line bg-panel p-6">
-        <h2 className="text-lg font-semibold">Add widget</h2>
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-backdrop p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={headingId}
+        className="w-full max-w-lg rounded-lg border border-border bg-background p-6 shadow-dialog"
+      >
+        <h2 id={headingId} className="text-base font-semibold">
+          Add widget
+        </h2>
         <div className="mt-4 space-y-3">
           <Field label="Title">
             <TextInput value={title} onChange={(event) => setTitle(event.target.value)} />
@@ -156,12 +164,12 @@ export function WidgetEditor({
           ) : null}
         </div>
         <div className="mt-6 flex justify-end gap-2">
-          <GhostButton type="button" onClick={onClose}>
+          <Button type="button" onClick={onClose}>
             Cancel
-          </GhostButton>
-          <PrimaryButton type="button" onClick={submit} disabled={!dataSourceId || !resource}>
+          </Button>
+          <Button variant="primary" type="button" onClick={submit} disabled={!dataSourceId || !resource}>
             Add widget
-          </PrimaryButton>
+          </Button>
         </div>
       </div>
     </div>

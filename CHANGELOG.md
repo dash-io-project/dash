@@ -14,6 +14,18 @@ All notable changes to Dash are documented here.
 
 ### Changed
 
+- The Dash app has a new look that follows Soldock: neutral grays, ink for the main action, thin borders, and almost no shadows. The colors are design tokens with light and dark values. See [ADR 0017](docs/adr/0017-design-tokens-and-appearance.md) and the **Design** section of the README.
+- The app has a Light, Dark, or System appearance. Select it in the account panel at the bottom of the sidebar. The browser keeps the choice in `localStorage` with the key `dash:appearance`. Before, the app had only a dark look.
+- The sidebar has two groups, **Analytics** and **Organization**. The account button at the bottom opens a panel with the Appearance choice, the **Profile** link, and **Sign out**. Before, **Profile** was a row in the sidebar and the button had the name **Log out**.
+- At 900px and below, a top bar has a menu button that opens the sidebar as a drawer. Before, the navigation was a row that scrolled sideways.
+- Each page starts with the same header: the title, one line of description, and the actions at the right.
+- The app uses the system fonts. It does not load fonts from Google Fonts.
+- Charts use a new series palette with blue first, and they follow the appearance. A chart fills its widget card.
+- A dashboard grid row is 56px in place of 72px, so a dashboard is shorter. The stored layout of a widget does not change. A KPI card shows a small label and the value. The label is not uppercase. On a phone, two KPI cards share a row.
+- The **Copy link** button of a widget shows only an icon. Its accessible name stays **Copy link**.
+- A table widget aligns number columns to the right with tabular figures. The filter field has a search icon, and a sorted column header has an `aria-sort` value.
+- The **Remove** button of a data source is an outline button with red text. The confirmation dialog keeps the red button.
+- The favicon is the chart line on an ink tile.
 - The **API tokens** page is for the REST API only. It does not show the MCP banner or offer the `mcp` scope. Agents stay on the **Agents** page.
 - **Breaking:** `POST /api/tokens` issues agent tokens only. A request without the `mcp` scope gets 400. Use `/api/api-users` for an API token.
 - An older token without the `mcp` scope becomes an API user when its owner opens the API tokens page. The token keeps its access.

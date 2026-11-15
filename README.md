@@ -24,6 +24,12 @@ ARR, net revenue retention, paying customers, and gross margin. Charts show ARR 
 
 <img alt="Executive overview dashboard with KPI cards, ARR and MRR charts, and a top customers table" src="docs/screenshots/executive-overview.png" width="880">
 
+### Dark appearance
+
+Select **Dark** in the account panel at the bottom of the sidebar. **System** follows the device.
+
+<img alt="Executive overview dashboard in the dark appearance" src="docs/screenshots/executive-overview-dark.png" width="880">
+
 ### Customer support
 
 Open tickets, first response time, CSAT, and NPS. Charts show ticket volume, categories, response time by priority, and survey results. The data comes from the support collections in MongoDB.
@@ -57,6 +63,8 @@ Everyone in the organization with their role. Administrators invite people with 
 <img alt="Organization settings, the Sample company data panel after a seed run, and the Dash MCP endpoint" src="docs/screenshots/settings.png" width="880">
 
 ### Profile
+
+Open the account panel at the bottom of the sidebar and select **Profile**.
 
 <img alt="Profile page for the demo admin user" src="docs/screenshots/profile.png" width="880">
 
@@ -225,7 +233,7 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] Data sources page (admin): add and remove sources (Postgres, MySQL, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift)
 - [x] Demo seed: the Fernway sample company in Postgres, MongoDB, and BigQuery sources (`DEMO_ENVIRONMENT`)
 - [ ] Real-time multi-user dashboard collaboration
-- [ ] Light theme
+- [x] Light, Dark, and System appearance, selected in the account panel
 
 ### API and agents
 
@@ -237,6 +245,78 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] MCP server (`POST /mcp`) for charts and dashboards
 - [x] Public health checks (`GET /healthz`, `GET /ping`) that verify the app database
 - [x] OAuth for MCP clients (discovery, dynamic client registration, PKCE, refresh rotation)
+
+## Design
+
+The look follows [Ember](https://github.com/NYLLON-SOFTWARE/ember-cloudflare) (MIT), the same as Soldock: neutral grays, ink for the main action, thin borders, and almost no shadows. The app does not use the name, the logo, or the app icons of Ember. See [ADR 0017](docs/adr/0017-design-tokens-and-appearance.md).
+
+### Tokens
+
+The tokens are at the top of [`packages/web/src/styles/app.css`](packages/web/src/styles/app.css). The light values are on `:root`. The dark values are on `:root.dark`. Tailwind reads them through `@theme inline`, so `bg-background`, `text-muted-foreground`, and `border-border` follow the mode.
+
+| Token | Light | Dark | Use |
+| --- | --- | --- | --- |
+| `--background` | `#ffffff` | `#171717` | The canvas: the content of a page, dialogs, the sign-in card |
+| `--foreground` | `#171717` | `#f5f5f5` | Text |
+| `--surface` | `#fafafa` | `#1c1c1c` | The sidebar, the top bar, table headers, notes in a card, the sign-in page |
+| `--hover` | `#f2f2f2` | `#282828` | The hover and the current fill of a sidebar row, a menu item, or a button |
+| `--row-hover` | `#f8f8f8` | `#202020` | The hover of a table row and of a dashboard card |
+| `--card`, `--popover` | `#ffffff` | `#1c1c1c` | Cards, widgets, menus, and the account panel |
+| `--border` | `#e5e5e5` | `#343434` | Each divider line |
+| `--input` | `#d4d4d4` | `#404040` | The border of a text field |
+| `--muted-foreground` | `#6b6b6b` | `#a3a3a3` | Secondary text and icons that are not current |
+| `--primary`, `--primary-hover`, `--primary-foreground` | `#171717`, `#2e2e2e`, `#fafafa` | `#f5f5f5`, `#dedede`, `#171717` | The main button, the brand tile, the account avatar |
+| `--ring` | `#737373` | `#a3a3a3` | The border and the ring of a text field with the focus |
+| `--focus` | `#171717` | `#f5f5f5` | The 2px focus outline of each other control |
+| `--link` | `#0066ef` | `#43abff` | Text links |
+| `--positive` | `#166534` | `#4ade80` | Success text |
+| `--negative` | `#b91c1c` | `#fca5a5` | Error text |
+| `--destructive` | `#b91c1c` | `#b91c1c` | A destructive button, with white text |
+| `--warning` | `#daa038` | `#efb146` | The color of a warning. The text of a warning is `--foreground` |
+| `--chart-1` to `--chart-8` | blue `#2a78d6` first | blue `#3987e5` first | Chart series, in a fixed sequence |
+| `--chart-grid` | `#ececec` | `#2a2a2a` | Chart grid lines |
+
+- `--positive-soft`, `--negative-soft`, and `--warning-soft` are fills. `color-mix()` makes them from the color and `--background`. `--negative-border` and `--warning-border` are their borders.
+- `--control`, `--control-hover`, `--control-border`, and `--field` are the fills of buttons and text fields. They have dark values, so a component needs no rule for dark mode.
+- Radii: `--radius-lg` 10px (cards, dialogs), `--radius-md` 8px (buttons, fields, sidebar rows), and `--radius-sm` 6px (menu items). Only badges and avatars are round.
+- Shadows: `--shadow-xs` (buttons, fields), `--shadow-menu` (menus), and `--shadow-dialog`. The sidebar, the drawer, cards, and widgets have no shadow.
+- Text uses the system font stack. The interface text is 14px. The title of a page is 18px with weight 600, and the heading of a panel is 15px with weight 600. Table headers are 12px. The app loads no font file.
+- Each number column, KPI value, and count uses tabular figures (`.tabular`).
+- Use a token for each color. The theme removes the default Tailwind palette, so a class such as `text-rose-300` makes no CSS.
+
+### Contrast
+
+Each text color has a contrast ratio of 4.5:1 or more on each fill behind it, in the two modes. The lowest ratio is `--muted-foreground` on `--hover`: 4.76:1 in light mode and 5.84:1 in dark mode.
+
+Known limit: the border of a text field (`--input`) has a low contrast on the canvas. The ratio is 1.48:1 in light mode and 1.73:1 in dark mode. This is less than the 3:1 of WCAG 1.4.11. Each field has a visible label. With the focus, the border changes to `--ring`, which has 4.74:1 in light mode and 7.11:1 in dark mode.
+
+Three light chart colors (`--chart-3`, `--chart-4`, and `--chart-5`) have less than 3:1 on a white card. A chart with two or more series has a legend, and each chart has a tooltip with the values.
+
+### Appearance
+
+[`packages/web/src/lib/appearance.ts`](packages/web/src/lib/appearance.ts) keeps the Light, Dark, or System choice. The account panel at the bottom of the sidebar has the choice.
+
+- The choice is in `localStorage`, with the key `dash:appearance`. A missing value or an unknown value gives System. If the browser refuses the storage, the app follows the device.
+- The module sets the `dark` class, `data-appearance`, and `color-scheme` on `<html>`.
+- The server sends the full page. An inline script in `<head>` applies the choice before the first paint, so the page does not show the wrong colors and then change. Dash sets no `script-src` policy. If you add one, allow this script with a hash or a nonce.
+- The choice is a display setting of one browser. Thus it has no API.
+
+### Icons
+
+The icons are from [lucide-react](https://lucide.dev), with a stroke width of 1.75 (`ICON_STROKE` in `components/ui.tsx`). An icon is 14px to 20px.
+
+### Layout
+
+- The canvas (`--background`) has the content. The sidebar is on `--surface`, with a 1px line between the two. The content is not a card.
+- The sidebar has the brand mark, the workspace switcher, the navigation groups **Analytics** and **Organization**, and the account button. The account panel has the name and the email address, the Appearance choice, the **Profile** link, and **Sign out**.
+- A sidebar row is 36px high with a radius of 8px. The current row has the `--hover` fill.
+- Each page starts with `PageHeader`: the title, one line of description, and the actions at the right.
+- Settings, Profile, Members, Workspaces, API tokens, and Agents use panels. A panel has a heading (`.panel-title`) and a muted line (`.panel-note`). A card (`.card`) holds only a list or a form. Sign-in, register, invite, and the OAuth approval use one card of 420px on the surface, with fields and buttons 40px high.
+- A widget is a card with a header row: the title at the left, the **Snapshot** label and the **Copy link** button at the right. A KPI card shows the **Snapshot** label above its value. A dashboard grid row is 56px. A chart fills its card. A KPI card shows its label at the top and its value at the bottom. From 360px to 900px, two KPI cards share a row, and the value gets smaller in a narrow card.
+- The app has one breakpoint for the drawer: 900px. At 900px and below, a top bar has the menu button, and the sidebar opens as a drawer. Escape, the close button, and the backdrop close it.
+- At 900px and below, and for a touch screen (`pointer: coarse`), each control is 44px or more and text fields have 16px text. A checkbox keeps its size: the label around it is the 44px target.
+- No page scrolls sideways at 360px. A table scrolls in its own container.
+- `prefers-reduced-motion` stops the transitions.
 
 ## REST surface
 
@@ -385,6 +465,7 @@ Override the Postgres endpoint with `DASH_TEST_POSTGRES_HOST`, `DASH_TEST_POSTGR
 - [ADR 0011](docs/adr/0011-public-website.md) — public website (Next.js)
 - [ADR 0012](docs/adr/0012-dash-cloud-accounts.md) — Dash Cloud accounts in the public website
 - [ADR 0013](docs/adr/0013-demo-host-and-dev-website.md) — the app on demo.dash.io, the website on dev.dash.io
+- [ADR 0017](docs/adr/0017-design-tokens-and-appearance.md) — design tokens, appearance, and the app shell
 
 ## Deploys
 

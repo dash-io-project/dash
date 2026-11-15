@@ -5,7 +5,7 @@ import type { InvitationPreview } from "@dash/core";
 import { USER_ROLE_LABELS } from "@dash/core";
 import { api } from "~/lib/api";
 import { invitationTokenFromHash } from "~/lib/invitation";
-import { AuthCard, Field, PrimaryButton, TextInput } from "~/components/ui";
+import { AuthCard, Button, Field, TextInput, FullPageMessage } from "~/components/ui";
 
 export const Route = createFileRoute("/invite")({
   component: InvitePage,
@@ -43,7 +43,7 @@ function InvitePage() {
   });
 
   if (token === undefined || (token && preview.isPending)) {
-    return <p className="grid min-h-screen place-items-center text-sm text-mist">Loading…</p>;
+    return <FullPageMessage>Loading…</FullPageMessage>;
   }
   if (!token || preview.isError || !preview.data) {
     return <InvitationUnavailable />;
@@ -57,12 +57,12 @@ function InvitationUnavailable() {
       title="Invitation unavailable"
       subtitle="This link is invalid, was already used, was revoked, or has expired."
       footer={
-        <Link to="/login" className="text-accent">
+        <Link to="/login" className="link">
           Log in
         </Link>
       }
     >
-      <p className="text-sm text-mist">Ask an administrator for a new invite link.</p>
+      <p className="text-muted-foreground">Ask an administrator for a new invite link.</p>
     </AuthCard>
   );
 }
@@ -106,7 +106,7 @@ function AcceptForm({ token, invitation }: { token: string; invitation: Invitati
       footer={
         <>
           Already have an account?{" "}
-          <Link to="/login" className="text-accent">
+          <Link to="/login" className="link">
             Log in
           </Link>
         </>
@@ -118,7 +118,7 @@ function AcceptForm({ token, invitation }: { token: string; invitation: Invitati
           value={invitation.email}
           readOnly
           autoComplete="username"
-          className="text-mist"
+          className="text-muted-foreground"
         />
       </Field>
       <Field label="Name">
@@ -140,10 +140,10 @@ function AcceptForm({ token, invitation }: { token: string; invitation: Invitati
           required
         />
       </Field>
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-      <PrimaryButton type="submit" disabled={pending} className="w-full">
+      {error ? <p className="text-negative">{error}</p> : null}
+      <Button variant="primary" type="submit" disabled={pending} className="w-full">
         {pending ? "Creating account…" : "Accept invitation"}
-      </PrimaryButton>
+      </Button>
     </AuthCard>
   );
 }

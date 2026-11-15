@@ -5,15 +5,8 @@ import type { Dashboard, DataSourceRecord } from "@dash/core";
 import { api } from "~/lib/api";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { parseBigQueryUri } from "~/lib/bigquery-uri";
-import {
-  DangerButton,
-  Field,
-  GhostButton,
-  PrimaryButton,
-  Select,
-  TextArea,
-  TextInput,
-} from "~/components/ui";
+import { PageBody, PageHeader } from "~/components/PageHeader";
+import { Button, Field, Select, TextArea, TextInput, Badge, EmptyState } from "~/components/ui";
 import { fetchMe } from "~/lib/session";
 
 function serviceAccountCredentials(raw: string):
@@ -111,7 +104,7 @@ function ConnectionUriField({
         rows={3}
         spellCheck={false}
         autoComplete="off"
-        className="min-h-16 font-mono"
+        className="min-h-16 font-mono text-[13px]"
       />
     </Field>
   );
@@ -127,7 +120,7 @@ function ConnectionModeToggle({
   return (
     <button
       type="button"
-      className="text-sm text-accent hover:underline"
+      className="link"
       onClick={() => onChange(!usingUri)}
     >
       {usingUri ? "Enter fields instead" : "Paste a connection URI instead"}
@@ -358,91 +351,93 @@ function DataSourcesPage() {
   }
 
   return (
-    <div>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-mist">Admin</p>
-          <h1 className="mt-1 text-3xl font-semibold">Data sources</h1>
-          <p className="mt-2 max-w-2xl text-sm text-mist">
-            Add a warehouse for dashboards and MCP, or remove one that is no longer needed.
-            Paste a connection URI, or enter the fields. Postgres, MySQL, Snowflake, MongoDB,
-            BigQuery, Databricks SQL, Redshift, and Stripe are tested on save.
-          </p>
-        </div>
-        {isAdmin ? (
-          <PrimaryButton type="button" onClick={openAdd}>
-            Add data source
-          </PrimaryButton>
-        ) : (
-          <p className="text-sm text-mist">Only administrators can add or remove sources.</p>
-        )}
-      </div>
+    <>
+      <PageHeader
+        title="Data sources"
+        description="Add a warehouse for dashboards and MCP, or remove one that is no longer needed."
+        actions={
+          isAdmin ? (
+            <Button variant="primary" type="button" onClick={openAdd}>
+              Add data source
+            </Button>
+          ) : null
+        }
+      />
+      <PageBody className="space-y-6">
+      <p className="max-w-3xl text-muted-foreground">
+        Paste a connection URI, or enter the fields. Postgres, MySQL, Snowflake, MongoDB, BigQuery, Databricks SQL,
+        Redshift, and Stripe are tested on save.
+        {isAdmin ? null : " Only administrators can add or remove sources."}
+      </p>
 
       {sources.isLoading ? (
-        <p className="mt-8 text-mist">Loading data sources…</p>
+        <p className="text-muted-foreground">Loading data sources…</p>
       ) : (sources.data?.length ?? 0) === 0 ? (
-        <div className="mt-10 rounded-2xl border border-dashed border-line p-10 text-center">
-          <p className="text-paper">No data sources yet.</p>
-          <p className="mt-2 text-sm text-mist">
-            Add a PostgreSQL, MySQL, Snowflake, MongoDB, BigQuery, Databricks SQL, or Redshift connection to start querying.
-          </p>
-          {isAdmin ? (
-            <PrimaryButton className="mt-4" type="button" onClick={openAdd}>
-              Add data source
-            </PrimaryButton>
-          ) : null}
-        </div>
+        <EmptyState
+          title="No data sources yet."
+          action={
+            isAdmin ? (
+              <Button variant="primary" type="button" onClick={openAdd}>
+                Add data source
+              </Button>
+            ) : null
+          }
+        >
+          Add a PostgreSQL, MySQL, Snowflake, MongoDB, BigQuery, Databricks SQL, or Redshift connection to start querying.
+        </EmptyState>
       ) : (
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {(sources.data ?? []).map((source) => {
             const widgets = usageCount(source.id);
             return (
-              <article key={source.id} className="flex flex-col rounded-2xl border border-line bg-panel p-5">
+              <article key={source.id} className="card flex min-w-0 flex-col p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-lg font-medium">{source.name}</h2>
-                  <span className="rounded-full bg-white/10 px-2 py-1 text-xs uppercase tracking-wide text-mist">
-                    {source.kind}
-                  </span>
+                  <h2 className="min-w-0 truncate font-semibold">{source.name}</h2>
+                  <Badge>{source.kind}</Badge>
                 </div>
-                <p className="mt-2 text-sm text-mist">{source.description || "No description"}</p>
-                <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                <p className="mt-1 text-[13px] text-muted-foreground">{source.description || "No description"}</p>
+                <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2">
                   {Object.entries(source.summary).map(([key, value]) => (
-                    <div key={key}>
-                      <dt className="text-xs text-mist">{key}</dt>
-                      <dd className="truncate">{String(value)}</dd>
+                    <div key={key} className="min-w-0">
+                      <dt className="text-xs text-muted-foreground">{key}</dt>
+                      <dd className="truncate" title={String(value)}>
+                        {String(value)}
+                      </dd>
                     </div>
                   ))}
                 </dl>
-                <p className="mt-3 text-xs text-mist">
-                  {widgets === 0
-                    ? "Not used in this workspace"
-                    : `Used by ${widgets} widget${widgets === 1 ? "" : "s"} in this workspace`}
-                </p>
-                {isAdmin ? (
-                  <DangerButton
-                    className="mt-4 self-start"
-                    type="button"
-                    onClick={() => setPendingDelete(source)}
-                  >
-                    Remove
-                  </DangerButton>
-                ) : null}
+                <div className="mt-auto flex items-center justify-between gap-3 pt-4">
+                  <p className="tabular text-xs text-muted-foreground">
+                    {widgets === 0
+                      ? "Not used in this workspace"
+                      : `Used by ${widgets} widget${widgets === 1 ? "" : "s"} in this workspace`}
+                  </p>
+                  {isAdmin ? (
+                    <Button size="sm" className="text-negative" type="button" onClick={() => setPendingDelete(source)}>
+                      Remove
+                    </Button>
+                  ) : null}
+                </div>
               </article>
             );
           })}
         </div>
       )}
+      </PageBody>
 
       {open ? (
-        <div className="fixed inset-0 z-20 grid place-items-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-backdrop p-4">
           <form
-            className="max-h-[90vh] w-full max-w-lg space-y-3 overflow-y-auto rounded-3xl border border-line bg-panel p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-data-source-title"
+            className="max-h-[90dvh] w-full max-w-lg space-y-3 overflow-y-auto rounded-lg border border-border bg-background p-6 shadow-dialog"
             onSubmit={(event) => {
               event.preventDefault();
               create.mutate();
             }}
           >
-            <h2 className="text-lg font-semibold">Add data source</h2>
+            <h2 id="add-data-source-title" className="text-base font-semibold">Add data source</h2>
             <Field label="Name">
               <TextInput
                 value={form.name}
@@ -575,7 +570,7 @@ function DataSourcesPage() {
                     </Field>
                   </>
                 )}
-                <label className="flex items-center gap-2 text-sm text-mist">
+                <label className="check-row flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={form.ssl}
@@ -744,7 +739,7 @@ function DataSourcesPage() {
                     </Field>
                   </>
                 )}
-                <label className="flex items-center gap-2 text-sm text-mist">
+                <label className="check-row flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={form.tls}
@@ -862,7 +857,7 @@ function DataSourcesPage() {
                         onChange={(event) => setForm({ ...form, apiEndpoint: event.target.value })}
                         placeholder="http://127.0.0.1:14439"
                       />
-                      <p className="text-xs text-mist">
+                      <p className="text-[13px] text-muted-foreground">
                         Leave this empty for a Databricks workspace. For the local cluster, set the host to
                         127.0.0.1 and the schema to analytics.
                       </p>
@@ -908,7 +903,7 @@ function DataSourcesPage() {
                         onChange={(event) => setForm({ ...form, apiEndpoint: event.target.value })}
                         placeholder="http://127.0.0.1:12119 for the local fixture"
                       />
-                      <p className="text-xs text-mist">
+                      <p className="text-[13px] text-muted-foreground">
                         Leave this empty to call https://api.stripe.com. For the local fixture, use
                         http://127.0.0.1:12119.
                       </p>
@@ -921,50 +916,55 @@ function DataSourcesPage() {
                 />
               </>
             ) : null}
-            {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+            {error ? <p className="text-negative">{error}</p> : null}
             <div className="flex justify-end gap-2">
-              <GhostButton type="button" onClick={() => setOpen(false)}>
+              <Button type="button" onClick={() => setOpen(false)}>
                 Cancel
-              </GhostButton>
-              <PrimaryButton type="submit" disabled={create.isPending || !form.name.trim()}>
+              </Button>
+              <Button variant="primary" type="submit" disabled={create.isPending || !form.name.trim()}>
                 {create.isPending ? "Testing connection…" : "Add data source"}
-              </PrimaryButton>
+              </Button>
             </div>
           </form>
         </div>
       ) : null}
 
       {pendingDelete ? (
-        <div className="fixed inset-0 z-20 grid place-items-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-3xl border border-line bg-panel p-6">
-            <h2 className="text-lg font-semibold">Remove data source</h2>
-            <p className="mt-2 text-sm text-mist">
-              Remove <span className="text-paper">{pendingDelete.name}</span>? Dashboards that
+        <div className="fixed inset-0 z-50 grid place-items-center bg-backdrop p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="remove-data-source-title"
+            className="w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-dialog"
+          >
+            <h2 id="remove-data-source-title" className="text-base font-semibold">Remove data source</h2>
+            <p className="mt-2 text-muted-foreground">
+              Remove <span className="font-medium text-foreground">{pendingDelete.name}</span>? Dashboards that
               query it will fail until you point those widgets at another source.
               {usageCount(pendingDelete.id) > 0
                 ? ` ${usageCount(pendingDelete.id)} widget(s) in this workspace use it. Other workspaces can also use this source.`
                 : ""}
             </p>
             {remove.isError ? (
-              <p className="mt-3 text-sm text-rose-300">
+              <p className="mt-3 text-negative">
                 {remove.error instanceof Error ? remove.error.message : "Remove failed"}
               </p>
             ) : null}
             <div className="mt-6 flex justify-end gap-2">
-              <GhostButton type="button" onClick={() => setPendingDelete(null)}>
+              <Button type="button" onClick={() => setPendingDelete(null)}>
                 Cancel
-              </GhostButton>
-              <DangerButton
+              </Button>
+              <Button variant="destructive"
                 type="button"
                 disabled={remove.isPending}
                 onClick={() => remove.mutate(pendingDelete.id)}
               >
                 {remove.isPending ? "Removing…" : "Remove source"}
-              </DangerButton>
+              </Button>
             </div>
           </div>
         </div>
       ) : null}
-    </div>
+    </>
   );
 }

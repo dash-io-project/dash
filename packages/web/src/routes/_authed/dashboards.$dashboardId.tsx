@@ -5,7 +5,8 @@ import type { AdapterSchema, Dashboard, DashboardWidget, DataSourceRecord } from
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { WidgetCard } from "~/components/WidgetCard";
 import { WidgetEditor } from "~/components/WidgetEditor";
-import { GhostButton, PrimaryButton, TextInput } from "~/components/ui";
+import { PageBody, PageHeader } from "~/components/PageHeader";
+import { Button, EmptyState, TextInput } from "~/components/ui";
 import { parseWidgetIds, widgetUrl } from "~/lib/dashboard-links";
 
 export const Route = createFileRoute("/_authed/dashboards/$dashboardId")({
@@ -74,10 +75,10 @@ function DashboardPage() {
 
   const dashboard = dashboardQuery.data;
   if (dashboardQuery.isLoading) {
-    return <div className="text-mist">Loading dashboard…</div>;
+    return <PageBody className="text-muted-foreground">Loading dashboard…</PageBody>;
   }
   if (!dashboard) {
-    return <div className="text-rose-300">Dashboard not found.</div>;
+    return <PageBody className="text-negative">Dashboard not found.</PageBody>;
   }
   // A focused view keeps the dashboard order. One widget fills the width.
   const shown = selected ? dashboard.widgets.filter((widget) => selected.includes(widget.id)) : dashboard.widgets;
@@ -110,96 +111,111 @@ function DashboardPage() {
   }
 
   return (
-    <div>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          {editing ? (
-            <div className="space-y-2">
-              <TextInput
-                value={dashboard.name}
-                onChange={(event) =>
-                  queryClient.setQueryData(["dashboard", workspace.id, dashboardId], {
-                    ...dashboard,
-                    name: event.target.value,
-                  })
-                }
-              />
-              <TextInput
-                value={dashboard.description}
-                onChange={(event) =>
-                  queryClient.setQueryData(["dashboard", workspace.id, dashboardId], {
-                    ...dashboard,
-                    description: event.target.value,
-                  })
-                }
-              />
-            </div>
+    <>
+      <PageHeader
+        title={
+          editing ? (
+            <TextInput
+              aria-label="Dashboard name"
+              value={dashboard.name}
+              onChange={(event) =>
+                queryClient.setQueryData(["dashboard", workspace.id, dashboardId], {
+                  ...dashboard,
+                  name: event.target.value,
+                })
+              }
+            />
           ) : (
+            dashboard.name
+          )
+        }
+        description={
+          editing ? (
+            <TextInput
+              aria-label="Dashboard description"
+              className="mt-2"
+              value={dashboard.description}
+              onChange={(event) =>
+                queryClient.setQueryData(["dashboard", workspace.id, dashboardId], {
+                  ...dashboard,
+                  description: event.target.value,
+                })
+              }
+            />
+          ) : (
+            dashboard.description
+          )
+        }
+        actions={
+          canEdit && !selected ? (
             <>
-              <h1 className="text-3xl font-semibold">{dashboard.name}</h1>
-              <p className="mt-2 max-w-3xl text-mist">{dashboard.description}</p>
+              {editing ? (
+                <Button
+                  variant="primary"
+                  type="button"
+                  onClick={() => {
+                    void save.mutateAsync({
+                      name: dashboard.name,
+                      description: dashboard.description,
+                    });
+                    setEditing(false);
+                  }}
+                >
+                  Save
+                </Button>
+              ) : (
+                <Button type="button" onClick={() => setEditing(true)}>
+                  Rename
+                </Button>
+              )}
+              <Button type="button" onClick={() => setAdding(true)}>
+                Add widget
+              </Button>
+              <Button type="button" onClick={() => void removeDashboard()}>
+                Delete
+              </Button>
             </>
-          )}
-        </div>
-        {canEdit && !selected ? <div className="flex flex-wrap gap-2">
-          {editing ? (
-            <PrimaryButton
-              type="button"
-              onClick={() => {
-                void save.mutateAsync({
-                  name: dashboard.name,
-                  description: dashboard.description,
-                });
-                setEditing(false);
-              }}
+          ) : null
+        }
+      />
+      <PageBody className="space-y-4">
+        {save.error ? (
+          <p role="alert" className="text-negative">
+            {save.error.message}
+          </p>
+        ) : null}
+        {selected ? (
+          <div className="card flex flex-wrap items-center gap-3 bg-surface px-4 py-2.5 text-muted-foreground">
+            <span className="tabular">
+              {shown.length === 0
+                ? "The linked widgets are not on this dashboard now."
+                : `Showing ${shown.length} of ${dashboard.widgets.length} widgets.`}
+            </span>
+            <Link
+              to="/dashboards/$dashboardId"
+              params={{ dashboardId }}
+              search={(previous) => ({ ...previous, widgets: undefined })}
+              className="link"
             >
-              Save
-            </PrimaryButton>
-          ) : (
-            <GhostButton type="button" onClick={() => setEditing(true)}>
-              Rename
-            </GhostButton>
-          )}
-          <GhostButton type="button" onClick={() => setAdding(true)}>
-            Add widget
-          </GhostButton>
-          <GhostButton type="button" onClick={() => void removeDashboard()}>
-            Delete
-          </GhostButton>
-        </div> : null}
-      </div>
-      {save.error ? <p role="alert" className="mt-4 text-rose-300">{save.error.message}</p> : null}
-      {selected ? (
-        <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-line px-4 py-3 text-sm text-mist">
-          <span>
-            {shown.length === 0
-              ? "The linked widgets are not on this dashboard now."
-              : `Showing ${shown.length} of ${dashboard.widgets.length} widgets.`}
-          </span>
-          <Link
-            to="/dashboards/$dashboardId"
-            params={{ dashboardId }}
-            search={(previous) => ({ ...previous, widgets: undefined })}
-          >
-            {/* A global rule sets the color of each link, so the span sets it. */}
-            <span className="text-accent underline">Show all widgets</span>
-          </Link>
+              Show all widgets
+            </Link>
+          </div>
+        ) : null}
+        <div className="dash-grid">
+          {shown.map((widget) => (
+            <WidgetCard
+              key={widget.id}
+              widget={shown.length === 1 && selected ? { ...widget, layout: { ...widget.layout, w: 12 } } : widget}
+              getShareUrl={() => shareUrl(widget.id)}
+            />
+          ))}
         </div>
-      ) : null}
-      <div className="dash-grid mt-8">
-        {shown.map((widget) => (
-          <WidgetCard
-            key={widget.id}
-            widget={shown.length === 1 && selected ? { ...widget, layout: { ...widget.layout, w: 12 } } : widget}
-            getShareUrl={() => shareUrl(widget.id)}
-          />
-        ))}
-      </div>
-      {dashboard.widgets.length === 0 && !selected ? (
-        <div className="mt-10 rounded-2xl border border-dashed border-line p-10 text-center text-mist">
-          Empty canvas. Add a widget or ask Dash MCP to generate a chart.
-        </div>
-      ) : null}
+        {dashboard.widgets.length === 0 && !selected ? (
+          <EmptyState title="This dashboard has no widgets.">
+            Add a widget or ask Dash MCP to generate a chart.
+          </EmptyState>
+        ) : null}
+      </PageBody>
       {adding ? (
         <WidgetEditor
           dataSources={sourcesQuery.data ?? []}
@@ -208,6 +224,6 @@ function DashboardPage() {
           onClose={() => setAdding(false)}
         />
       ) : null}
-    </div>
+    </>
   );
 }
