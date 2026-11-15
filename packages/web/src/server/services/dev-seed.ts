@@ -300,21 +300,11 @@ function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-const NETWORK_CODES = new Set([
-  "ECONNREFUSED",
-  "ENOTFOUND",
-  "ETIMEDOUT",
-  "ECONNRESET",
-  "EAI_AGAIN",
-  "EHOSTUNREACH",
-  "ENETUNREACH",
-  "ECONNABORTED",
-  "UND_ERR_CONNECT_TIMEOUT",
-  "UND_ERR_SOCKET",
-]);
+/** The engine refused the connection, or the name did not resolve. A timeout is not in this set. */
+const UNREACHABLE_CODES = new Set(["ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "EHOSTUNREACH", "ENETUNREACH"]);
 
-/** Postgres codes for a missing database or a connection that cannot start. */
-const POSTGRES_UNAVAILABLE = new Set(["3D000", "08000", "08001", "08003", "08006", "57P03"]);
+/** Postgres: the named database does not exist. */
+const POSTGRES_MISSING = new Set(["3D000"]);
 
 function causes(error: unknown): unknown[] {
   const seen = new Set<unknown>();
@@ -333,22 +323,20 @@ function causes(error: unknown): unknown[] {
 }
 
 /**
- * True when the engine or its database is not there. A missing schema or
- * dataset is not this case: the writer creates those.
+ * True when the engine or its database is not there. A timeout, a reset, or a
+ * missing schema is not this case. The writer creates a missing schema.
  */
-function isDatabaseUnavailable(error: unknown): boolean {
+export function isDatabaseUnavailable(error: unknown): boolean {
   for (const item of causes(error)) {
     if (typeof item !== "object" || item === null) continue;
     const code = "code" in item && typeof item.code === "string" ? item.code : "";
-    if (NETWORK_CODES.has(code) || POSTGRES_UNAVAILABLE.has(code)) return true;
+    if (UNREACHABLE_CODES.has(code) || POSTGRES_MISSING.has(code)) return true;
     const name = "name" in item && typeof item.name === "string" ? item.name : "";
-    if (name === "MongoServerSelectionError" || name === "MongoNetworkError" || name === "TimeoutError") return true;
     const status = "status" in item && typeof item.status === "number" ? item.status : 0;
-    // A missing dataset is a normal 404. A missing project is not.
     const text = item instanceof Error ? item.message : "";
+    // A missing dataset is a normal 404. A missing project is not.
     if (name === "BigQueryHttpError" && status === 404 && /not found: project/i.test(text)) return true;
-    if (name === "BigQueryHttpError" && (status === 502 || status === 503)) return true;
-    if (item instanceof Error && /ECONNREFUSED|ENOTFOUND|ETIMEDOUT|getaddrinfo|timed out/i.test(text)) return true;
+    if (/ECONNREFUSED|ENOTFOUND|getaddrinfo/i.test(text)) return true;
   }
   return false;
 }
@@ -431,8 +419,11 @@ export async function startDevSeed(user: PublicUser, planId: string, size: SeedS
         writers.set(item.sourceId, writer);
       }
       // Check every target before the first write. A database that is not
-      // there is skipped. The other sources still receive data.
+      // there is skipped. A timeout on a live source fails that source.
+      // The other sources still receive data.
       const unavailable = new Set<string>();
+      const failedSources = new Set<string>();
+      const writeFailures = new Set<SeedDomainKey>();
       const conflicts: string[] = [];
       for (const [index, item] of plan.assignments.entries()) {
         if (signal.aborted) throw signal.reason;
@@ -440,14 +431,25 @@ export async function startDevSeed(user: PublicUser, planId: string, size: SeedS
           await update({ [`steps.${index}.status`]: "skipped", [`steps.${index}.error`]: UNAVAILABLE_STEP });
           continue;
         }
+        if (failedSources.has(item.sourceId)) {
+          writeFailures.add(item.domain);
+          await update({ [`steps.${index}.status`]: "failed", [`steps.${index}.error`]: "This data source did not answer." });
+          continue;
+        }
         const domain = dataset.domains.find((entry) => entry.key === item.domain)!;
         try {
           const state = await writers.get(item.sourceId)!.inspect(domain);
           if (state.state === "foreign") conflicts.push(`${item.sourceName}: ${state.conflicts.join(", ")}`);
         } catch (error) {
-          if (signal.aborted || !isDatabaseUnavailable(error)) throw error;
-          unavailable.add(item.sourceId);
-          await update({ [`steps.${index}.status`]: "skipped", [`steps.${index}.error`]: UNAVAILABLE_STEP });
+          if (signal.aborted) throw error;
+          if (isDatabaseUnavailable(error)) {
+            unavailable.add(item.sourceId);
+            await update({ [`steps.${index}.status`]: "skipped", [`steps.${index}.error`]: UNAVAILABLE_STEP });
+            continue;
+          }
+          failedSources.add(item.sourceId);
+          writeFailures.add(item.domain);
+          await update({ [`steps.${index}.status`]: "failed", [`steps.${index}.error`]: message(error) });
         }
       }
       if (conflicts.length > 0) {
@@ -459,10 +461,9 @@ export async function startDevSeed(user: PublicUser, planId: string, size: SeedS
 
       const owned = [...claimed.owned];
       const done = new Set<SeedDomainKey>();
-      const writeFailures = new Set<SeedDomainKey>();
       for (const [index, item] of plan.assignments.entries()) {
         if (signal.aborted) throw signal.reason;
-        if (unavailable.has(item.sourceId)) continue;
+        if (unavailable.has(item.sourceId) || failedSources.has(item.sourceId)) continue;
         const domain = dataset.domains.find((entry) => entry.key === item.domain)!;
         const target = seed.seedTarget(configs.get(item.sourceId)!);
         await update({ [`steps.${index}.status`]: "running" });
@@ -488,15 +489,6 @@ export async function startDevSeed(user: PublicUser, planId: string, size: SeedS
           await update({ [`steps.${index}.status`]: "done", [`steps.${index}.rows`]: rows });
         } catch (error) {
           if (signal.aborted) throw error;
-          if (isDatabaseUnavailable(error)) {
-            unavailable.add(item.sourceId);
-            await update({ [`steps.${index}.status`]: "skipped", [`steps.${index}.error`]: UNAVAILABLE_STEP });
-            for (const [later, assignment] of plan.assignments.entries()) {
-              if (later <= index || assignment.sourceId !== item.sourceId) continue;
-              await update({ [`steps.${later}.status`]: "skipped", [`steps.${later}.error`]: UNAVAILABLE_STEP });
-            }
-            continue;
-          }
           writeFailures.add(item.domain);
           await update({ [`steps.${index}.status`]: "failed", [`steps.${index}.error`]: message(error) });
         }

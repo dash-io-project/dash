@@ -1,5 +1,11 @@
-import { dashboards, getDb, nowIso } from "./db.ts";
+import { findUserByEmail } from "./auth.ts";
+import { verifyPassword } from "./crypto.ts";
+import { apiTokens, dashboards, getDb, nowIso, sessions, users } from "./db.ts";
 import { getSettings } from "./services/settings.ts";
+
+/** The published demo account. Startup removes it only while this password still matches. */
+const LEGACY_DEMO_EMAIL = "admin@dash.dev";
+const LEGACY_DEMO_PASSWORD = "dashadmin";
 
 /**
  * The built-in sample warehouse (`kind: "demo"`) is gone. Older app databases
@@ -28,6 +34,28 @@ async function retireDemoSources(): Promise<void> {
   await marker.updateOne({ _id: "demo-retired" }, { $set: { complete: true } }, { upsert: true });
 }
 
+/**
+ * Older installs can still hold admin@dash.dev with the published password.
+ * This step runs once. It deletes that account, its sessions, and its tokens
+ * when the password still matches. An account with a different password stays.
+ */
+async function retireLegacyDemoAdmin(): Promise<void> {
+  const db = await getDb();
+  const marker = db.collection<{ _id: string; complete: boolean; adminUserId?: string }>("settings");
+  if (await marker.findOne({ _id: "demo-admin-retired" })) return;
+  const user = await findUserByEmail(LEGACY_DEMO_EMAIL);
+  if (user && (await verifyPassword(LEGACY_DEMO_PASSWORD, user.passwordHash))) {
+    await (await sessions()).deleteMany({ userId: user._id });
+    await (await apiTokens()).updateMany(
+      { userId: user._id, revokedAt: null },
+      { $set: { revokedAt: nowIso() } },
+    );
+    await (await users()).deleteOne({ _id: user._id });
+    await marker.deleteOne({ _id: "bootstrap", adminUserId: user._id });
+  }
+  await marker.updateOne({ _id: "demo-admin-retired" }, { $set: { complete: true } }, { upsert: true });
+}
+
 let seedTask: Promise<void> | undefined;
 
 export function resetSeedForTests(): void {
@@ -37,6 +65,7 @@ export function resetSeedForTests(): void {
 async function seedOnce(): Promise<void> {
   await getSettings();
   await retireDemoSources();
+  await retireLegacyDemoAdmin();
 }
 
 export function ensureSeeded(): Promise<void> {
