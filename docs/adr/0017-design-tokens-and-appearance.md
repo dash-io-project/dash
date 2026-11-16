@@ -41,4 +41,4 @@ A dashboard is shorter than before, because a grid row is smaller. A widget keep
 
 If Dash adds a `script-src` policy later, the policy must allow the head script with a hash or a nonce. Without it, a page from the server shows the light colors until React starts.
 
-The marketing website (`packages/site`) does not use these tokens.
+The marketing website (`packages/site`) uses the same token names and values. See [ADR 0018](0018-website-design-tokens.md).

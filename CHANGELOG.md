@@ -16,6 +16,11 @@ All notable changes to Dash are documented here.
 
 - The Dash app has a new look that follows Soldock: neutral grays, ink for the main action, thin borders, and almost no shadows. The colors are design tokens with light and dark values. See [ADR 0017](docs/adr/0017-design-tokens-and-appearance.md) and the **Design** section of the README.
 - The app has a Light, Dark, or System appearance. Select it in the account panel at the bottom of the sidebar. The browser keeps the choice in `localStorage` with the key `dash:appearance`. Before, the app had only a dark look.
+- The public website (`@dash/site`) has a new look that agrees with the app. It uses the token names and the token values of the app: neutral grays, ink for the main action, thin borders, and almost no shadows. The gradients, the glow shadows, and the round buttons are gone. See [ADR 0018](docs/adr/0018-website-design-tokens.md).
+- The website follows the light or dark mode of the device. It has no appearance setting.
+- The website uses the system font stack. It does not load the Outfit and JetBrains Mono fonts.
+- The website shows screenshots of the new app. The screenshot on the home page has a dark file for dark mode. The share image (`og.png`) and the icon use the ink brand mark.
+- On the home page, the MCP tools and the self-host requirements are lists with a description for each item. The adapter tiles have neutral icons, and `adapters.ts` has no `color` field.
 - The sidebar has two groups, **Analytics** and **Organization**. The account button at the bottom opens a panel with the Appearance choice, the **Profile** link, and **Sign out**. Before, **Profile** was a row in the sidebar and the button had the name **Log out**.
 - At 900px and below, a top bar has a menu button that opens the sidebar as a drawer. Before, the navigation was a row that scrolled sideways.
 - Each page starts with the same header: the title, one line of description, and the actions at the right.
