@@ -44,7 +44,7 @@ for (const width of [800, 320]) {
     const frame = page.frameLocator("iframe");
     await expect(frame.getByRole("heading", { level: 1, name: view.title })).toBeVisible();
     // Test actual SVG marks, not only a tool result or an empty chart container.
-    const bars = frame.locator('.mcp-content .ts-chart__bar');
+    const bars = frame.locator('.mcp-content .ts-chart__bar > rect, .mcp-content .ts-chart__bar > path');
     await expect.poll(async () => bars.evaluateAll((nodes) => nodes.filter((node) => {
       const box = node.getBoundingClientRect();
       return box.width > 0 && box.height > 0 && getComputedStyle(node).fill !== "none";
