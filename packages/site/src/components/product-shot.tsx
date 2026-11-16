@@ -42,7 +42,11 @@ export function ProductShot({
       <div className={`relative w-full ${aspectClassName}`}>
         <picture>
           {dark ? (
-            <source media="(prefers-color-scheme: dark)" srcSet={dark.srcSet ?? dark.src} />
+            <source
+              media="(prefers-color-scheme: dark)"
+              srcSet={dark.srcSet ?? dark.src}
+              sizes={dark.sizes}
+            />
           ) : null}
           <img
             {...props}
