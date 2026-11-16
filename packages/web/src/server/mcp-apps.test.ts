@@ -122,6 +122,54 @@ describe("MCP dashboard apps", () => {
     mocks.dashboard.mockResolvedValue({ ...dashboard, widgets: [] });
     expect(viewSchema.parse((await call("show_dashboard", { dashboardId: "dashboard" })).structuredContent).widgets).toEqual([]);
   });
+  it("rejects duplicate widget IDs without a query", async () => {
+    mocks.dashboard.mockResolvedValue({ ...dashboard, widgets: [dashboard.widgets[0], dashboard.widgets[0]] });
+    const result = await call("show_widget", { dashboardId: "dashboard", widgetId: "live" });
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent.widgets).toEqual([]);
+    expect(mocks.query).not.toHaveBeenCalled();
+  });
+  it("bounds the full-dashboard query count before execution", async () => {
+    for (const [count, template] of [[11, dashboard.widgets[0]!], [21, dashboard.widgets[1]!]] as const) {
+      mocks.dashboard.mockResolvedValue({ ...dashboard, widgets: Array.from({ length: count }, (_, i) => ({ ...template, id: String(i) })) });
+      const result = await call("show_dashboard", { dashboardId: "dashboard" });
+      expect(result.isError).toBe(true);
+      expect(mocks.query).not.toHaveBeenCalled();
+    }
+  });
+  it("rejects concurrent views from the same caller and releases the slot", async () => {
+    let release!: (value: unknown) => void;
+    mocks.query.mockImplementationOnce(() => new Promise((resolve) => { release = resolve; }));
+    const first = call("show_widget", { dashboardId: "dashboard", widgetId: "live" });
+    await vi.waitFor(() => expect(mocks.query).toHaveBeenCalledTimes(1));
+    const second = await call("show_widget", { dashboardId: "dashboard", widgetId: "live" });
+    release({ rows: [], truncated: false });
+    await first;
+    expect(second.isError).toBe(true);
+    expect(mocks.query).toHaveBeenCalledTimes(1);
+    expect((await call("show_widget", { dashboardId: "dashboard", widgetId: "saved" })).isError).not.toBe(true);
+  });
+  it("bounds response bytes and marks omitted data explicitly", async () => {
+    mocks.query.mockResolvedValue({ rows: [{ text: "x".repeat(3 * 1024 * 1024) }], truncated: false });
+    const result = await call("show_widget", { dashboardId: "dashboard", widgetId: "live" });
+    expect(JSON.stringify(result).length).toBeLessThan(2 * 1024 * 1024);
+    expect(result.structuredContent.widgets[0]).toMatchObject({ rows: [], truncated: true, error: expect.any(String) });
+  });
+  it("stops live queries at the total row budget without partial KPI values", async () => {
+    mocks.dashboard.mockResolvedValue({ ...dashboard, widgets: Array.from({ length: 3 }, (_, i) => ({ ...dashboard.widgets[0], id: String(i) })) });
+    mocks.query.mockResolvedValue({ rows: Array.from({ length: 10_000 }, () => ({ sales: 1 })), truncated: false });
+    const result = await call("show_dashboard", { dashboardId: "dashboard" });
+    expect(mocks.query).toHaveBeenCalledTimes(2);
+    expect(result.structuredContent.widgets[2]).toMatchObject({ rows: [], truncated: true, error: expect.any(String) });
+  });
+  it("rejects a saved query above the limit without changing it", async () => {
+    const large = structuredClone(dashboard);
+    large.widgets[0]!.query!.limit = 20_000;
+    mocks.dashboard.mockResolvedValue(large);
+    const result = await call("show_widget", { dashboardId: "dashboard", widgetId: "live" });
+    expect(result.structuredContent.widgets[0].error).toContain("10,000");
+    expect(mocks.query).not.toHaveBeenCalled();
+  });
   it("requires IDs and a nonempty selection", async () => {
     for (const [name, args] of [["show_widget", { dashboardId: "dashboard" }], ["show_dashboard", { dashboardId: "dashboard", widgetIds: [] }]] as const) {
       const result = await request("tools/call", { name, arguments: args });

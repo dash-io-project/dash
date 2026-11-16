@@ -17,7 +17,7 @@ export function registerDashboardApps(server: McpServer, auth: WorkspaceAuthCont
     _meta: { ui: { resourceUri: RESOURCE_URI } },
   };
   async function display(dashboardId: string, mode: DashView["mode"], widgetIds?: string[]) {
-    const view = await resolveDashboardView(auth.workspace.id, origin, dashboardId, mode, widgetIds);
+    const view = await resolveDashboardView(auth.workspace.id, origin, dashboardId, mode, widgetIds, auth.user.id);
     const structuredContent = viewSchema.parse(view);
     const summary = view.errors.length ? view.errors.join(" ") : `${view.title}: ${view.widgets.length} widget(s). ${view.widgets.filter((widget) => widget.error).length} failed.`;
     return {

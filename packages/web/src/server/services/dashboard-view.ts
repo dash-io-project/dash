@@ -4,8 +4,25 @@ import { dashboardUrl, widgetUrl } from "../../lib/dashboard-links.ts";
 import { getDashboard } from "./dashboards.ts";
 import { queryDataSource } from "./query.ts";
 
+const activeCallers = new Set<string>();
+const MAX_VIEW_BYTES = 2 * 1024 * 1024;
+const MAX_VIEW_ROWS = 20_000;
+
+/** Limit each caller to one view and each server process to 16 concurrent views. */
+export async function resolveDashboardView(workspaceId: string, origin: string, dashboardId: string, mode: DashView["mode"], widgetIds: string[] | undefined, callerId: string): Promise<DashView> {
+  if (activeCallers.has(callerId) || activeCallers.size >= 16) {
+    return { mode, dashboardId, widgetIds, title: "Dash", url: origin, resolvedAt: new Date().toISOString(), widgets: [], errors: ["A view request is already active or the server is busy. Try again later."] };
+  }
+  activeCallers.add(callerId);
+  try {
+    return await resolveView(workspaceId, origin, dashboardId, mode, widgetIds);
+  } finally {
+    activeCallers.delete(callerId);
+  }
+}
+
 /** Resolve only the selected widgets after the workspace and membership checks. */
-export async function resolveDashboardView(workspaceId: string, origin: string, dashboardId: string, mode: DashView["mode"], widgetIds?: string[]): Promise<DashView> {
+async function resolveView(workspaceId: string, origin: string, dashboardId: string, mode: DashView["mode"], widgetIds?: string[]): Promise<DashView> {
   const resolvedAt = new Date().toISOString();
   const view: DashView = { mode, dashboardId, widgetIds, title: "Dash", url: origin, resolvedAt, errors: [], widgets: [] };
   const dashboard = await getDashboard(workspaceId, dashboardId);
@@ -14,6 +31,13 @@ export async function resolveDashboardView(workspaceId: string, origin: string, 
     return { ...view, errors: ["Widget not found or access denied."] };
   }
   const selected = widgetIds ? dashboard.widgets.filter((widget) => widgetIds.includes(widget.id)) : dashboard.widgets;
+  if (new Set(selected.map((widget) => widget.id)).size !== selected.length || (mode === "widget" && selected.length !== 1)) {
+    return { ...view, errors: ["Widget IDs are ambiguous. Repair the dashboard in Dash."] };
+  }
+  if (selected.length > 20 || selected.filter((widget) => !widget.snapshot).length > 10) {
+    return { ...view, errors: ["A view can contain at most 20 widgets and 10 live queries. Select fewer widgets."] };
+  }
+  let rowCount = 0;
   view.title = mode === "widget" ? selected[0]!.title : dashboard.name;
   view.url = widgetIds ? widgetUrl(origin, dashboard, widgetIds) : dashboardUrl(origin, dashboard);
   for (const widget of selected) {
@@ -31,6 +55,9 @@ export async function resolveDashboardView(workspaceId: string, origin: string, 
       item.error = "This widget type or configuration is not supported.";
     } else if (widget.snapshot) {
       item.rows = widget.snapshot.rows;
+    } else if (rowCount >= MAX_VIEW_ROWS || (widget.query.limit ?? 1000) > 10_000) {
+      item.error = "The view query budget is exhausted or the saved query limit exceeds 10,000 rows. Open this widget in Dash.";
+      item.truncated = true;
     } else {
       try {
         const result = await queryDataSource(widget.dataSourceId, widget.query);
@@ -41,7 +68,16 @@ export async function resolveDashboardView(workspaceId: string, origin: string, 
         item.error = "The widget query failed. Check its data source in Dash.";
       }
     }
+    if (rowCount + item.rows.length > MAX_VIEW_ROWS || Buffer.byteLength(JSON.stringify({ ...view, widgets: [...view.widgets, item] })) > MAX_VIEW_BYTES) {
+      item.rows = [];
+      item.truncated = true;
+      item.error = "The widget data exceeds the view row or byte budget. Open this widget in Dash.";
+    }
+    rowCount += item.rows.length;
     view.widgets.push(item);
+    if (Buffer.byteLength(JSON.stringify(view)) > MAX_VIEW_BYTES) {
+      return { ...view, title: "Dash", widgets: [], errors: ["The widget configuration exceeds the view byte budget. Select fewer widgets."] };
+    }
   }
   return view;
 }
