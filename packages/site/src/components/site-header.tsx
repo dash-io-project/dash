@@ -11,8 +11,6 @@ const navLinkClasses =
 
 /** The sticky site header with the logo, the main nav, and the primary calls to action. */
 export function SiteHeader() {
-  const textLinks = navLinks.filter((link) => !link.external);
-
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background">
       <div className="container-x relative flex h-(--header-height) items-center gap-6">
@@ -20,23 +18,25 @@ export function SiteHeader() {
           <Logo />
         </Link>
 
-        <nav aria-label="Main" className="hidden md:block">
-          <ul className="flex items-center gap-1">
-            {textLinks.map((link) => (
-              <li key={link.href}>
-                <Link href={link.href} className={navLinkClasses}>
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
         <div className="ml-auto hidden items-center gap-2 md:flex">
-          <a href={site.github} className={navLinkClasses}>
-            <GitHubIcon className="size-4" />
-            GitHub
-          </a>
+          <nav aria-label="Main">
+            <ul className="flex items-center gap-1">
+              {navLinks.map((link) => (
+                <li key={link.href}>
+                  {link.external ? (
+                    <a href={link.href} className={navLinkClasses}>
+                      {link.href === site.github ? <GitHubIcon className="size-4" /> : null}
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link href={link.href} className={navLinkClasses}>
+                      {link.label}
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </nav>
           <span className="mx-1 h-5 w-px bg-border" aria-hidden="true" />
           <ButtonLink href={cta.signIn.href} variant="ghost" size="sm">
             {cta.signIn.label}
