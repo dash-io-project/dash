@@ -9,8 +9,7 @@ export type NavLink = {
 
 /** Links in the site header. Internal links end with a slash. */
 export const navLinks: readonly NavLink[] = [
-  { label: "Product", href: "/#product" },
-  { label: "Open source", href: "/open-source/" },
+  { label: "Home", href: "/" },
   { label: "Pricing", href: "/pricing/" },
   { label: "GitHub", href: site.github, external: true },
 ];
