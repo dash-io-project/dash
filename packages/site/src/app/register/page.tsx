@@ -2,7 +2,7 @@ import { ArrowRight, Check } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { RegisterForm } from "~/components/auth/register-form";
-import { cloudPlan, formatPrice } from "~/content/plans";
+import { formatUsd, freePlan, priceUnit, usageSummary } from "~/content/plans";
 import { pageMetadata } from "~/lib/metadata";
 
 const description =
@@ -41,11 +41,11 @@ export default function RegisterPage() {
           className="max-w-xl border-t border-border pt-8 lg:col-start-1 lg:row-start-2 lg:self-start"
         >
           <h2 id="cloud-plan-title" className="text-base font-semibold text-foreground">
-            What your account includes
+            Your account starts on {freePlan.name}
           </h2>
 
           <ul className="mt-5 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
-            {cloudPlan.features.map((feature) => (
+            {freePlan.features.map((feature) => (
               <li key={feature} className="flex items-start gap-3 text-[0.9375rem] text-foreground">
                 <Check className="mt-1 size-4 shrink-0" aria-hidden="true" />
                 <span>{feature}</span>
@@ -57,13 +57,11 @@ export default function RegisterPage() {
             <div>
               <p className="flex items-baseline gap-2">
                 <span className="text-3xl font-semibold tracking-[-0.03em] text-foreground tabular">
-                  {formatPrice(cloudPlan)}
+                  {formatUsd(freePlan.monthlyPrice)}
                 </span>
-                <span className="text-sm text-muted-foreground">{cloudPlan.priceUnit}</span>
+                <span className="text-sm text-muted-foreground">{priceUnit}</span>
               </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {cloudPlan.priceLabel}. Prices are in USD.
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{usageSummary(freePlan)}</p>
             </div>
             <Link
               href="/pricing/"

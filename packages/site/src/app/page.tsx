@@ -14,7 +14,7 @@ import { SectionHeading } from "~/components/section-heading";
 import { TwoWays } from "~/components/two-ways";
 import { adapterCount } from "~/content/adapters";
 import { mcpEndpoint, mcpTools } from "~/content/mcp";
-import { cloudPlan, formatPrice } from "~/content/plans";
+import { formatUsd, freePlan, priceUnit, proPlan } from "~/content/plans";
 import { quickStartCommands, selfHostRequirements } from "~/content/quickstart";
 import { cta, site } from "~/lib/site";
 
@@ -70,8 +70,8 @@ export default function HomePage() {
               </ButtonLink>
             </div>
             <p className="mt-5 text-sm text-muted-foreground">
-              Free forever when you self-host. Cloud from {formatPrice(cloudPlan)}{" "}
-              {cloudPlan.priceUnit}.
+              Free forever when you self-host. Dash Cloud starts free with {freePlan.includedHours}{" "}
+              compute hours, and {proPlan.name} is {formatUsd(proPlan.monthlyPrice)} {priceUnit}.
             </p>
           </div>
         </div>

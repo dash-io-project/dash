@@ -1,3 +1,11 @@
+import {
+  formatUsd,
+  freePlan,
+  maxHoursInMonth,
+  maxMonthlyBill,
+  plans,
+  proPlan,
+} from "~/content/plans";
 import { site } from "~/lib/site";
 
 export type FaqItem = {
@@ -6,19 +14,30 @@ export type FaqItem = {
   answer: string;
 };
 
+const sleepMinutes = freePlan.sleepAfterMinutes;
+const alwaysOnPlans = plans
+  .filter((plan) => plan.sleepAfterMinutes === null)
+  .map((plan) => plan.name)
+  .join(" and ");
+const proExtra = formatUsd(proPlan.extraHourPrice ?? 0);
+
 /** Questions on the pricing page. The owner will confirm the answers about billing and migration. */
 export const pricingFaq: readonly FaqItem[] = [
   {
     id: "limited",
     question: "Is the open source version limited?",
     answer:
-      "No. The open source build and Dash Cloud run the same product with the same features. The MIT license covers the full code base. There are no feature gates and no usage caps.",
+      "No. The open source build and each Dash Cloud plan run the same product with the same features. The MIT license covers the full code base. A self-hosted Dash has no feature gates and no usage caps. The Dash Cloud plans differ only in compute hours, server size, and support.",
   },
   {
     id: "billing",
-    question: "How does Dash Cloud billing work?",
-    answer:
-      "Dash Cloud bills by compute hour. A compute hour is one hour of server time that your workspace uses. Each month, Dash Cloud adds up the hours and bills the total. There is no charge for each user, so you can invite your full team.",
+    question: "What is a compute hour?",
+    answer: `Dash Cloud runs your organization on its own server. A compute hour is one hour that this server is awake. The server starts when a person or an agent uses Dash. It sleeps after ${sleepMinutes} minutes with no requests. An agent that sends requests over MCP also keeps the server awake. On ${alwaysOnPlans}, the server never sleeps. There is no charge for each user, so you can invite your full team.`,
+  },
+  {
+    id: "limit",
+    question: "What happens when I use all the included hours?",
+    answer: `On ${freePlan.name}, the workspace pauses until the next month starts. On ${proPlan.name}, each extra hour costs ${proExtra}. A month has at most ${maxHoursInMonth} hours, so a ${proPlan.name} bill is never more than ${formatUsd(maxMonthlyBill(proPlan))}. On ${alwaysOnPlans}, each hour is included.`,
   },
   {
     id: "move",
@@ -40,8 +59,7 @@ export const pricingFaq: readonly FaqItem[] = [
   {
     id: "enterprise",
     question: "What does Enterprise add?",
-    answer:
-      "Enterprise runs on a dedicated instance with an uptime SLA, priority support, and invoice billing. The product is the same.",
+    answer: `Enterprise adds a dedicated instance, more than one organization, and invoice billing. The product is the same. Write to ${site.contactEmail}.`,
   },
   {
     id: "license",

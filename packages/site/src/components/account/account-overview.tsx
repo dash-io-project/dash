@@ -9,9 +9,9 @@ export type AccountOverviewProps = {
   organization: {
     name: string;
     planName: string;
-    /** The formatted price, for example "$0.10". */
+    /** The formatted price, for example "$29". */
     price: string;
-    /** For example "per compute hour". */
+    /** For example "a month". */
     priceUnit: string;
   };
 };

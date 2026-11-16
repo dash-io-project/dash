@@ -1,7 +1,7 @@
 import { ArrowRight, Check, Cloud, Server } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { cloudPlan, formatPrice } from "~/content/plans";
+import { freePlan, priceUnit } from "~/content/plans";
 import { cta } from "~/lib/site";
 import { ButtonLink } from "./button-link";
 import { GitHubIcon } from "./icons";
@@ -15,8 +15,8 @@ const selfHostPoints = [
 
 const cloudPoints = [
   "We run it. You sign in.",
+  `Start free with ${freePlan.includedHours} compute hours ${priceUnit}.`,
   "Automatic upgrades and daily backups.",
-  "Email support from the team that builds Dash.",
   "The same product as the open source build.",
 ];
 
@@ -97,8 +97,8 @@ export function TwoWays() {
         icon={<Cloud aria-hidden="true" />}
         label="Managed"
         title="Dash Cloud"
-        price={formatPrice(cloudPlan)}
-        priceUnit={cloudPlan.priceUnit}
+        price="$0"
+        priceUnit="to start"
         points={cloudPoints}
         action={
           <ButtonLink href={cta.cloud.href} trailingIcon={<ArrowRight />}>

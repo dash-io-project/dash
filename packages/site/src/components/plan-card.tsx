@@ -1,5 +1,5 @@
 import { ArrowRight, Check } from "lucide-react";
-import { formatPrice, type Plan } from "~/content/plans";
+import { formatUsd, type Plan, priceUnit, usageSummary } from "~/content/plans";
 import { ButtonLink } from "./button-link";
 
 /** One pricing plan. The highlighted plan has an ink border, a badge, and the main button. */
@@ -17,23 +17,19 @@ export function PlanCard({ plan }: { plan: Plan }) {
         <h3 id={`plan-${plan.id}`} className="text-lg font-semibold text-foreground">
           {plan.name}
         </h3>
-        {highlighted ? <span className="badge badge-primary">Most popular</span> : null}
+        {highlighted ? <span className="badge badge-primary">Recommended</span> : null}
       </div>
-      <p className="mt-2 min-h-12 text-[0.9375rem] leading-6 text-muted-foreground">
+      <p className="mt-2 text-[0.9375rem] lg:min-h-12 leading-6 text-muted-foreground">
         {plan.description}
       </p>
 
       <p className="mt-6 flex items-baseline gap-2">
         <span className="text-[2.75rem] leading-none font-semibold tracking-[-0.03em] text-foreground tabular">
-          {formatPrice(plan)}
+          {formatUsd(plan.monthlyPrice)}
         </span>
-        {plan.priceUnit ? (
-          <span className="text-sm text-muted-foreground">{plan.priceUnit}</span>
-        ) : null}
+        <span className="text-sm text-muted-foreground">{priceUnit}</span>
       </p>
-      <p className="mt-2 text-sm text-muted-foreground">
-        {plan.price === null ? "Talk to us" : plan.priceLabel}
-      </p>
+      <p className="mt-2 text-sm text-muted-foreground lg:min-h-10">{usageSummary(plan)}</p>
 
       <div className="mt-7">
         <ButtonLink

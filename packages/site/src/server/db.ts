@@ -16,7 +16,8 @@ export type AccountDoc = {
 export type OrganizationDoc = {
   _id: string;
   name: string;
-  plan: PlanId;
+  /** "cloud" is the one plan from before Free, Pro, and Business. */
+  plan: PlanId | "cloud";
   ownerAccountId: string;
   createdAt: Date;
 };

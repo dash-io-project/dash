@@ -21,7 +21,7 @@ beforeEach(useTestDatabase);
 afterEach(dropTestDatabase);
 
 describe("createAccount", () => {
-  test("stores a lowercase email, a scrypt hash, and an owner organization on the Cloud plan", async () => {
+  test("stores a lowercase email, a scrypt hash, and an owner organization on the Free plan", async () => {
     const { accountId } = await createAccount(ada);
     const db = await getDb();
     const account = await accounts(db).findOne({ _id: accountId });
@@ -37,7 +37,7 @@ describe("createAccount", () => {
     expect(organization).toMatchObject({
       _id: account?.organizationId,
       name: "Analytical Engines",
-      plan: "cloud",
+      plan: "free",
     });
   });
 
