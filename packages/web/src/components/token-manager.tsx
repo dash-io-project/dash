@@ -13,6 +13,7 @@ import { api } from "~/lib/api";
 import { cn } from "~/lib/cn";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { PageBody, PageHeader } from "~/components/PageHeader";
+import { Select, type SelectOption } from "~/components/Select";
 import {
   Badge,
   type BadgeTone,
@@ -22,7 +23,6 @@ import {
   Field,
   ICON_STROKE,
   Panel,
-  Select,
   TextInput,
 } from "~/components/ui";
 import { SecretReveal } from "~/components/secret-reveal";
@@ -54,6 +54,11 @@ function formatDate(value: string | null, empty: string): string {
 function expiryLabel(days: number): string {
   return days === 365 ? "1 year" : `${days} days`;
 }
+
+const EXPIRY_OPTIONS: SelectOption[] = API_TOKEN_EXPIRY_DAYS.map((days) => ({
+  value: String(days),
+  label: expiryLabel(days),
+}));
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -144,13 +149,11 @@ function ConfirmAction({
 function ExpirySelect({ value, onChange, label }: { value: number; onChange: (days: number) => void; label: string }) {
   return (
     <Field label={label}>
-      <Select value={value} onChange={(event) => onChange(Number(event.target.value))}>
-        {API_TOKEN_EXPIRY_DAYS.map((days) => (
-          <option key={days} value={days}>
-            {expiryLabel(days)}
-          </option>
-        ))}
-      </Select>
+      <Select
+        value={String(value)}
+        options={EXPIRY_OPTIONS}
+        onValueChange={(days) => onChange(Number(days))}
+      />
     </Field>
   );
 }

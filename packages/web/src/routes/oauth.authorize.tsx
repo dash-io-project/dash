@@ -4,7 +4,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { ApiTokenScope, PublicUser, Workspace } from "@dash/core";
 import { api, ApiError } from "~/lib/api";
 import { fetchMe } from "~/lib/session";
-import { AuthCard, Button, Field, Select, TextInput, FullPageMessage } from "~/components/ui";
+import { Select } from "~/components/Select";
+import { AuthCard, Button, Field, TextInput, FullPageMessage } from "~/components/ui";
 
 interface AuthorizationPreview {
   client?: { name: string; redirectHost: string };
@@ -163,13 +164,12 @@ function ConsentForm({
         <TextInput required maxLength={80} value={name} onChange={(event) => setName(event.target.value)} />
       </Field>
       <Field label="Workspace">
-        <Select value={workspaceId} onChange={(event) => setWorkspaceId(event.target.value)}>
-          {workspaces.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </Select>
+        <Select
+          value={workspaceId}
+          placeholder="Select a workspace"
+          options={workspaces.map((item) => ({ value: item.id, label: item.name }))}
+          onValueChange={setWorkspaceId}
+        />
       </Field>
       <fieldset className="space-y-2">
         <legend className="field-label">Access</legend>
