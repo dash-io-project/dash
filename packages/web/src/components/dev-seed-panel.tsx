@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Circle, Loader2, MinusCircle, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ApiError, api } from "~/lib/api";
-import { Badge, Button, Card, Field, Panel, Select } from "~/components/ui";
+import { Select, type SelectOption } from "~/components/Select";
+import { Badge, Button, Card, Field, Panel } from "~/components/ui";
 
 type Size = "small" | "standard";
 type StepStatus = "pending" | "running" | "done" | "failed" | "skipped";
@@ -29,10 +30,10 @@ interface PlanResponse {
   };
 }
 
-const SIZE_LABELS: Record<Size, string> = {
-  small: "Small: about 23,000 rows, fast",
-  standard: "Standard: about 190,000 rows",
-};
+const SIZE_OPTIONS: SelectOption<Size>[] = [
+  { value: "small", label: "Small", description: "About 23,000 rows, fast" },
+  { value: "standard", label: "Standard", description: "About 190,000 rows" },
+];
 
 const DOMAIN_LABELS: Record<string, string> = {
   app: "Product database",
@@ -177,11 +178,7 @@ export function DevSeedPanel() {
       ) : null}
 
       <Field label="Dataset size">
-        <Select value={size} onChange={(event) => setSize(event.target.value as Size)} disabled={running}>
-          {(Object.keys(SIZE_LABELS) as Size[]).map((value) => (
-            <option key={value} value={value}>{SIZE_LABELS[value]}</option>
-          ))}
-        </Select>
+        <Select value={size} options={SIZE_OPTIONS} onValueChange={setSize} disabled={running} />
       </Field>
 
       {confirming === "seed" ? (

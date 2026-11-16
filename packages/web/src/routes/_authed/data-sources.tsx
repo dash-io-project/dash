@@ -6,7 +6,8 @@ import { api } from "~/lib/api";
 import { useWorkspace } from "~/components/WorkspaceProvider";
 import { parseBigQueryUri } from "~/lib/bigquery-uri";
 import { PageBody, PageHeader } from "~/components/PageHeader";
-import { Button, Field, Select, TextArea, TextInput, Badge, EmptyState } from "~/components/ui";
+import { Select, type SelectOption } from "~/components/Select";
+import { Button, Field, TextArea, TextInput, Badge, EmptyState } from "~/components/ui";
 import { fetchMe } from "~/lib/session";
 
 function serviceAccountCredentials(raw: string):
@@ -45,6 +46,17 @@ type SourceKind =
   | "databricks"
   | "redshift"
   | "stripe";
+
+const KIND_OPTIONS: SelectOption<SourceKind>[] = [
+  { value: "postgres", label: "PostgreSQL" },
+  { value: "mysql", label: "MySQL" },
+  { value: "redshift", label: "Amazon Redshift" },
+  { value: "snowflake", label: "Snowflake" },
+  { value: "mongodb", label: "MongoDB" },
+  { value: "bigquery", label: "Google BigQuery" },
+  { value: "databricks", label: "Databricks SQL" },
+  { value: "stripe", label: "Stripe" },
+];
 
 const URI_PLACEHOLDER: Record<SourceKind, string> = {
   postgres: "postgres://user:password@localhost:5432/analytics",
@@ -456,8 +468,8 @@ function DataSourcesPage() {
             <Field label="Kind">
               <Select
                 value={form.kind}
-                onChange={(event) => {
-                  const kind = event.target.value as SourceKind;
+                options={KIND_OPTIONS}
+                onValueChange={(kind) => {
                   const enteringDatabricks = kind === "databricks" && form.kind !== "databricks";
                   setForm({
                     ...form,
@@ -490,16 +502,7 @@ function DataSourcesPage() {
                     useConnectionString: true,
                   });
                 }}
-              >
-                <option value="postgres">PostgreSQL</option>
-                <option value="mysql">MySQL</option>
-                <option value="redshift">Amazon Redshift</option>
-                <option value="snowflake">Snowflake</option>
-                <option value="mongodb">MongoDB</option>
-                <option value="bigquery">Google BigQuery</option>
-                <option value="databricks">Databricks SQL</option>
-                <option value="stripe">Stripe</option>
-              </Select>
+              />
             </Field>
             {form.kind === "postgres" || form.kind === "mysql" || form.kind === "redshift" ? (
               <>
