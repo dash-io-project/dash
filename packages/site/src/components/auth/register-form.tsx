@@ -60,12 +60,9 @@ export function RegisterForm() {
       <div className="pt-1">
         <SubmitButton>Create account</SubmitButton>
       </div>
-      <p className="text-center text-sm leading-6 text-mist">
+      <p className="text-center text-sm leading-6 text-muted-foreground">
         Do you have an account?{" "}
-        <Link
-          href={cta.signIn.href}
-          className="font-medium text-paper underline decoration-line-2 underline-offset-4 hover:decoration-accent"
-        >
+        <Link href={cta.signIn.href} className="link font-medium">
           {cta.signIn.label}
         </Link>
       </p>

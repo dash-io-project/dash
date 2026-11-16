@@ -1,9 +1,12 @@
 import { expect, test } from "vitest";
-import { cloudPlan, formatPrice } from "./plans";
+import { formatUsd } from "./plans";
 
-test("formatPrice shows whole dollars with no cents, other amounts with cents, and a label for a custom price", () => {
-  expect(formatPrice({ ...cloudPlan, price: 0 })).toBe("$0");
-  expect(formatPrice({ ...cloudPlan, price: 0.1 })).toBe("$0.10");
-  expect(formatPrice({ ...cloudPlan, price: 1.5 })).toBe("$1.50");
-  expect(formatPrice({ ...cloudPlan, price: null, priceLabel: "Custom" })).toBe("Custom");
+test("formatUsd shows whole dollars with no cents and other amounts with cents", () => {
+  expect(formatUsd(0)).toBe("$0");
+  expect(formatUsd(29)).toBe("$29");
+  expect(formatUsd(0.1)).toBe("$0.10");
+  expect(formatUsd(1.5)).toBe("$1.50");
+  // A sum of prices can be a little off in floating point. It must show the amount in cents.
+  expect(formatUsd(0.1 * 3 * 10)).toBe("$3");
+  expect(formatUsd(29 + 444 * 0.1)).toBe("$73.40");
 });

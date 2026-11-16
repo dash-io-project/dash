@@ -4,36 +4,36 @@ import { type ComparisonValue, comparisonGroups, plans } from "~/content/plans";
 function Cell({ value }: { value: ComparisonValue }) {
   if (value === true) {
     return (
-      <span role="img" aria-label="Included" className="inline-flex text-paper">
-        <Check className="size-4 text-accent" aria-hidden="true" />
+      <span role="img" aria-label="Included" className="inline-flex text-foreground">
+        <Check className="size-4" aria-hidden="true" />
       </span>
     );
   }
   if (value === false) {
     return (
-      <span role="img" aria-label="Not included" className="inline-flex text-mist/50">
+      <span role="img" aria-label="Not included" className="inline-flex text-muted-foreground">
         <Minus className="size-4" aria-hidden="true" />
       </span>
     );
   }
-  return <span className="text-paper">{value}</span>;
+  return <span className="text-foreground">{value}</span>;
 }
 
 /** Feature comparison across the three plans. The table scrolls on narrow screens. */
 export function ComparisonTable() {
   return (
-    <div className="surface overflow-hidden rounded-3xl">
-      <p className="border-b border-line px-6 py-3 text-xs text-mist lg:hidden">
+    <div className="card overflow-hidden">
+      <p className="border-b border-border bg-surface px-5 py-2.5 text-xs text-muted-foreground lg:hidden">
         Scroll sideways to compare each plan.
       </p>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[44rem] border-separate border-spacing-0 text-left text-[0.95rem]">
+        <table className="w-full min-w-[40rem] table-fixed border-separate border-spacing-0 text-left text-[0.9375rem]">
           <caption className="sr-only">Feature comparison across Dash plans</caption>
           <thead>
-            <tr className="[&>th]:border-b [&>th]:border-line">
+            <tr className="[&>th]:border-b [&>th]:border-border">
               <th
                 scope="col"
-                className="sticky left-0 z-10 bg-panel px-6 py-5 font-medium text-mist shadow-[1px_0_0_var(--color-line)]"
+                className="sticky left-0 z-10 w-40 border-r sm:w-[34%] border-border bg-card px-5 py-4 text-sm font-medium text-muted-foreground"
               >
                 Feature
               </th>
@@ -41,7 +41,7 @@ export function ComparisonTable() {
                 <th
                   key={plan.id}
                   scope="col"
-                  className={`px-6 py-5 font-semibold ${plan.highlighted ? "text-accent" : "text-paper"}`}
+                  className="w-[22%] px-5 py-4 font-semibold text-foreground"
                 >
                   {plan.name}
                 </th>
@@ -54,7 +54,7 @@ export function ComparisonTable() {
                 <th
                   scope="rowgroup"
                   colSpan={plans.length + 1}
-                  className="bg-panel-2 px-6 py-2.5 text-left font-mono text-[0.7rem] font-medium uppercase tracking-[0.16em] text-mist"
+                  className="border-b border-border bg-surface px-5 py-2 text-left text-xs font-medium text-muted-foreground"
                 >
                   {group.title}
                 </th>
@@ -62,16 +62,16 @@ export function ComparisonTable() {
               {group.rows.map((row) => (
                 <tr
                   key={row.label}
-                  className="[&>td]:border-t [&>td]:border-line [&>th]:border-t [&>th]:border-line"
+                  className="[&>td]:border-b [&>td]:border-border [&>th]:border-b [&>th]:border-border [tbody:last-child>&:last-child>*]:border-b-0"
                 >
                   <th
                     scope="row"
-                    className="sticky left-0 z-10 bg-panel px-6 py-4 font-normal text-mist-2 shadow-[1px_0_0_var(--color-line)]"
+                    className="sticky left-0 z-10 border-r border-border bg-card px-5 py-3.5 font-normal text-foreground"
                   >
                     {row.label}
                   </th>
                   {plans.map((plan) => (
-                    <td key={plan.id} className="px-6 py-4">
+                    <td key={plan.id} className="px-5 py-3.5 tabular">
                       <Cell value={row.values[plan.id]} />
                     </td>
                   ))}

@@ -79,7 +79,7 @@ export async function createAccount(input: NewAccount): Promise<{ accountId: str
     await organizations(db).insertOne({
       _id: organizationId,
       name: input.organization.trim(),
-      plan: "cloud",
+      plan: "free",
       ownerAccountId: accountId,
       createdAt,
     });

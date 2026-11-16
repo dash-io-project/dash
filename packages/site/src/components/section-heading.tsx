@@ -26,20 +26,19 @@ export function SectionHeading({
   const alignment = align === "center" ? "mx-auto text-center items-center" : "";
   const size =
     Heading === "h1"
-      ? "text-[2.5rem] leading-[1.02] sm:text-6xl"
-      : "text-[2rem] leading-[1.08] sm:text-[2.75rem]";
+      ? "text-[2.5rem] leading-[1.06] tracking-[-0.035em] sm:text-[3.5rem]"
+      : "text-[1.75rem] leading-[1.15] tracking-[-0.025em] sm:text-4xl sm:leading-[1.12]";
 
   return (
     <div className={`flex max-w-2xl flex-col ${alignment} ${className}`}>
-      {eyebrow ? <p className="eyebrow mb-4">{eyebrow}</p> : null}
-      <Heading
-        id={id}
-        className={`text-shine font-display font-semibold tracking-[-0.03em] text-balance ${size}`}
-      >
+      {eyebrow ? <p className="eyebrow mb-3">{eyebrow}</p> : null}
+      <Heading id={id} className={`font-semibold text-balance text-foreground ${size}`}>
         {title}
       </Heading>
       {description ? (
-        <p className="mt-5 text-lg leading-8 text-mist text-pretty">{description}</p>
+        <p className="mt-4 text-[1.0625rem] leading-7 text-muted-foreground text-pretty sm:text-lg">
+          {description}
+        </p>
       ) : null}
     </div>
   );

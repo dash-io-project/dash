@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AccountOverview } from "~/components/account/account-overview";
-import { cloudPlan, formatPrice, plans } from "~/content/plans";
+import { formatUsd, freePlan, plans, priceUnit } from "~/content/plans";
 import { pageMetadata } from "~/lib/metadata";
 import { cta } from "~/lib/site";
 import { getCurrentAccount } from "~/server/current-account";
@@ -19,7 +19,8 @@ export default async function AccountPage() {
   if (!current) redirect(cta.signIn.href);
 
   const { account, organization } = current;
-  const plan = plans.find((candidate) => candidate.id === organization.plan) ?? cloudPlan;
+  // An organization from before the three plans has the plan "cloud". No organization pays yet, so it shows as Free.
+  const plan = plans.find((candidate) => candidate.id === organization.plan) ?? freePlan;
   return (
     <AccountOverview
       name={account.name}
@@ -28,8 +29,8 @@ export default async function AccountPage() {
       organization={{
         name: organization.name,
         planName: plan.name,
-        price: formatPrice(plan),
-        priceUnit: plan.priceUnit,
+        price: formatUsd(plan.monthlyPrice),
+        priceUnit,
       }}
     />
   );

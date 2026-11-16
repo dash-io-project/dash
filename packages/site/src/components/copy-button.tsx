@@ -43,12 +43,12 @@ export function CopyButton({ text, label = "Copy to clipboard" }: CopyButtonProp
       type="button"
       onClick={onCopy}
       aria-label={result ? result.aria : label}
-      className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 font-sans text-xs font-medium text-mist ring-1 ring-inset ring-white/10 transition-colors hover:bg-white/[0.08] hover:text-paper"
+      className="inline-flex h-7 items-center gap-1.5 rounded-sm px-2 font-sans text-xs font-medium text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
     >
       {state === "copied" ? (
-        <Check className="size-3.5 text-accent" aria-hidden="true" />
+        <Check className="size-3.5 text-positive" aria-hidden="true" />
       ) : state === "failed" ? (
-        <X className="size-3.5 text-warn" aria-hidden="true" />
+        <X className="size-3.5 text-negative" aria-hidden="true" />
       ) : (
         <Copy className="size-3.5" aria-hidden="true" />
       )}

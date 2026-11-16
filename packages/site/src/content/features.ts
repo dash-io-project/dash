@@ -30,9 +30,9 @@ export const features: readonly Feature[] = [
     icon: "dashboards",
     screenshot: {
       src: "/screenshots/customer-support.webp",
-      alt: "Customer support dashboard with KPI cards, ticket volume charts, and a survey table",
-      width: 2400,
-      height: 2900,
+      alt: "Customer support dashboard with KPI cards above a chart of tickets created and solved",
+      width: 1600,
+      height: 1000,
     },
   },
   {
@@ -43,9 +43,9 @@ export const features: readonly Feature[] = [
     icon: "data-sources",
     screenshot: {
       src: "/screenshots/data-sources.webp",
-      alt: "Data sources page with MongoDB, BigQuery, and Postgres connections",
-      width: 2400,
-      height: 1500,
+      alt: "Data sources page with the cards of a BigQuery connection and a MongoDB connection",
+      width: 1600,
+      height: 1000,
     },
   },
   {
