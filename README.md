@@ -123,8 +123,8 @@ Open [http://localhost:3001](http://localhost:3001). The marketing pages need no
 
 - The website uses the design tokens of the app and follows the light or dark mode of the device. The tokens are in `packages/site/src/app/globals.css`. See [Design](#design) and [ADR 0018](docs/adr/0018-website-design-tokens.md).
 - Repository, Dash Cloud, and contact links are in `packages/site/src/lib/site.ts`.
-- Plan names, prices, and features are in one data file. Change a price there, not in a component.
-- Dash Cloud runs in this website, not on a separate host. Sign-up at `/register/` creates an account and an organization on the Cloud plan. Sign-in is at `/login/`, and `/account/` shows the account. Search engines do not index these pages.
+- Plan names, prices, and features are in `packages/site/src/content/plans.ts`. Change a price there, not in a component. [ADR 0019](docs/adr/0019-dash-cloud-plans-and-prices.md) gives the cost of a compute hour and the margin rule.
+- Dash Cloud runs in this website, not on a separate host. Sign-up at `/register/` creates an account and an organization on the Free plan. Sign-in is at `/login/`, and `/account/` shows the account. Search engines do not index these pages.
 - Passwords use scrypt. A session lasts 30 days in an `HttpOnly` cookie. After 10 failed sign-ins for one email, sign-in for that email stops for 15 minutes.
 - Password reset, email verification, billing, and the hosted Dash workspace are not built yet.
 - The prices and the `hello@dash.io` address are placeholders until launch.

@@ -20,6 +20,9 @@ All notable changes to Dash are documented here.
 - The website follows the light or dark mode of the device. It has no appearance setting.
 - The website uses the system font stack. It does not load the Outfit and JetBrains Mono fonts.
 - The website shows screenshots of the new app. The screenshot on the home page has a dark file for dark mode. The share image (`og.png`) and the icon use the ink brand mark.
+- Dash Cloud has three plans: Free ($0, 40 compute hours each month), Pro ($29, 300 hours, then $0.10 for each hour), and Business ($199, always on, with an uptime SLA). The prices are the Cloudflare cost with a 70% gross margin. No plan charges for each user. Before, Cloud had a placeholder price of $0.10 for each compute hour. See [ADR 0019](docs/adr/0019-dash-cloud-plans-and-prices.md).
+- The pricing page shows self-host and Enterprise below the three plan cards. The FAQ tells what a compute hour is and what happens after the included hours.
+- Sign-up creates an organization on the plan `free`, not `cloud`. The account page shows an older `cloud` organization as Free.
 - On the home page, the MCP tools and the self-host requirements are lists with a description for each item. The adapter tiles have neutral icons, and `adapters.ts` has no `color` field.
 - The sidebar has two groups, **Analytics** and **Organization**. The account button at the bottom opens a panel with the Appearance choice, the **Profile** link, and **Sign out**. Before, **Profile** was a row in the sidebar and the button had the name **Log out**.
 - At 900px and below, a top bar has a menu button that opens the sidebar as a drawer. Before, the navigation was a row that scrolled sideways.
