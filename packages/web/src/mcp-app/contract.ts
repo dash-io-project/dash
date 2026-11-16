@@ -31,4 +31,4 @@ export const viewSchema = z.object({
   })),
 });
 export type DashView = z.infer<typeof viewSchema>;
-export const RESOURCE_URI = "ui://dash/dashboard-v1.html";
+export const RESOURCE_URI = "ui://dash/dashboard-v2.html";

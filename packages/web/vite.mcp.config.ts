@@ -8,9 +8,11 @@ export default defineConfig({
   resolve: { alias: { "~": fileURLToPath(new URL("./src", import.meta.url)) } },
   plugins: [react(), tailwindcss(), {
     name: "dash-mcp-html",
+    enforce: "post",
     generateBundle(_options, bundle) {
       const script = Object.values(bundle).filter((entry) => entry.type === "chunk").map((entry) => entry.code).join("\n");
       const css = Object.values(bundle).flatMap((entry) => entry.type === "asset" && entry.fileName.endsWith(".css") ? [entry.source] : []).join("\n");
+      if (!css.trim()) this.error("The MCP App resource must contain CSS.");
       for (const name of Object.keys(bundle)) delete bundle[name];
       this.emitFile({ type: "asset", fileName: "view.html", source: `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dash</title><style>${css.replaceAll("</style", "<\\/style")}</style></head><body><div id="root"></div><script type="module">${script.replaceAll("</script", "<\\/script")}</script></body></html>` });
     },

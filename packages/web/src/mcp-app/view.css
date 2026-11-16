@@ -10,7 +10,7 @@ button:disabled { opacity: .5; }
 .mcp-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; }
 .mcp-widget { display: flex; flex-direction: column; min-width: 0; padding: 16px; }
 .mcp-widget p { font-size: 12px; margin: 6px 0; overflow-wrap: anywhere; }
-.mcp-content { flex: 1; min-height: 160px; height: 320px; max-height: 600px; overflow: auto; }
+.mcp-content { flex: 0 0 auto; min-height: 160px; height: 320px; max-height: 600px; overflow: auto; }
 .mcp-single { display: block; }
 .mcp-single .mcp-content { height: min(calc(var(--host-height, 700px) - 180px), 600px); }
 [role="alert"] { color: var(--negative); }

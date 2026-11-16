@@ -1,6 +1,6 @@
 # MCP Apps
 
-Dash has two read-only tools. Both tools use one resource, `ui://dash/dashboard-v1.html`.
+Dash has two read-only tools. Both tools use one resource, `ui://dash/dashboard-v2.html`.
 
 | Tool | Input | Result |
 | --- | --- | --- |
@@ -44,7 +44,8 @@ Do not use SDK v1 examples without a compatibility check.
 
 Run `pnpm --filter @dash/web build:mcp` after a renderer change during development.
 The web build, test, and dev scripts run this step automatically.
-Vite bundles the renderer and CSS into one HTML resource. The server bundle contains that resource.
+Vite bundles the renderer and CSS into one HTML resource after it emits the CSS.
+The build fails if the CSS is empty. The server bundle contains that resource.
 No CDN, external frame, browser credential, or `window.openai` API is required.
 
 The resource requests no CSP network domains and uses the default host sandbox origin.
@@ -67,9 +68,15 @@ pnpm typecheck
 pnpm lint
 pnpm --filter @dash/web build:mcp
 pnpm --filter @dash/web exec vitest run src/server/mcp-apps.test.ts src/mcp-app/controller.test.ts src/lib/kpi.test.ts src/lib/chart/tanstack.test.ts
+pnpm --filter @dash/web exec playwright install chromium
+pnpm --filter @dash/web test:mcp-browser
 pnpm --filter @dash/web build
 pnpm --filter @dash/site build
 ```
+
+The browser tests load the built resource in a synthetic MCP host with no credentials.
+They check visible chart bars, styles, refresh, and host dimensions at wide and narrow widths.
+These tests do not verify ChatGPT or Claude.
 
 The full CI suite also starts the Docker test services, runs all tests, and checks server shutdown.
 The AI workspace has no Docker executable, so that suite cannot run here.
@@ -81,7 +88,7 @@ Use an approved test deployment with synthetic dashboards. Do not use production
 1. In ChatGPT, refresh the connector tool list after the server update. Reconnect the connector if the new tools do not appear.
 2. In Claude web, refresh the connector after the update. Disconnect and reconnect it if its tool list stays stale.
 3. In Claude Desktop, refresh the connector and reload the main window. Reconnect it if the new tools remain absent.
-4. In each host, ask to show the sales dashboard. Confirm that the UI actually renders.
+4. Start a new conversation after the connector refresh. Confirm that the tool metadata uses `ui://dash/dashboard-v2.html`. In each host, ask to show the sales dashboard. Confirm that the UI actually renders.
 5. Ask to show a leaderboard chart, a ticket table, and a ticket-count KPI separately. Confirm that each view contains only that widget.
 6. Test a chart with several series. Compare its encodings and values with Dash.
 7. Refresh a live view. Confirm that its data changes and its table filter stays set.

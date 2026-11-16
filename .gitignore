@@ -163,3 +163,7 @@ packages/web/.output/
 
 # Bundled MCP App resource
 packages/web/.mcp-app/
+
+# Browser test results
+playwright-report/
+test-results/
