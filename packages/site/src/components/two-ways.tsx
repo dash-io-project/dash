@@ -1,7 +1,7 @@
 import { ArrowRight, Check, Cloud, Server } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { freePlan, priceUnit } from "~/content/plans";
+import { formatUsd, freePlan, priceUnit } from "~/content/plans";
 import { cta } from "~/lib/site";
 import { ButtonLink } from "./button-link";
 import { GitHubIcon } from "./icons";
@@ -97,7 +97,7 @@ export function TwoWays() {
         icon={<Cloud aria-hidden="true" />}
         label="Managed"
         title="Dash Cloud"
-        price="$0"
+        price={formatUsd(freePlan.monthlyPrice)}
         priceUnit="to start"
         points={cloudPoints}
         action={
