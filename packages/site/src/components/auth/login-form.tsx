@@ -37,12 +37,9 @@ export function LoginForm() {
       <div className="pt-1">
         <SubmitButton>Sign in</SubmitButton>
       </div>
-      <p className="text-center text-sm leading-6 text-mist">
+      <p className="text-center text-sm leading-6 text-muted-foreground">
         Are you new to Dash Cloud?{" "}
-        <Link
-          href={cta.cloud.href}
-          className="font-medium text-paper underline decoration-line-2 underline-offset-4 hover:decoration-accent"
-        >
+        <Link href={cta.cloud.href} className="link font-medium">
           Create an account
         </Link>
       </p>

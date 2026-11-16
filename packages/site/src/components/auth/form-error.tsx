@@ -12,9 +12,9 @@ export function FormError({ message }: FormErrorProps) {
   return (
     <div
       role="alert"
-      className="flex items-start gap-3 rounded-xl bg-warn/10 px-4 py-3 text-sm leading-6 text-paper ring-1 ring-inset ring-warn/40"
+      className="flex items-start gap-3 rounded-md border border-negative-border bg-negative-soft px-4 py-3 text-sm leading-6 text-foreground"
     >
-      <AlertTriangle className="mt-1 size-4 shrink-0 text-warn" aria-hidden="true" />
+      <AlertTriangle className="mt-1 size-4 shrink-0 text-negative" aria-hidden="true" />
       <p>{message}</p>
     </div>
   );

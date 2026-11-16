@@ -21,40 +21,38 @@ type DetailProps = {
   children: ReactNode;
 };
 
-/** One row of a details list: a small term above a value. */
+/** One row of a details list: a term on the left and a value on the right. */
 function Detail({ term, children }: DetailProps) {
   return (
-    <div className="flex flex-col gap-1 py-4 first:pt-0 last:pb-0">
-      <dt className="text-[0.82rem] font-medium text-mist">{term}</dt>
-      <dd className="text-[1.02rem] leading-7 text-paper break-words">{children}</dd>
+    <div className="flex flex-col gap-1 px-5 py-4 sm:flex-row sm:items-baseline sm:gap-6 sm:px-6">
+      <dt className="shrink-0 text-sm text-muted-foreground sm:w-36">{term}</dt>
+      <dd className="min-w-0 text-[0.9375rem] leading-6 break-words text-foreground">{children}</dd>
     </div>
   );
 }
 
 type CardProps = {
   id: string;
-  eyebrow: string;
+  label: string;
   title: string;
   icon: ReactNode;
   children: ReactNode;
 };
 
-/** A `surface` card with an icon, an eyebrow, and a heading. */
-function Card({ id, eyebrow, title, icon, children }: CardProps) {
+/** A card with an icon, a small label, a heading, and a list of details. */
+function Card({ id, label, title, icon, children }: CardProps) {
   return (
-    <article aria-labelledby={id} className="surface rounded-3xl p-6 sm:p-8">
-      <div className="flex items-center gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent ring-1 ring-inset ring-accent/30 [&>svg]:size-5">
-          {icon}
-        </span>
+    <article aria-labelledby={id} className="card overflow-hidden">
+      <div className="flex items-center gap-3 border-b border-border bg-surface px-5 py-4 sm:px-6">
+        <span className="icon-tile bg-card [&>svg]:size-[18px]">{icon}</span>
         <div>
-          <p className="eyebrow">{eyebrow}</p>
-          <h2 id={id} className="text-lg font-semibold text-paper">
+          <p className="text-sm leading-5 text-muted-foreground">{label}</p>
+          <h2 id={id} className="text-base leading-6 font-semibold text-foreground">
             {title}
           </h2>
         </div>
       </div>
-      <dl className="mt-6 divide-y divide-line border-t border-line pt-6">{children}</dl>
+      <dl className="divide-y divide-border">{children}</dl>
     </article>
   );
 }
@@ -67,44 +65,33 @@ function formatMemberSince(date: Date): string {
 /** The signed-in view of a Dash Cloud account. */
 export function AccountOverview({ name, email, memberSince, organization }: AccountOverviewProps) {
   return (
-    <section className="relative overflow-hidden" aria-labelledby="account-title">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_420px_at_50%_-10%,rgb(94_234_212/0.12),transparent_60%)]"
-      />
-      <div
-        aria-hidden="true"
-        className="bg-grid pointer-events-none absolute inset-x-0 top-0 h-[24rem]"
-      />
-      <div className="container-x relative pt-14 pb-20 sm:pt-20 sm:pb-28">
-        <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+    <section aria-labelledby="account-title">
+      <div className="container-x pt-12 pb-20 sm:pt-16 sm:pb-28">
+        <header className="flex flex-col gap-6 border-b border-border pb-8 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
-            <p className="eyebrow mb-4">Dash Cloud account</p>
+            <p className="eyebrow mb-3">Dash Cloud account</p>
             <h1
               id="account-title"
-              className="text-shine font-display text-[2.25rem] leading-[1.05] font-semibold tracking-[-0.03em] text-balance break-words sm:text-5xl"
+              className="text-[2rem] leading-[1.1] font-semibold tracking-[-0.03em] text-balance break-words text-foreground sm:text-[2.5rem]"
             >
               {organization.name}
             </h1>
-            <p className="mt-4 text-lg leading-8 text-mist text-pretty">
+            <p className="mt-3 text-[1.0625rem] leading-7 text-muted-foreground text-pretty">
               Welcome, {name}. You are the owner of this organization on Dash Cloud.
             </p>
           </div>
           <form action={signOutAction} className="shrink-0">
-            <button
-              type="submit"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-white/[0.06] px-5 text-[0.95rem] font-medium whitespace-nowrap text-paper ring-1 ring-inset ring-white/15 backdrop-blur transition-[background-color,box-shadow,color,transform] duration-200 hover:bg-white/[0.1] hover:ring-white/25 focus-visible:outline-offset-4 motion-safe:active:scale-[0.98]"
-            >
+            <button type="submit" className="btn">
               <LogOut className="size-4 shrink-0" aria-hidden="true" />
               <span>Sign out</span>
             </button>
           </form>
         </header>
 
-        <div className="mt-10 grid grid-cols-1 gap-5 sm:mt-12 lg:grid-cols-2 motion-safe:animate-rise">
+        <div className="mt-8 grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
           <Card
             id="account-organization"
-            eyebrow="Organization"
+            label="Organization"
             title="Your team"
             icon={<Building2 aria-hidden="true" />}
           >
@@ -112,21 +99,19 @@ export function AccountOverview({ name, email, memberSince, organization }: Acco
             <Detail term="Plan">
               <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                 <span>{organization.planName}</span>
-                <span className="font-mono text-sm text-mist-2">
+                <span className="text-sm text-muted-foreground tabular">
                   {organization.price} {organization.priceUnit}
                 </span>
               </span>
             </Detail>
             <Detail term="Your role">
-              <span className="inline-flex items-center rounded-full bg-accent/12 px-2.5 py-0.5 font-mono text-[0.72rem] font-medium uppercase tracking-[0.16em] text-accent ring-1 ring-inset ring-accent/30">
-                Owner
-              </span>
+              <span className="badge">Owner</span>
             </Detail>
           </Card>
 
           <Card
             id="account-person"
-            eyebrow="You"
+            label="You"
             title="Your details"
             icon={<UserRound aria-hidden="true" />}
           >

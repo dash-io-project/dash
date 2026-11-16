@@ -20,16 +20,13 @@ export function SubmitButton({ children }: SubmitButtonProps) {
       type="submit"
       disabled={pending}
       aria-busy={pending}
-      className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-accent px-6 text-base font-medium whitespace-nowrap text-ink shadow-[0_0_0_1px_rgb(94_234_212/0.4),0_10px_30px_-10px_rgb(94_234_212/0.6)] transition-[background-color,box-shadow,color,transform] duration-200 hover:bg-[#7ff0dd] hover:shadow-[0_0_0_1px_rgb(94_234_212/0.6),0_14px_40px_-10px_rgb(94_234_212/0.75)] focus-visible:outline-offset-4 disabled:cursor-wait disabled:opacity-80 motion-safe:active:scale-[0.98]"
+      className="btn btn-primary btn-lg w-full disabled:cursor-wait"
     >
       <span>{children}</span>
       {pending ? (
         <LoaderCircle className="size-4 shrink-0 motion-safe:animate-spin" aria-hidden="true" />
       ) : (
-        <ArrowRight
-          className="size-4 shrink-0 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5"
-          aria-hidden="true"
-        />
+        <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
       )}
     </button>
   );

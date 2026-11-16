@@ -21,16 +21,8 @@ export const metadata: Metadata = pageMetadata({
 export default function PricingPage() {
   return (
     <>
-      <section className="relative overflow-hidden" aria-labelledby="pricing-title">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_420px_at_50%_-10%,rgb(94_234_212/0.12),transparent_60%)]"
-        />
-        <div
-          aria-hidden="true"
-          className="bg-grid pointer-events-none absolute inset-x-0 top-0 h-[30rem]"
-        />
-        <div className="container-x relative pt-20 pb-16 sm:pt-28">
+      <section className="bg-surface" aria-labelledby="pricing-title">
+        <div className="container-x pt-16 pb-16 sm:pt-24 sm:pb-20">
           <SectionHeading
             as="h1"
             eyebrow="Pricing"
@@ -40,17 +32,14 @@ export default function PricingPage() {
             align="center"
           />
 
-          <div className="mt-16 grid grid-cols-1 gap-5 lg:grid-cols-3 lg:items-start">
+          <div className="mt-12 grid grid-cols-1 gap-5 sm:mt-14 lg:grid-cols-3">
             {plans.map((plan) => (
               <PlanCard key={plan.id} plan={plan} />
             ))}
           </div>
-          <p className="mt-6 text-center text-sm text-mist">
+          <p className="mt-8 text-center text-sm text-muted-foreground">
             Prices are in USD. Need more than one organization? Write to{" "}
-            <a
-              href={`mailto:${site.contactEmail}`}
-              className="text-paper underline-offset-4 hover:underline"
-            >
+            <a href={`mailto:${site.contactEmail}`} className="link">
               {site.contactEmail}
             </a>
             .
@@ -58,7 +47,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <section className="border-t border-line py-20 sm:py-28" aria-labelledby="compare-title">
+      <section className="section-y border-t border-border" aria-labelledby="compare-title">
         <div className="container-x">
           <SectionHeading
             eyebrow="Compare plans"
@@ -72,8 +61,8 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <section className="border-t border-line py-20 sm:py-28" aria-labelledby="faq-title">
-        <div className="container-x grid grid-cols-1 gap-12 lg:grid-cols-12">
+      <section className="section-y border-t border-border" aria-labelledby="faq-title">
+        <div className="container-x grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-16">
           <div className="lg:col-span-4">
             <SectionHeading
               eyebrow="FAQ"
@@ -82,10 +71,7 @@ export default function PricingPage() {
               description={
                 <>
                   Not here? Write to{" "}
-                  <a
-                    href={`mailto:${site.contactEmail}`}
-                    className="text-paper underline-offset-4 hover:underline"
-                  >
+                  <a href={`mailto:${site.contactEmail}`} className="link">
                     {site.contactEmail}
                   </a>
                   .
