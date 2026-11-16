@@ -21,6 +21,10 @@ It rejects ambiguous widget IDs before any query.
 A view permits at most 20 widgets, 10 live queries, 20,000 rows, and 2 MiB of structured data.
 A saved live query above 10,000 rows produces an error; the service does not change its limit.
 Oversized widget data produces an explicit error without partial KPI values.
+Rejected rows consume the request budget. An oversized result stops all later live queries in that request.
+The JSON check stops at a conservative byte budget before it builds an oversized response string.
+The existing adapters buffer a query result before they return it. The 2 MiB limit is a response limit, not a driver-memory limit.
+Source-side field limits and any configured adapter timeouts still govern the first query. This change does not add streaming to the shared adapter interface.
 Each server process permits one active view per caller and 16 active views in total.
 These limits are process-local; multiple server processes do not share the concurrency counter.
 An active query holds its slot until the backend completes or fails.

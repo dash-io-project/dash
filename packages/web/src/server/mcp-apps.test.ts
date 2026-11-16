@@ -151,7 +151,9 @@ describe("MCP dashboard apps", () => {
   });
   it("bounds response bytes and marks omitted data explicitly", async () => {
     mocks.query.mockResolvedValue({ rows: [{ text: "x".repeat(3 * 1024 * 1024) }], truncated: false });
-    const result = await call("show_widget", { dashboardId: "dashboard", widgetId: "live" });
+    const result = await call("show_dashboard", { dashboardId: "dashboard" });
+    expect(mocks.query).toHaveBeenCalledTimes(1);
+    expect(result.structuredContent.widgets[2]).toMatchObject({ rows: [], truncated: true, error: expect.any(String) });
     expect(JSON.stringify(result).length).toBeLessThan(2 * 1024 * 1024);
     expect(result.structuredContent.widgets[0]).toMatchObject({ rows: [], truncated: true, error: expect.any(String) });
   });

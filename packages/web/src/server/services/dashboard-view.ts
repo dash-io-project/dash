@@ -8,6 +8,32 @@ const activeCallers = new Set<string>();
 const MAX_VIEW_BYTES = 2 * 1024 * 1024;
 const MAX_VIEW_ROWS = 20_000;
 
+/** Stop JSON serialization before it can build a result above the response budget. */
+function withinByteBudget(value: unknown): boolean {
+  let remaining = MAX_VIEW_BYTES;
+  const exhausted = new Error("View byte budget exhausted");
+  const charge = (text: string) => {
+    // Check raw bytes before JSON escaping can allocate a larger string.
+    if (Buffer.byteLength(text) > remaining) throw exhausted;
+    remaining -= Buffer.byteLength(JSON.stringify(text)) + 2;
+    if (remaining < 0) throw exhausted;
+  };
+  try {
+    JSON.stringify(value, (key, field) => {
+      charge(key);
+      if (typeof field === "string") charge(field);
+      else {
+        remaining -= field !== null && typeof field === "object" ? 2 : 32;
+        if (remaining < 0) throw exhausted;
+      }
+      return field;
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Limit each caller to one view and each server process to 16 concurrent views. */
 export async function resolveDashboardView(workspaceId: string, origin: string, dashboardId: string, mode: DashView["mode"], widgetIds: string[] | undefined, callerId: string): Promise<DashView> {
   if (activeCallers.has(callerId) || activeCallers.size >= 16) {
@@ -38,6 +64,7 @@ async function resolveView(workspaceId: string, origin: string, dashboardId: str
     return { ...view, errors: ["A view can contain at most 20 widgets and 10 live queries. Select fewer widgets."] };
   }
   let rowCount = 0;
+  let budgetExhausted = false;
   view.title = mode === "widget" ? selected[0]!.title : dashboard.name;
   view.url = widgetIds ? widgetUrl(origin, dashboard, widgetIds) : dashboardUrl(origin, dashboard);
   for (const widget of selected) {
@@ -55,7 +82,7 @@ async function resolveView(workspaceId: string, origin: string, dashboardId: str
       item.error = "This widget type or configuration is not supported.";
     } else if (widget.snapshot) {
       item.rows = widget.snapshot.rows;
-    } else if (rowCount >= MAX_VIEW_ROWS || (widget.query.limit ?? 1000) > 10_000) {
+    } else if (budgetExhausted || rowCount >= MAX_VIEW_ROWS || (widget.query.limit ?? 1000) > 10_000) {
       item.error = "The view query budget is exhausted or the saved query limit exceeds 10,000 rows. Open this widget in Dash.";
       item.truncated = true;
     } else {
@@ -68,14 +95,15 @@ async function resolveView(workspaceId: string, origin: string, dashboardId: str
         item.error = "The widget query failed. Check its data source in Dash.";
       }
     }
-    if (rowCount + item.rows.length > MAX_VIEW_ROWS || Buffer.byteLength(JSON.stringify({ ...view, widgets: [...view.widgets, item] })) > MAX_VIEW_BYTES) {
+    rowCount += item.rows.length;
+    if (rowCount > MAX_VIEW_ROWS || !withinByteBudget({ ...view, widgets: [...view.widgets, item] })) {
+      budgetExhausted = true;
       item.rows = [];
       item.truncated = true;
       item.error = "The widget data exceeds the view row or byte budget. Open this widget in Dash.";
     }
-    rowCount += item.rows.length;
     view.widgets.push(item);
-    if (Buffer.byteLength(JSON.stringify(view)) > MAX_VIEW_BYTES) {
+    if (!withinByteBudget(view)) {
       return { ...view, title: "Dash", widgets: [], errors: ["The widget configuration exceeds the view byte budget. Select fewer widgets."] };
     }
   }
