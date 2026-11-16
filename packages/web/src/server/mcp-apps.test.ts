@@ -53,6 +53,10 @@ describe("MCP dashboard apps", () => {
     expect(resource.text).toContain("<script type=\"module\">");
     expect(resource.text).not.toMatch(/<script[^>]+src=/);
     expect(resource.text).not.toContain("process.env.NODE_ENV");
+    const css = resource.text.match(/<style>([\s\S]*?)<\/style>/)?.[1];
+    expect(css).toContain(".mcp-content");
+    expect(css).toContain(".h-full");
+    expect(resource.text).not.toMatch(/<link[^>]+rel=["']stylesheet/);
     expect(resource._meta.ui.csp).toEqual({ connectDomains: [], resourceDomains: [] });
   });
   it("returns only one live widget and preserves its saved query and encodings", async () => {

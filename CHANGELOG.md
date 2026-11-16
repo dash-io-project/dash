@@ -4,6 +4,10 @@ All notable changes to Dash are documented here.
 
 ## Unreleased
 
+### Fixed
+
+- MCP App resources include CSS after Vite emits it. Charts have a fixed content height, and single-widget views show one title.
+
 ### Added
 
 - `show_dashboard` and `show_widget` display read-only MCP Apps with one shared renderer. Both tools support refresh and direct Dash links. See [MCP Apps](docs/mcp-apps.md).

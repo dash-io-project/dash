@@ -22,10 +22,10 @@ class WidgetBoundary extends Component<{ children: ReactNode; revision: string }
   }
   render() { return this.state.failed ? <p role="alert">This widget cannot display its data.</p> : this.props.children; }
 }
-function Widget({ widget }: { widget: DashView["widgets"][number] }) {
+function Widget({ widget, showTitle }: { widget: DashView["widgets"][number]; showTitle: boolean }) {
   const chart = widget.chart;
   return <section className="card mcp-widget" style={{ gridColumn: `span ${Math.max(1, Math.min(12, widget.layout.w))}`, minHeight: Math.max(180, Math.min(600, widget.layout.h * 60)) }}>
-    <h2>{widget.title}</h2>
+    {showTitle && <h2>{widget.title}</h2>}
     {widget.source === "snapshot" ? <p>Saved data · <time dateTime={widget.savedAt}>{widget.savedAt}</time>. Refresh does not recalculate these rows.</p> : <p>Retrieved <time dateTime={widget.resolvedAt}>{widget.resolvedAt}</time></p>}
     {widget.truncated && <p role="status">Incomplete results. The data source returned a limited row set. KPI values use only these rows.</p>}
     <div className="mcp-content">
@@ -57,7 +57,7 @@ function View() {
     {state.busy && <p role="status">Loading…</p>}
     {state.error && <p role="alert">{state.error}</p>}
     {actionError && <p role="alert">{actionError}</p>}
-    {view && <><div className={`mcp-grid ${view.mode === "widget" ? "mcp-single" : ""}`}>{view.widgets.map((widget) => <Widget key={widget.id} widget={widget} />)}</div>{view.widgets.length === 0 && <p>This dashboard has no widgets.</p>}</>}
+    {view && <><div className={`mcp-grid ${view.mode === "widget" ? "mcp-single" : ""}`}>{view.widgets.map((widget) => <Widget key={widget.id} widget={widget} showTitle={view.mode === "dashboard"} />)}</div>{view.widgets.length === 0 && <p>This dashboard has no widgets.</p>}</>}
   </main>;
 }
 app.ontoolinput = () => controller.input();

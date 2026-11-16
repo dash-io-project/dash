@@ -34,6 +34,8 @@ jobs:
       - run: pnpm lint
       - run: pnpm test:services:start
       - run: pnpm test
+      - run: pnpm --filter @dash/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @dash/web test:mcp-browser
       - run: pnpm --filter @dash/web build
       - run: pnpm --filter @dash/site build
       - run: pnpm test:shutdown
