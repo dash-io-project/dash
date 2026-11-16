@@ -6,6 +6,8 @@ All notable changes to Dash are documented here.
 
 ### Added
 
+- `show_dashboard` and `show_widget` display read-only MCP Apps with one shared renderer. Both tools support refresh and direct Dash links. See [MCP Apps](docs/mcp-apps.md).
+
 - API users on the **API tokens** page. An API user is an identity for a script or a service. It can have more than one token, so a service can rotate its token without downtime. To rotate a token, create a new token first. Update the app with the new token. Then revoke the old token. Delete an API user to revoke all of its tokens. See [ADR 0016](docs/adr/0016-api-users-and-token-rotation.md).
 - `GET/POST /api/api-users`, `DELETE /api/api-users/:id`, `POST /api/api-users/:id/tokens`, and `DELETE /api/api-users/:id/tokens/:tokenId`. Only a browser session can use them.
 - `add_chart_widget` accepts `rows` for a snapshot chart. An agent can save data that it calculated, for example average tickets for each hour. Dash keeps up to 1,000 rows, or 256 KiB of JSON, with the widget. The snapshots on one dashboard can use 2 MiB in total. The rows do not refresh. The chart shows a **Snapshot** label with the save date. Give `rows`, or give `dataSourceId` and `resource`. Do not give both.

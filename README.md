@@ -244,6 +244,7 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] API users: more than one token for each API user, for rotation without downtime
 - [x] Agents page: connect an MCP agent with OAuth or with a token
 - [x] MCP server (`POST /mcp`) for charts and dashboards
+- [x] MCP Apps tools for dashboards and single widgets. See [setup and host test steps](docs/mcp-apps.md).
 - [x] Public health checks (`GET /healthz`, `GET /ping`) that verify the app database
 - [x] OAuth for MCP clients (discovery, dynamic client registration, PKCE, refresh rotation)
 
