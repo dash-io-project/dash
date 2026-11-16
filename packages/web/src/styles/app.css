@@ -577,7 +577,11 @@
     display: none;
   }
 
+  /* Only the main area scrolls. An absolute box in the page, such as an `sr-only`
+     status, uses the main area as its containing block. Thus the box does not make
+     the document taller, and the sidebar stays the full height of the window. */
   .shell-main {
+    position: relative;
     min-width: 0;
     overflow-y: auto;
     background: var(--background);
