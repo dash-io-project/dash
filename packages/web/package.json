@@ -4,12 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
+    "dev": "pnpm build:mcp && vite dev",
+    "build": "pnpm build:mcp && vite build",
     "preview": "vite preview",
     "start": "node .output/server/index.mjs",
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "test": "pnpm build:mcp && vitest run",
+    "typecheck": "tsc --noEmit",
+    "build:mcp": "vite build --config vite.mcp.config.ts"
   },
   "dependencies": {
     "@dash/adapter-bigquery": "workspace:*",
@@ -22,6 +23,9 @@
     "@dash/adapter-stripe": "workspace:*",
     "@dash/core": "workspace:*",
     "@dash/seed": "workspace:*",
+    "@modelcontextprotocol/client": "2.4.0",
+    "@modelcontextprotocol/core": "2.4.0",
+    "@modelcontextprotocol/ext-apps": "2.0.4",
     "@modelcontextprotocol/server": "2.4.0",
     "@tanstack/charts": "1.1.0",
     "@tanstack/react-query": "5.105.0",

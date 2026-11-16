@@ -160,3 +160,6 @@ packages/web/.output/
 
 # Wrangler local state
 .wrangler/
+
+# Bundled MCP App resource
+packages/web/.mcp-app/

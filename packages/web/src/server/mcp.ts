@@ -1,3 +1,4 @@
+import { registerDashboardApps } from "./mcp-apps.ts";
 import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { type ApiTokenScope, type Dashboard, type DashboardWidget, isChartType } from "@dash/core";
@@ -277,6 +278,7 @@ function buildServer(auth: WorkspaceAuthContext, origin: string): McpServer {
     );
   }
 
+  registerDashboardApps(server, auth, origin);
   return server;
 }
 
