@@ -202,10 +202,15 @@ function DashboardPage() {
           </div>
         ) : null}
         <div className="dash-grid">
-          {shown.map((widget) => (
+          {shown.map((widget, index) => (
             <WidgetCard
               key={widget.id}
-              widget={shown.length === 1 && selected ? { ...widget, layout: { ...widget.layout, w: 12 } } : widget}
+              index={index}
+              widget={
+                shown.length === 1 && selected
+                  ? { ...widget, layout: { ...widget.layout, w: 12 } }
+                  : widget
+              }
               getShareUrl={() => shareUrl(widget.id)}
             />
           ))}
