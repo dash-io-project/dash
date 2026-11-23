@@ -11,16 +11,35 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as HealthzRouteImport } from './routes/healthz'
+import { Route as InviteRouteImport } from './routes/invite'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as PingRouteImport } from './routes/ping'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known.oauth-authorization-server'
+import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes/[.]well-known.oauth-protected-resource'
+import { Route as AuthedAgentTokensRouteImport } from './routes/_authed/agent-tokens'
+import { Route as AuthedAgentsRouteImport } from './routes/_authed/agents'
 import { Route as AuthedDataSourcesRouteImport } from './routes/_authed/data-sources'
+import { Route as AuthedMembersRouteImport } from './routes/_authed/members'
 import { Route as AuthedProfileRouteImport } from './routes/_authed/profile'
 import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
+import { Route as AuthedTeamRouteImport } from './routes/_authed/team'
 import { Route as AuthedTokensRouteImport } from './routes/_authed/tokens'
+import { Route as AuthedWorkspacesRouteImport } from './routes/_authed/workspaces'
+import { Route as ApiDevSeedRouteImport } from './routes/api/dev-seed'
 import { Route as ApiSettingsRouteImport } from './routes/api/settings'
+import { Route as OauthAuthorizeRouteImport } from './routes/oauth.authorize'
+import { Route as OauthRegisterRouteImport } from './routes/oauth.register'
+import { Route as OauthTokenRouteImport } from './routes/oauth.token'
+import { Route as DotwellKnownOauthProtectedResourceMcpRouteImport } from './routes/[.]well-known.oauth-protected-resource.mcp'
 import { Route as AuthedDashboardsIndexRouteImport } from './routes/_authed/dashboards.index'
 import { Route as AuthedDashboardsDashboardIdRouteImport } from './routes/_authed/dashboards.$dashboardId'
+import { Route as ApiApiUsersIndexRouteImport } from './routes/api/api-users.index'
+import { Route as ApiApiUsersIdRouteImport } from './routes/api/api-users.$id'
+import { Route as ApiAuthBootstrapRouteImport } from './routes/api/auth/bootstrap'
+import { Route as ApiAuthInvitationRouteImport } from './routes/api/auth/invitation'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
@@ -29,12 +48,23 @@ import { Route as ApiDashboardsIndexRouteImport } from './routes/api/dashboards.
 import { Route as ApiDashboardsIdRouteImport } from './routes/api/dashboards.$id'
 import { Route as ApiDataSourcesIndexRouteImport } from './routes/api/data-sources.index'
 import { Route as ApiDataSourcesIdRouteImport } from './routes/api/data-sources.$id'
+import { Route as ApiInvitationsIndexRouteImport } from './routes/api/invitations.index'
+import { Route as ApiInvitationsIdRouteImport } from './routes/api/invitations.$id'
+import { Route as ApiMembersIndexRouteImport } from './routes/api/members.index'
+import { Route as ApiMembersIdRouteImport } from './routes/api/members.$id'
+import { Route as ApiOauthAuthorizeRouteImport } from './routes/api/oauth.authorize'
 import { Route as ApiTokensIndexRouteImport } from './routes/api/tokens.index'
 import { Route as ApiTokensIdRouteImport } from './routes/api/tokens.$id'
 import { Route as ApiUsersMeRouteImport } from './routes/api/users/me'
+import { Route as ApiWorkspacesIndexRouteImport } from './routes/api/workspaces.index'
+import { Route as ApiWorkspacesIdRouteImport } from './routes/api/workspaces.$id'
+import { Route as ApiAuthInvitationAcceptRouteImport } from './routes/api/auth/invitation.accept'
 import { Route as ApiDataSourcesIdConnectRouteImport } from './routes/api/data-sources.$id.connect'
 import { Route as ApiDataSourcesIdQueryRouteImport } from './routes/api/data-sources.$id.query'
 import { Route as ApiDataSourcesIdSchemaRouteImport } from './routes/api/data-sources.$id.schema'
+import { Route as ApiWorkspacesIdMembersRouteImport } from './routes/api/workspaces.$id.members'
+import { Route as ApiApiUsersIdTokensIndexRouteImport } from './routes/api/api-users.$id.tokens.index'
+import { Route as ApiApiUsersIdTokensTokenIdRouteImport } from './routes/api/api-users.$id.tokens.$tokenId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -43,6 +73,16 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HealthzRoute = HealthzRouteImport.update({
+  id: '/healthz',
+  path: '/healthz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteRoute = InviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -55,14 +95,46 @@ const McpRoute = McpRouteImport.update({
   path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PingRoute = PingRouteImport.update({
+  id: '/ping',
+  path: '/ping',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DotwellKnownOauthAuthorizationServerRoute =
+  DotwellKnownOauthAuthorizationServerRouteImport.update({
+    id: '/.well-known/oauth-authorization-server',
+    path: '/.well-known/oauth-authorization-server',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DotwellKnownOauthProtectedResourceRoute =
+  DotwellKnownOauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthedAgentTokensRoute = AuthedAgentTokensRouteImport.update({
+  id: '/agent-tokens',
+  path: '/agent-tokens',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAgentsRoute = AuthedAgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedDataSourcesRoute = AuthedDataSourcesRouteImport.update({
   id: '/data-sources',
   path: '/data-sources',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedMembersRoute = AuthedMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedProfileRoute = AuthedProfileRouteImport.update({
@@ -75,16 +147,52 @@ const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedTeamRoute = AuthedTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedTokensRoute = AuthedTokensRouteImport.update({
   id: '/tokens',
   path: '/tokens',
   getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedWorkspacesRoute = AuthedWorkspacesRouteImport.update({
+  id: '/workspaces',
+  path: '/workspaces',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const ApiDevSeedRoute = ApiDevSeedRouteImport.update({
+  id: '/api/dev-seed',
+  path: '/api/dev-seed',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSettingsRoute = ApiSettingsRouteImport.update({
   id: '/api/settings',
   path: '/api/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OauthAuthorizeRoute = OauthAuthorizeRouteImport.update({
+  id: '/oauth/authorize',
+  path: '/oauth/authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthRegisterRoute = OauthRegisterRouteImport.update({
+  id: '/oauth/register',
+  path: '/oauth/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthTokenRoute = OauthTokenRouteImport.update({
+  id: '/oauth/token',
+  path: '/oauth/token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotwellKnownOauthProtectedResourceMcpRoute =
+  DotwellKnownOauthProtectedResourceMcpRouteImport.update({
+    id: '/mcp',
+    path: '/mcp',
+    getParentRoute: () => DotwellKnownOauthProtectedResourceRoute,
+  } as any)
 const AuthedDashboardsIndexRoute = AuthedDashboardsIndexRouteImport.update({
   id: '/dashboards/',
   path: '/dashboards/',
@@ -96,6 +204,26 @@ const AuthedDashboardsDashboardIdRoute =
     path: '/dashboards/$dashboardId',
     getParentRoute: () => AuthedRoute,
   } as any)
+const ApiApiUsersIndexRoute = ApiApiUsersIndexRouteImport.update({
+  id: '/api/api-users/',
+  path: '/api/api-users/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiApiUsersIdRoute = ApiApiUsersIdRouteImport.update({
+  id: '/api/api-users/$id',
+  path: '/api/api-users/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthBootstrapRoute = ApiAuthBootstrapRouteImport.update({
+  id: '/api/auth/bootstrap',
+  path: '/api/auth/bootstrap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthInvitationRoute = ApiAuthInvitationRouteImport.update({
+  id: '/api/auth/invitation',
+  path: '/api/auth/invitation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
   id: '/api/auth/login',
   path: '/api/auth/login',
@@ -136,6 +264,31 @@ const ApiDataSourcesIdRoute = ApiDataSourcesIdRouteImport.update({
   path: '/api/data-sources/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiInvitationsIndexRoute = ApiInvitationsIndexRouteImport.update({
+  id: '/api/invitations/',
+  path: '/api/invitations/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiInvitationsIdRoute = ApiInvitationsIdRouteImport.update({
+  id: '/api/invitations/$id',
+  path: '/api/invitations/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMembersIndexRoute = ApiMembersIndexRouteImport.update({
+  id: '/api/members/',
+  path: '/api/members/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMembersIdRoute = ApiMembersIdRouteImport.update({
+  id: '/api/members/$id',
+  path: '/api/members/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOauthAuthorizeRoute = ApiOauthAuthorizeRouteImport.update({
+  id: '/api/oauth/authorize',
+  path: '/api/oauth/authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiTokensIndexRoute = ApiTokensIndexRouteImport.update({
   id: '/api/tokens/',
   path: '/api/tokens/',
@@ -150,6 +303,21 @@ const ApiUsersMeRoute = ApiUsersMeRouteImport.update({
   id: '/api/users/me',
   path: '/api/users/me',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWorkspacesIndexRoute = ApiWorkspacesIndexRouteImport.update({
+  id: '/api/workspaces/',
+  path: '/api/workspaces/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWorkspacesIdRoute = ApiWorkspacesIdRouteImport.update({
+  id: '/api/workspaces/$id',
+  path: '/api/workspaces/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthInvitationAcceptRoute = ApiAuthInvitationAcceptRouteImport.update({
+  id: '/accept',
+  path: '/accept',
+  getParentRoute: () => ApiAuthInvitationRoute,
 } as any)
 const ApiDataSourcesIdConnectRoute = ApiDataSourcesIdConnectRouteImport.update({
   id: '/connect',
@@ -166,193 +334,410 @@ const ApiDataSourcesIdSchemaRoute = ApiDataSourcesIdSchemaRouteImport.update({
   path: '/schema',
   getParentRoute: () => ApiDataSourcesIdRoute,
 } as any)
+const ApiWorkspacesIdMembersRoute = ApiWorkspacesIdMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => ApiWorkspacesIdRoute,
+} as any)
+const ApiApiUsersIdTokensIndexRoute =
+  ApiApiUsersIdTokensIndexRouteImport.update({
+    id: '/tokens/',
+    path: '/tokens/',
+    getParentRoute: () => ApiApiUsersIdRoute,
+  } as any)
+const ApiApiUsersIdTokensTokenIdRoute =
+  ApiApiUsersIdTokensTokenIdRouteImport.update({
+    id: '/tokens/$tokenId',
+    path: '/tokens/$tokenId',
+    getParentRoute: () => ApiApiUsersIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/healthz': typeof HealthzRoute
+  '/invite': typeof InviteRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
+  '/ping': typeof PingRoute
   '/register': typeof RegisterRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
+  '/agent-tokens': typeof AuthedAgentTokensRoute
+  '/agents': typeof AuthedAgentsRoute
   '/data-sources': typeof AuthedDataSourcesRoute
+  '/members': typeof AuthedMembersRoute
   '/profile': typeof AuthedProfileRoute
   '/settings': typeof AuthedSettingsRoute
+  '/team': typeof AuthedTeamRoute
   '/tokens': typeof AuthedTokensRoute
+  '/workspaces': typeof AuthedWorkspacesRoute
+  '/api/dev-seed': typeof ApiDevSeedRoute
   '/api/settings': typeof ApiSettingsRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/oauth/register': typeof OauthRegisterRoute
+  '/oauth/token': typeof OauthTokenRoute
+  '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
   '/dashboards/$dashboardId': typeof AuthedDashboardsDashboardIdRoute
+  '/api/api-users/$id': typeof ApiApiUsersIdRouteWithChildren
+  '/api/auth/bootstrap': typeof ApiAuthBootstrapRoute
+  '/api/auth/invitation': typeof ApiAuthInvitationRouteWithChildren
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/me': typeof ApiAuthMeRoute
   '/api/auth/register': typeof ApiAuthRegisterRoute
   '/api/dashboards/$id': typeof ApiDashboardsIdRoute
   '/api/data-sources/$id': typeof ApiDataSourcesIdRouteWithChildren
+  '/api/invitations/$id': typeof ApiInvitationsIdRoute
+  '/api/members/$id': typeof ApiMembersIdRoute
+  '/api/oauth/authorize': typeof ApiOauthAuthorizeRoute
   '/api/tokens/$id': typeof ApiTokensIdRoute
   '/api/users/me': typeof ApiUsersMeRoute
+  '/api/workspaces/$id': typeof ApiWorkspacesIdRouteWithChildren
   '/dashboards/': typeof AuthedDashboardsIndexRoute
+  '/api/api-users/': typeof ApiApiUsersIndexRoute
   '/api/dashboards/': typeof ApiDashboardsIndexRoute
   '/api/data-sources/': typeof ApiDataSourcesIndexRoute
+  '/api/invitations/': typeof ApiInvitationsIndexRoute
+  '/api/members/': typeof ApiMembersIndexRoute
   '/api/tokens/': typeof ApiTokensIndexRoute
+  '/api/workspaces/': typeof ApiWorkspacesIndexRoute
+  '/api/auth/invitation/accept': typeof ApiAuthInvitationAcceptRoute
   '/api/data-sources/$id/connect': typeof ApiDataSourcesIdConnectRoute
   '/api/data-sources/$id/query': typeof ApiDataSourcesIdQueryRoute
   '/api/data-sources/$id/schema': typeof ApiDataSourcesIdSchemaRoute
+  '/api/workspaces/$id/members': typeof ApiWorkspacesIdMembersRoute
+  '/api/api-users/$id/tokens/$tokenId': typeof ApiApiUsersIdTokensTokenIdRoute
+  '/api/api-users/$id/tokens/': typeof ApiApiUsersIdTokensIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/healthz': typeof HealthzRoute
+  '/invite': typeof InviteRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
+  '/ping': typeof PingRoute
   '/register': typeof RegisterRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
+  '/agent-tokens': typeof AuthedAgentTokensRoute
+  '/agents': typeof AuthedAgentsRoute
   '/data-sources': typeof AuthedDataSourcesRoute
+  '/members': typeof AuthedMembersRoute
   '/profile': typeof AuthedProfileRoute
   '/settings': typeof AuthedSettingsRoute
+  '/team': typeof AuthedTeamRoute
   '/tokens': typeof AuthedTokensRoute
+  '/workspaces': typeof AuthedWorkspacesRoute
+  '/api/dev-seed': typeof ApiDevSeedRoute
   '/api/settings': typeof ApiSettingsRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/oauth/register': typeof OauthRegisterRoute
+  '/oauth/token': typeof OauthTokenRoute
+  '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
   '/dashboards/$dashboardId': typeof AuthedDashboardsDashboardIdRoute
+  '/api/api-users/$id': typeof ApiApiUsersIdRouteWithChildren
+  '/api/auth/bootstrap': typeof ApiAuthBootstrapRoute
+  '/api/auth/invitation': typeof ApiAuthInvitationRouteWithChildren
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/me': typeof ApiAuthMeRoute
   '/api/auth/register': typeof ApiAuthRegisterRoute
   '/api/dashboards/$id': typeof ApiDashboardsIdRoute
   '/api/data-sources/$id': typeof ApiDataSourcesIdRouteWithChildren
+  '/api/invitations/$id': typeof ApiInvitationsIdRoute
+  '/api/members/$id': typeof ApiMembersIdRoute
+  '/api/oauth/authorize': typeof ApiOauthAuthorizeRoute
   '/api/tokens/$id': typeof ApiTokensIdRoute
   '/api/users/me': typeof ApiUsersMeRoute
+  '/api/workspaces/$id': typeof ApiWorkspacesIdRouteWithChildren
   '/dashboards': typeof AuthedDashboardsIndexRoute
+  '/api/api-users': typeof ApiApiUsersIndexRoute
   '/api/dashboards': typeof ApiDashboardsIndexRoute
   '/api/data-sources': typeof ApiDataSourcesIndexRoute
+  '/api/invitations': typeof ApiInvitationsIndexRoute
+  '/api/members': typeof ApiMembersIndexRoute
   '/api/tokens': typeof ApiTokensIndexRoute
+  '/api/workspaces': typeof ApiWorkspacesIndexRoute
+  '/api/auth/invitation/accept': typeof ApiAuthInvitationAcceptRoute
   '/api/data-sources/$id/connect': typeof ApiDataSourcesIdConnectRoute
   '/api/data-sources/$id/query': typeof ApiDataSourcesIdQueryRoute
   '/api/data-sources/$id/schema': typeof ApiDataSourcesIdSchemaRoute
+  '/api/workspaces/$id/members': typeof ApiWorkspacesIdMembersRoute
+  '/api/api-users/$id/tokens/$tokenId': typeof ApiApiUsersIdTokensTokenIdRoute
+  '/api/api-users/$id/tokens': typeof ApiApiUsersIdTokensIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
+  '/healthz': typeof HealthzRoute
+  '/invite': typeof InviteRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
+  '/ping': typeof PingRoute
   '/register': typeof RegisterRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
+  '/_authed/agent-tokens': typeof AuthedAgentTokensRoute
+  '/_authed/agents': typeof AuthedAgentsRoute
   '/_authed/data-sources': typeof AuthedDataSourcesRoute
+  '/_authed/members': typeof AuthedMembersRoute
   '/_authed/profile': typeof AuthedProfileRoute
   '/_authed/settings': typeof AuthedSettingsRoute
+  '/_authed/team': typeof AuthedTeamRoute
   '/_authed/tokens': typeof AuthedTokensRoute
+  '/_authed/workspaces': typeof AuthedWorkspacesRoute
+  '/api/dev-seed': typeof ApiDevSeedRoute
   '/api/settings': typeof ApiSettingsRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/oauth/register': typeof OauthRegisterRoute
+  '/oauth/token': typeof OauthTokenRoute
+  '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
   '/_authed/dashboards/$dashboardId': typeof AuthedDashboardsDashboardIdRoute
+  '/api/api-users/$id': typeof ApiApiUsersIdRouteWithChildren
+  '/api/auth/bootstrap': typeof ApiAuthBootstrapRoute
+  '/api/auth/invitation': typeof ApiAuthInvitationRouteWithChildren
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/me': typeof ApiAuthMeRoute
   '/api/auth/register': typeof ApiAuthRegisterRoute
   '/api/dashboards/$id': typeof ApiDashboardsIdRoute
   '/api/data-sources/$id': typeof ApiDataSourcesIdRouteWithChildren
+  '/api/invitations/$id': typeof ApiInvitationsIdRoute
+  '/api/members/$id': typeof ApiMembersIdRoute
+  '/api/oauth/authorize': typeof ApiOauthAuthorizeRoute
   '/api/tokens/$id': typeof ApiTokensIdRoute
   '/api/users/me': typeof ApiUsersMeRoute
+  '/api/workspaces/$id': typeof ApiWorkspacesIdRouteWithChildren
   '/_authed/dashboards/': typeof AuthedDashboardsIndexRoute
+  '/api/api-users/': typeof ApiApiUsersIndexRoute
   '/api/dashboards/': typeof ApiDashboardsIndexRoute
   '/api/data-sources/': typeof ApiDataSourcesIndexRoute
+  '/api/invitations/': typeof ApiInvitationsIndexRoute
+  '/api/members/': typeof ApiMembersIndexRoute
   '/api/tokens/': typeof ApiTokensIndexRoute
+  '/api/workspaces/': typeof ApiWorkspacesIndexRoute
+  '/api/auth/invitation/accept': typeof ApiAuthInvitationAcceptRoute
   '/api/data-sources/$id/connect': typeof ApiDataSourcesIdConnectRoute
   '/api/data-sources/$id/query': typeof ApiDataSourcesIdQueryRoute
   '/api/data-sources/$id/schema': typeof ApiDataSourcesIdSchemaRoute
+  '/api/workspaces/$id/members': typeof ApiWorkspacesIdMembersRoute
+  '/api/api-users/$id/tokens/$tokenId': typeof ApiApiUsersIdTokensTokenIdRoute
+  '/api/api-users/$id/tokens/': typeof ApiApiUsersIdTokensIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/healthz'
+    | '/invite'
     | '/login'
     | '/mcp'
+    | '/ping'
     | '/register'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
+    | '/agent-tokens'
+    | '/agents'
     | '/data-sources'
+    | '/members'
     | '/profile'
     | '/settings'
+    | '/team'
     | '/tokens'
+    | '/workspaces'
+    | '/api/dev-seed'
     | '/api/settings'
+    | '/oauth/authorize'
+    | '/oauth/register'
+    | '/oauth/token'
+    | '/.well-known/oauth-protected-resource/mcp'
     | '/dashboards/$dashboardId'
+    | '/api/api-users/$id'
+    | '/api/auth/bootstrap'
+    | '/api/auth/invitation'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/me'
     | '/api/auth/register'
     | '/api/dashboards/$id'
     | '/api/data-sources/$id'
+    | '/api/invitations/$id'
+    | '/api/members/$id'
+    | '/api/oauth/authorize'
     | '/api/tokens/$id'
     | '/api/users/me'
+    | '/api/workspaces/$id'
     | '/dashboards/'
+    | '/api/api-users/'
     | '/api/dashboards/'
     | '/api/data-sources/'
+    | '/api/invitations/'
+    | '/api/members/'
     | '/api/tokens/'
+    | '/api/workspaces/'
+    | '/api/auth/invitation/accept'
     | '/api/data-sources/$id/connect'
     | '/api/data-sources/$id/query'
     | '/api/data-sources/$id/schema'
+    | '/api/workspaces/$id/members'
+    | '/api/api-users/$id/tokens/$tokenId'
+    | '/api/api-users/$id/tokens/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/healthz'
+    | '/invite'
     | '/login'
     | '/mcp'
+    | '/ping'
     | '/register'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
+    | '/agent-tokens'
+    | '/agents'
     | '/data-sources'
+    | '/members'
     | '/profile'
     | '/settings'
+    | '/team'
     | '/tokens'
+    | '/workspaces'
+    | '/api/dev-seed'
     | '/api/settings'
+    | '/oauth/authorize'
+    | '/oauth/register'
+    | '/oauth/token'
+    | '/.well-known/oauth-protected-resource/mcp'
     | '/dashboards/$dashboardId'
+    | '/api/api-users/$id'
+    | '/api/auth/bootstrap'
+    | '/api/auth/invitation'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/me'
     | '/api/auth/register'
     | '/api/dashboards/$id'
     | '/api/data-sources/$id'
+    | '/api/invitations/$id'
+    | '/api/members/$id'
+    | '/api/oauth/authorize'
     | '/api/tokens/$id'
     | '/api/users/me'
+    | '/api/workspaces/$id'
     | '/dashboards'
+    | '/api/api-users'
     | '/api/dashboards'
     | '/api/data-sources'
+    | '/api/invitations'
+    | '/api/members'
     | '/api/tokens'
+    | '/api/workspaces'
+    | '/api/auth/invitation/accept'
     | '/api/data-sources/$id/connect'
     | '/api/data-sources/$id/query'
     | '/api/data-sources/$id/schema'
+    | '/api/workspaces/$id/members'
+    | '/api/api-users/$id/tokens/$tokenId'
+    | '/api/api-users/$id/tokens'
   id:
     | '__root__'
     | '/'
     | '/_authed'
+    | '/healthz'
+    | '/invite'
     | '/login'
     | '/mcp'
+    | '/ping'
     | '/register'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
+    | '/_authed/agent-tokens'
+    | '/_authed/agents'
     | '/_authed/data-sources'
+    | '/_authed/members'
     | '/_authed/profile'
     | '/_authed/settings'
+    | '/_authed/team'
     | '/_authed/tokens'
+    | '/_authed/workspaces'
+    | '/api/dev-seed'
     | '/api/settings'
+    | '/oauth/authorize'
+    | '/oauth/register'
+    | '/oauth/token'
+    | '/.well-known/oauth-protected-resource/mcp'
     | '/_authed/dashboards/$dashboardId'
+    | '/api/api-users/$id'
+    | '/api/auth/bootstrap'
+    | '/api/auth/invitation'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/me'
     | '/api/auth/register'
     | '/api/dashboards/$id'
     | '/api/data-sources/$id'
+    | '/api/invitations/$id'
+    | '/api/members/$id'
+    | '/api/oauth/authorize'
     | '/api/tokens/$id'
     | '/api/users/me'
+    | '/api/workspaces/$id'
     | '/_authed/dashboards/'
+    | '/api/api-users/'
     | '/api/dashboards/'
     | '/api/data-sources/'
+    | '/api/invitations/'
+    | '/api/members/'
     | '/api/tokens/'
+    | '/api/workspaces/'
+    | '/api/auth/invitation/accept'
     | '/api/data-sources/$id/connect'
     | '/api/data-sources/$id/query'
     | '/api/data-sources/$id/schema'
+    | '/api/workspaces/$id/members'
+    | '/api/api-users/$id/tokens/$tokenId'
+    | '/api/api-users/$id/tokens/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
+  HealthzRoute: typeof HealthzRoute
+  InviteRoute: typeof InviteRoute
   LoginRoute: typeof LoginRoute
   McpRoute: typeof McpRoute
+  PingRoute: typeof PingRoute
   RegisterRoute: typeof RegisterRoute
+  DotwellKnownOauthAuthorizationServerRoute: typeof DotwellKnownOauthAuthorizationServerRoute
+  DotwellKnownOauthProtectedResourceRoute: typeof DotwellKnownOauthProtectedResourceRouteWithChildren
+  ApiDevSeedRoute: typeof ApiDevSeedRoute
   ApiSettingsRoute: typeof ApiSettingsRoute
+  OauthAuthorizeRoute: typeof OauthAuthorizeRoute
+  OauthRegisterRoute: typeof OauthRegisterRoute
+  OauthTokenRoute: typeof OauthTokenRoute
+  ApiApiUsersIdRoute: typeof ApiApiUsersIdRouteWithChildren
+  ApiAuthBootstrapRoute: typeof ApiAuthBootstrapRoute
+  ApiAuthInvitationRoute: typeof ApiAuthInvitationRouteWithChildren
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiAuthMeRoute: typeof ApiAuthMeRoute
   ApiAuthRegisterRoute: typeof ApiAuthRegisterRoute
   ApiDashboardsIdRoute: typeof ApiDashboardsIdRoute
   ApiDataSourcesIdRoute: typeof ApiDataSourcesIdRouteWithChildren
+  ApiInvitationsIdRoute: typeof ApiInvitationsIdRoute
+  ApiMembersIdRoute: typeof ApiMembersIdRoute
+  ApiOauthAuthorizeRoute: typeof ApiOauthAuthorizeRoute
   ApiTokensIdRoute: typeof ApiTokensIdRoute
   ApiUsersMeRoute: typeof ApiUsersMeRoute
+  ApiWorkspacesIdRoute: typeof ApiWorkspacesIdRouteWithChildren
+  ApiApiUsersIndexRoute: typeof ApiApiUsersIndexRoute
   ApiDashboardsIndexRoute: typeof ApiDashboardsIndexRoute
   ApiDataSourcesIndexRoute: typeof ApiDataSourcesIndexRoute
+  ApiInvitationsIndexRoute: typeof ApiInvitationsIndexRoute
+  ApiMembersIndexRoute: typeof ApiMembersIndexRoute
   ApiTokensIndexRoute: typeof ApiTokensIndexRoute
+  ApiWorkspacesIndexRoute: typeof ApiWorkspacesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -371,6 +756,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/healthz': {
+      id: '/healthz'
+      path: '/healthz'
+      fullPath: '/healthz'
+      preLoaderRoute: typeof HealthzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite': {
+      id: '/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof InviteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -385,6 +784,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ping': {
+      id: '/ping'
+      path: '/ping'
+      fullPath: '/ping'
+      preLoaderRoute: typeof PingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register': {
       id: '/register'
       path: '/register'
@@ -392,11 +798,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.well-known/oauth-authorization-server': {
+      id: '/.well-known/oauth-authorization-server'
+      path: '/.well-known/oauth-authorization-server'
+      fullPath: '/.well-known/oauth-authorization-server'
+      preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authed/agent-tokens': {
+      id: '/_authed/agent-tokens'
+      path: '/agent-tokens'
+      fullPath: '/agent-tokens'
+      preLoaderRoute: typeof AuthedAgentTokensRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/agents': {
+      id: '/_authed/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof AuthedAgentsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/data-sources': {
       id: '/_authed/data-sources'
       path: '/data-sources'
       fullPath: '/data-sources'
       preLoaderRoute: typeof AuthedDataSourcesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/members': {
+      id: '/_authed/members'
+      path: '/members'
+      fullPath: '/members'
+      preLoaderRoute: typeof AuthedMembersRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/profile': {
@@ -413,6 +854,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSettingsRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/team': {
+      id: '/_authed/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof AuthedTeamRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/tokens': {
       id: '/_authed/tokens'
       path: '/tokens'
@@ -420,12 +868,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedTokensRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/workspaces': {
+      id: '/_authed/workspaces'
+      path: '/workspaces'
+      fullPath: '/workspaces'
+      preLoaderRoute: typeof AuthedWorkspacesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/api/dev-seed': {
+      id: '/api/dev-seed'
+      path: '/api/dev-seed'
+      fullPath: '/api/dev-seed'
+      preLoaderRoute: typeof ApiDevSeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/settings': {
       id: '/api/settings'
       path: '/api/settings'
       fullPath: '/api/settings'
       preLoaderRoute: typeof ApiSettingsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/oauth/authorize': {
+      id: '/oauth/authorize'
+      path: '/oauth/authorize'
+      fullPath: '/oauth/authorize'
+      preLoaderRoute: typeof OauthAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/register': {
+      id: '/oauth/register'
+      path: '/oauth/register'
+      fullPath: '/oauth/register'
+      preLoaderRoute: typeof OauthRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/token': {
+      id: '/oauth/token'
+      path: '/oauth/token'
+      fullPath: '/oauth/token'
+      preLoaderRoute: typeof OauthTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-protected-resource/mcp': {
+      id: '/.well-known/oauth-protected-resource/mcp'
+      path: '/mcp'
+      fullPath: '/.well-known/oauth-protected-resource/mcp'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceMcpRouteImport
+      parentRoute: typeof DotwellKnownOauthProtectedResourceRoute
     }
     '/_authed/dashboards/': {
       id: '/_authed/dashboards/'
@@ -440,6 +930,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboards/$dashboardId'
       preLoaderRoute: typeof AuthedDashboardsDashboardIdRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/api/api-users/': {
+      id: '/api/api-users/'
+      path: '/api/api-users'
+      fullPath: '/api/api-users/'
+      preLoaderRoute: typeof ApiApiUsersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/api-users/$id': {
+      id: '/api/api-users/$id'
+      path: '/api/api-users/$id'
+      fullPath: '/api/api-users/$id'
+      preLoaderRoute: typeof ApiApiUsersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/bootstrap': {
+      id: '/api/auth/bootstrap'
+      path: '/api/auth/bootstrap'
+      fullPath: '/api/auth/bootstrap'
+      preLoaderRoute: typeof ApiAuthBootstrapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/invitation': {
+      id: '/api/auth/invitation'
+      path: '/api/auth/invitation'
+      fullPath: '/api/auth/invitation'
+      preLoaderRoute: typeof ApiAuthInvitationRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/auth/login': {
       id: '/api/auth/login'
@@ -497,6 +1015,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDataSourcesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/invitations/': {
+      id: '/api/invitations/'
+      path: '/api/invitations'
+      fullPath: '/api/invitations/'
+      preLoaderRoute: typeof ApiInvitationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/invitations/$id': {
+      id: '/api/invitations/$id'
+      path: '/api/invitations/$id'
+      fullPath: '/api/invitations/$id'
+      preLoaderRoute: typeof ApiInvitationsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/members/': {
+      id: '/api/members/'
+      path: '/api/members'
+      fullPath: '/api/members/'
+      preLoaderRoute: typeof ApiMembersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/members/$id': {
+      id: '/api/members/$id'
+      path: '/api/members/$id'
+      fullPath: '/api/members/$id'
+      preLoaderRoute: typeof ApiMembersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/oauth/authorize': {
+      id: '/api/oauth/authorize'
+      path: '/api/oauth/authorize'
+      fullPath: '/api/oauth/authorize'
+      preLoaderRoute: typeof ApiOauthAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/tokens/': {
       id: '/api/tokens/'
       path: '/api/tokens'
@@ -517,6 +1070,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/users/me'
       preLoaderRoute: typeof ApiUsersMeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/workspaces/': {
+      id: '/api/workspaces/'
+      path: '/api/workspaces'
+      fullPath: '/api/workspaces/'
+      preLoaderRoute: typeof ApiWorkspacesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/workspaces/$id': {
+      id: '/api/workspaces/$id'
+      path: '/api/workspaces/$id'
+      fullPath: '/api/workspaces/$id'
+      preLoaderRoute: typeof ApiWorkspacesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/invitation/accept': {
+      id: '/api/auth/invitation/accept'
+      path: '/accept'
+      fullPath: '/api/auth/invitation/accept'
+      preLoaderRoute: typeof ApiAuthInvitationAcceptRouteImport
+      parentRoute: typeof ApiAuthInvitationRoute
     }
     '/api/data-sources/$id/connect': {
       id: '/api/data-sources/$id/connect'
@@ -539,29 +1113,100 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDataSourcesIdSchemaRouteImport
       parentRoute: typeof ApiDataSourcesIdRoute
     }
+    '/api/workspaces/$id/members': {
+      id: '/api/workspaces/$id/members'
+      path: '/members'
+      fullPath: '/api/workspaces/$id/members'
+      preLoaderRoute: typeof ApiWorkspacesIdMembersRouteImport
+      parentRoute: typeof ApiWorkspacesIdRoute
+    }
+    '/api/api-users/$id/tokens/': {
+      id: '/api/api-users/$id/tokens/'
+      path: '/tokens'
+      fullPath: '/api/api-users/$id/tokens/'
+      preLoaderRoute: typeof ApiApiUsersIdTokensIndexRouteImport
+      parentRoute: typeof ApiApiUsersIdRoute
+    }
+    '/api/api-users/$id/tokens/$tokenId': {
+      id: '/api/api-users/$id/tokens/$tokenId'
+      path: '/tokens/$tokenId'
+      fullPath: '/api/api-users/$id/tokens/$tokenId'
+      preLoaderRoute: typeof ApiApiUsersIdTokensTokenIdRouteImport
+      parentRoute: typeof ApiApiUsersIdRoute
+    }
   }
 }
 
 interface AuthedRouteChildren {
+  AuthedAgentTokensRoute: typeof AuthedAgentTokensRoute
+  AuthedAgentsRoute: typeof AuthedAgentsRoute
   AuthedDataSourcesRoute: typeof AuthedDataSourcesRoute
+  AuthedMembersRoute: typeof AuthedMembersRoute
   AuthedProfileRoute: typeof AuthedProfileRoute
   AuthedSettingsRoute: typeof AuthedSettingsRoute
+  AuthedTeamRoute: typeof AuthedTeamRoute
   AuthedTokensRoute: typeof AuthedTokensRoute
+  AuthedWorkspacesRoute: typeof AuthedWorkspacesRoute
   AuthedDashboardsDashboardIdRoute: typeof AuthedDashboardsDashboardIdRoute
   AuthedDashboardsIndexRoute: typeof AuthedDashboardsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedAgentTokensRoute: AuthedAgentTokensRoute,
+  AuthedAgentsRoute: AuthedAgentsRoute,
   AuthedDataSourcesRoute: AuthedDataSourcesRoute,
+  AuthedMembersRoute: AuthedMembersRoute,
   AuthedProfileRoute: AuthedProfileRoute,
   AuthedSettingsRoute: AuthedSettingsRoute,
+  AuthedTeamRoute: AuthedTeamRoute,
   AuthedTokensRoute: AuthedTokensRoute,
+  AuthedWorkspacesRoute: AuthedWorkspacesRoute,
   AuthedDashboardsDashboardIdRoute: AuthedDashboardsDashboardIdRoute,
   AuthedDashboardsIndexRoute: AuthedDashboardsIndexRoute,
 }
 
 const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
+
+interface DotwellKnownOauthProtectedResourceRouteChildren {
+  DotwellKnownOauthProtectedResourceMcpRoute: typeof DotwellKnownOauthProtectedResourceMcpRoute
+}
+
+const DotwellKnownOauthProtectedResourceRouteChildren: DotwellKnownOauthProtectedResourceRouteChildren =
+  {
+    DotwellKnownOauthProtectedResourceMcpRoute:
+      DotwellKnownOauthProtectedResourceMcpRoute,
+  }
+
+const DotwellKnownOauthProtectedResourceRouteWithChildren =
+  DotwellKnownOauthProtectedResourceRoute._addFileChildren(
+    DotwellKnownOauthProtectedResourceRouteChildren,
+  )
+
+interface ApiApiUsersIdRouteChildren {
+  ApiApiUsersIdTokensTokenIdRoute: typeof ApiApiUsersIdTokensTokenIdRoute
+  ApiApiUsersIdTokensIndexRoute: typeof ApiApiUsersIdTokensIndexRoute
+}
+
+const ApiApiUsersIdRouteChildren: ApiApiUsersIdRouteChildren = {
+  ApiApiUsersIdTokensTokenIdRoute: ApiApiUsersIdTokensTokenIdRoute,
+  ApiApiUsersIdTokensIndexRoute: ApiApiUsersIdTokensIndexRoute,
+}
+
+const ApiApiUsersIdRouteWithChildren = ApiApiUsersIdRoute._addFileChildren(
+  ApiApiUsersIdRouteChildren,
+)
+
+interface ApiAuthInvitationRouteChildren {
+  ApiAuthInvitationAcceptRoute: typeof ApiAuthInvitationAcceptRoute
+}
+
+const ApiAuthInvitationRouteChildren: ApiAuthInvitationRouteChildren = {
+  ApiAuthInvitationAcceptRoute: ApiAuthInvitationAcceptRoute,
+}
+
+const ApiAuthInvitationRouteWithChildren =
+  ApiAuthInvitationRoute._addFileChildren(ApiAuthInvitationRouteChildren)
 
 interface ApiDataSourcesIdRouteChildren {
   ApiDataSourcesIdConnectRoute: typeof ApiDataSourcesIdConnectRoute
@@ -578,24 +1223,58 @@ const ApiDataSourcesIdRouteChildren: ApiDataSourcesIdRouteChildren = {
 const ApiDataSourcesIdRouteWithChildren =
   ApiDataSourcesIdRoute._addFileChildren(ApiDataSourcesIdRouteChildren)
 
+interface ApiWorkspacesIdRouteChildren {
+  ApiWorkspacesIdMembersRoute: typeof ApiWorkspacesIdMembersRoute
+}
+
+const ApiWorkspacesIdRouteChildren: ApiWorkspacesIdRouteChildren = {
+  ApiWorkspacesIdMembersRoute: ApiWorkspacesIdMembersRoute,
+}
+
+const ApiWorkspacesIdRouteWithChildren = ApiWorkspacesIdRoute._addFileChildren(
+  ApiWorkspacesIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
+  HealthzRoute: HealthzRoute,
+  InviteRoute: InviteRoute,
   LoginRoute: LoginRoute,
   McpRoute: McpRoute,
+  PingRoute: PingRoute,
   RegisterRoute: RegisterRoute,
+  DotwellKnownOauthAuthorizationServerRoute:
+    DotwellKnownOauthAuthorizationServerRoute,
+  DotwellKnownOauthProtectedResourceRoute:
+    DotwellKnownOauthProtectedResourceRouteWithChildren,
+  ApiDevSeedRoute: ApiDevSeedRoute,
   ApiSettingsRoute: ApiSettingsRoute,
+  OauthAuthorizeRoute: OauthAuthorizeRoute,
+  OauthRegisterRoute: OauthRegisterRoute,
+  OauthTokenRoute: OauthTokenRoute,
+  ApiApiUsersIdRoute: ApiApiUsersIdRouteWithChildren,
+  ApiAuthBootstrapRoute: ApiAuthBootstrapRoute,
+  ApiAuthInvitationRoute: ApiAuthInvitationRouteWithChildren,
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiAuthMeRoute: ApiAuthMeRoute,
   ApiAuthRegisterRoute: ApiAuthRegisterRoute,
   ApiDashboardsIdRoute: ApiDashboardsIdRoute,
   ApiDataSourcesIdRoute: ApiDataSourcesIdRouteWithChildren,
+  ApiInvitationsIdRoute: ApiInvitationsIdRoute,
+  ApiMembersIdRoute: ApiMembersIdRoute,
+  ApiOauthAuthorizeRoute: ApiOauthAuthorizeRoute,
   ApiTokensIdRoute: ApiTokensIdRoute,
   ApiUsersMeRoute: ApiUsersMeRoute,
+  ApiWorkspacesIdRoute: ApiWorkspacesIdRouteWithChildren,
+  ApiApiUsersIndexRoute: ApiApiUsersIndexRoute,
   ApiDashboardsIndexRoute: ApiDashboardsIndexRoute,
   ApiDataSourcesIndexRoute: ApiDataSourcesIndexRoute,
+  ApiInvitationsIndexRoute: ApiInvitationsIndexRoute,
+  ApiMembersIndexRoute: ApiMembersIndexRoute,
   ApiTokensIndexRoute: ApiTokensIndexRoute,
+  ApiWorkspacesIndexRoute: ApiWorkspacesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

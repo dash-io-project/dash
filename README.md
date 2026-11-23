@@ -6,7 +6,7 @@ Dash is a modern Tableau / Looker-style workspace. Agents can list warehouses, r
 
 ## Screenshots
 
-Taken from the demo workspace (`admin@dash.dev`). The sample warehouse ships with a **Growth overview** page. **Regional revenue review** is a custom page on the same data.
+The screenshots show the Fernway sample company in Postgres, BigQuery, and MongoDB. To get the same dashboards, see [Sample company data](#sample-company-data-development). The Claude Code screenshot comes from an earlier build with a built-in sample warehouse.
 
 ### Sign in
 
@@ -16,19 +16,25 @@ Taken from the demo workspace (`admin@dash.dev`). The sample warehouse ships wit
 
 ### Dashboards
 
-<img alt="Dashboards list showing Growth overview and Regional revenue review" src="docs/screenshots/dashboards.png" width="880">
+<img alt="Dashboards list in the Fernway workspace with six dashboards" src="docs/screenshots/dashboards.png" width="880">
 
-### Growth overview
+### Executive overview
 
-KPI tiles, a stacked revenue area chart, product mix, signups versus churn, units by product, and a filterable product table.
+ARR, net revenue retention, paying customers, and gross margin. Charts show ARR by segment, new logos by region, MRR movements, and the burn multiple. A table lists the top 25 customers. The data comes from the finance warehouse in BigQuery, and from the product database and the billing export in Postgres.
 
-<img alt="Growth overview dashboard with KPI cards, charts, and a product table" src="docs/screenshots/growth-overview.png" width="880">
+<img alt="Executive overview dashboard with KPI cards, ARR and MRR charts, and a top customers table" src="docs/screenshots/executive-overview.png" width="880">
 
-### Regional revenue review
+### Dark appearance
 
-A custom page: product revenue, share of sales, the regional stack for the last 12 months, and net new accounts.
+Select **Dark** in the account panel at the bottom of the sidebar. **System** follows the device.
 
-<img alt="Custom Regional revenue review dashboard" src="docs/screenshots/regional-revenue.png" width="880">
+<img alt="Executive overview dashboard in the dark appearance" src="docs/screenshots/executive-overview-dark.png" width="880">
+
+### Customer support
+
+Open tickets, first response time, CSAT, and NPS. Charts show ticket volume, categories, response time by priority, and survey results. The data comes from the support collections in MongoDB.
+
+<img alt="Customer support dashboard with KPI cards, ticket charts, and a table of open tickets" src="docs/screenshots/customer-support.png" width="880">
 
 ### In Claude Code
 
@@ -38,30 +44,43 @@ The same product-revenue chart, drawn in the session after a Dash MCP query agai
 
 ### Data sources
 
-<img alt="Data sources page with the built-in sample warehouse" src="docs/screenshots/data-sources.png" width="880">
+<img alt="Data sources page with the Fernway Postgres, BigQuery, and MongoDB sources" src="docs/screenshots/data-sources.png" width="880">
 
 ### API tokens
 
-<img alt="API tokens page for issuing a scoped MCP client token" src="docs/screenshots/api-tokens.png" width="880">
+An API user is an identity for a script or a service that calls the REST API. Each API user can have more than one token, so you can rotate a token without downtime. Revoke a token to stop only that token. Delete the API user to revoke all of its tokens.
+
+<img alt="API tokens page with two API users, one with two active tokens during rotation" src="docs/screenshots/api-tokens.png" width="880">
+
+### Members
+
+Everyone in the organization with their role. Administrators invite people with a single-use link and switch members between **User** and **Admin**.
+
+<img alt="Members page with members, roles, an invite form, and a pending invitation" src="docs/screenshots/members.png" width="880">
 
 ### Settings
 
-<img alt="Workspace settings and the Dash MCP endpoint note" src="docs/screenshots/settings.png" width="880">
+<img alt="Organization settings, the Sample company data panel after a seed run, and the Dash MCP endpoint" src="docs/screenshots/settings.png" width="880">
 
 ### Profile
+
+Open the account panel at the bottom of the sidebar and select **Profile**.
 
 <img alt="Profile page for the demo admin user" src="docs/screenshots/profile.png" width="880">
 
 ## Requirements
 
 - [Node.js 24](https://nodejs.org/) (Active LTS)
-- [pnpm](https://pnpm.io/) 12 (pinned to 12.5.1 in `package.json`)
+- [pnpm](https://pnpm.io/) 12 (pinned to 12.16.1 in `package.json`)
+- MongoDB. App state is the database named in `MONGODB_URI`.
 
 ## Monorepo
 
 ```text
 packages/web/                @dash/web              UX + REST API + MCP (TanStack Start)
+packages/site/               @dash/site             Public website (Next.js, static export)
 packages/core/               @dash/core             Shared types and adapter interfaces
+packages/seed/               @dash/seed             Development seed: Fernway sample company and writers
 packages/postgres-adapter/   @dash/adapter-postgres
 packages/mysql-adapter/      @dash/adapter-mysql
 packages/snowflake-adapter/  @dash/adapter-snowflake
@@ -82,14 +101,96 @@ cp .env.example .env
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The demo seed creates:
+Open [http://localhost:3000](http://localhost:3000). The app starts with no users. Sign-in points at `/register`. The first account becomes the administrator.
 
-| | |
-| --- | --- |
-| Email | `admin@dash.dev` |
-| Password | `dashadmin` |
+Set `MONGODB_URI` in `.env` or the environment before starting the app. `pnpm dev` reads the repo `.env`; a variable already set in the environment wins. The path is the database name (`/dash`). Dash creates that database the first time it connects. A username without `authSource` authenticates against `admin`, where Atlas stores SCRAM users, and that user needs the `readWrite` role on the database. Change `DASH_SECRET` before exposing the app.
 
-Change `DASH_SECRET` before exposing the app. Set `DASH_SEED_DEMO=false` to skip the demo user and sample warehouse.
+## Public website
+
+`packages/site` (`@dash/site`) is the public website. It tells visitors that Dash is open source and free to host, and it describes the paid Dash Cloud service. The stack is Next.js, Tailwind CSS, Biome, and Vitest.
+
+```bash
+pnpm dev:site
+```
+
+Open [http://localhost:3001](http://localhost:3001). The marketing pages need no database. Dash Cloud accounts need MongoDB:
+
+1. Start the clusters with `pnpm test:services:start`, or use a different MongoDB server.
+2. Copy `packages/site/.env.example` to `packages/site/.env.local`.
+3. Set `DASH_CLOUD_MONGODB_URI`. The path is the database name, for example `mongodb://dash:dash@127.0.0.1:27029/dash_cloud?authSource=admin`.
+
+`pnpm --filter @dash/site build` makes a Node.js server, and `pnpm --filter @dash/site start` runs it on port 3001.
+
+- The website uses the design tokens of the app and follows the light or dark mode of the device. The tokens are in `packages/site/src/app/globals.css`. See [Design](#design) and [ADR 0018](docs/adr/0018-website-design-tokens.md).
+- Repository, Dash Cloud, and contact links are in `packages/site/src/lib/site.ts`.
+- Plan names, prices, and features are in `packages/site/src/content/plans.ts`. Change a price there, not in a component. [ADR 0019](docs/adr/0019-dash-cloud-plans-and-prices.md) gives the cost of a compute hour and the margin rule.
+- Dash Cloud runs in this website, not on a separate host. Sign-up at `/register/` creates an account and an organization on the Free plan. Sign-in is at `/login/`, and `/account/` shows the account. Search engines do not index these pages.
+- Passwords use scrypt. A session lasts 30 days in an `HttpOnly` cookie. After 10 failed sign-ins for one email, sign-in for that email stops for 15 minutes.
+- Password reset, email verification, billing, and the hosted Dash workspace are not built yet.
+- The prices and the `hello@dash.io` address are placeholders until launch.
+
+See [ADR 0011](docs/adr/0011-public-website.md) and [ADR 0012](docs/adr/0012-dash-cloud-accounts.md).
+
+## First account
+
+The app starts with no users. The login page does not show a demo account.
+
+There is no separate user-admin CLI. Accounts are created in the product:
+
+1. Open the app. With no users, sign-in points at `/register`. The first account becomes the administrator.
+2. Later people use the same registration form while **Settings → Allow new account registration** is on.
+3. An administrator turns that setting off to keep the organization closed. Registration stays available while there are no users, so a fresh database can always create its first admin.
+4. With registration closed, an administrator adds people from **Members**: enter an email, pick **User** or **Admin**, and share the sign-up link. Dash does not send email. A link works once and expires after 7 days.
+
+`GET /api/auth/bootstrap` is public. It reports whether the organization still needs that first account, and whether registration is open.
+
+## Sample company data (development)
+
+Dash can write a realistic dataset into the data sources that you configured. The dataset is for Fernway, Inc., a fictional B2B SaaS company. It has 36 months of history that ends with the last full month. Use it to test dashboards, charts, and agents against real engines.
+
+The numbers agree across sources. Finance MRR equals the subscriptions in the product database. Collections equal the successful charges. Each account id is the same in every source. At the standard size, Fernway grows from about $7M to about $35M ARR, with about 110% net revenue retention.
+
+| Domain | Contents | Kinds, in order of preference |
+| --- | --- | --- |
+| Product database | Accounts, users, plans, subscriptions, subscription events | Postgres, BigQuery, MongoDB |
+| Billing | Customers, invoices, charges, refunds, and disputes in the shape of a Stripe export | Postgres, BigQuery, MongoDB |
+| Sales CRM | Sales reps, leads, opportunities, stage history | Postgres, BigQuery, MongoDB |
+| Finance warehouse | GL entries, opex, headcount, MRR movements, SaaS KPIs | BigQuery, Postgres, MongoDB |
+| Product analytics | Raw events, account usage, active users, feature adoption, cohort retention | BigQuery, Postgres, MongoDB |
+| Marketing analytics | Campaigns, ad spend, web sessions, signup funnel | BigQuery, Postgres, MongoDB |
+| Customer support | Tickets with conversations, CSAT, NPS, agents, incidents | MongoDB, Postgres, BigQuery |
+
+Each domain goes to the oldest source of the first kind on its list. A Postgres or BigQuery source receives one `fernway_<domain>` schema or dataset for each domain. A MongoDB source receives `<domain>_<table>` collections in its configured database. Each domain has raw tables and `mart_*` tables. Dash queries do not join or group rows, so the charts read the marts.
+
+To seed the local clusters:
+
+1. Start the clusters with `pnpm test:services:start`.
+2. In `.env`, set `MONGODB_URI=mongodb://dash:dash@127.0.0.1:27029/dash_app?authSource=admin` and `DEMO_ENVIRONMENT=true`.
+3. Run `pnpm dev` and sign in as an administrator.
+4. On **Data sources**, add these sources:
+   - Postgres: `postgres://dash:dash@127.0.0.1:54329/fernway`
+   - MongoDB: `mongodb://dash:dash@127.0.0.1:27029/fernway?authSource=admin`
+   - BigQuery: project `dash`, API endpoint `http://127.0.0.1:9059`, and no default dataset
+5. Open **Settings**, go to **Sample company data**, select a size, and click **Seed data sources**.
+
+Do not point a source at the `dash` fixture database. The adapter tests expect only their fixture tables there. The Postgres cluster creates an empty `fernway` database for this purpose. Use the **Small** size with the BigQuery emulator, because the emulator keeps all data in its 1 GiB of memory.
+
+The run continues in the background. The panel shows each domain and its row count. When the run is complete, the shared **Fernway** workspace has six dashboards: Executive overview, Revenue & billing, Sales pipeline, Product engagement, Marketing performance, and Customer support. **Remove sample data** drops the data that the seeder wrote and deletes those dashboards.
+
+Safety rules:
+
+- The feature is off unless `DEMO_ENVIRONMENT=true`. `demo.dash.io` sets this value. The flag works in production.
+- A seed run skips a data source when its database is not available. The run writes the other sources. BigQuery is one example.
+- Only an administrator with a browser session can start a run. API tokens and MCP cannot.
+- Dash writes only to `fernway_*` schemas and datasets, and to the MongoDB collections that its manifest records. Each target holds a `dash_seed_manifest` table or collection.
+- Dash refuses a target that exists without that manifest. It examines every target before the first write.
+- Dash replaces and drops only the tables that the manifest lists. It keeps any other table in a seeded schema or dataset, and it drops a schema or dataset only when it is empty.
+- Dash refuses a MongoDB source that points at the Dash app database.
+- Removal acts only on the database that received the data. If someone changes or deletes a source after a seed run, removal keeps its record until a data source points at that database again.
+- While a seed or removal run is active, Dash refuses edits to and deletions of data sources. A new data source does not change a run that has started.
+- Email addresses use the reserved `.example` domain, so no seeded address can reach a real mailbox.
+
+The generator is in `packages/seed` (`@dash/seed`). It uses `@faker-js/faker` with a fixed seed, so the same month and size give the same data. See [ADR 0010](docs/adr/0010-dev-seed-data-sources.md).
 
 ## Feature checklist
 
@@ -103,6 +204,8 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] Data adapter interface (`DataAdapter`)
 - [x] Postgres adapter (`@dash/adapter-postgres`)
 - [x] Local Docker Compose clusters for adapter tests (`pnpm test:services:start` / `test:services:stop`)
+- [x] App deploy to `demo.dash.io` (Cloudflare Worker + container, GitHub Actions)
+- [x] Website deploy to `dev.dash.io` (Cloudflare Worker + container, GitHub Actions)
 - [x] MySQL adapter (`@dash/adapter-mysql`)
 - [x] MongoDB adapter (`@dash/adapter-mongodb`)
 - [x] Google BigQuery adapter (`@dash/adapter-bigquery`)
@@ -111,64 +214,220 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] Redshift adapter (`@dash/adapter-redshift`)
 - [x] Stripe adapter (`@dash/adapter-stripe`)
 - [ ] ClickHouse adapter
+- [x] Public website (`@dash/site`): open source and Dash Cloud pages, pricing
+- [x] Dash Cloud accounts in `@dash/site`: sign-up, sign-in, sessions, account page
+- [ ] Dash Cloud billing and hosted workspaces
 
 ### UX
 
 - [x] Login and registration
 - [x] User profile
+- [x] One organization per instance, with multiple workspaces
+- [x] Personal workspaces, private by default, with access for selected organization members
+- [x] Shared workspaces that organization admins create and manage
+- [x] Viewer and editor access, with workspace checks for dashboard API and MCP requests
+- [x] Members: member list, User / Admin roles, invitation links
 - [x] Settings
 - [x] Dynamic dashboard pages
 - [x] Chart widgets (TanStack Charts)
 - [x] Sortable and filterable tables (TanStack Table)
-- [x] Data sources page (admin): add and remove sources (demo warehouse, Postgres, MySQL, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift)
+- [x] Data sources page (admin): add and remove sources (Postgres, MySQL, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift)
+- [x] Demo seed: the Fernway sample company in Postgres, MongoDB, and BigQuery sources (`DEMO_ENVIRONMENT`)
 - [ ] Real-time multi-user dashboard collaboration
-- [ ] Light theme
+- [x] Light, Dark, and System appearance, selected in the account panel
 
 ### API and agents
 
 - [x] REST API
 - [x] Session authentication (httpOnly cookie)
 - [x] API tokens (hashed, scoped, expiring, revocable)
+- [x] API users: more than one token for each API user, for rotation without downtime
+- [x] Agents page: connect an MCP agent with OAuth or with a token
 - [x] MCP server (`POST /mcp`) for charts and dashboards
-- [ ] OAuth for MCP clients
+- [x] MCP Apps tools for dashboards and single widgets. See [setup and host test steps](docs/mcp-apps.md).
+- [x] Public health checks (`GET /healthz`, `GET /ping`) that verify the app database
+- [x] OAuth for MCP clients (discovery, dynamic client registration, PKCE, refresh rotation)
+
+## Design
+
+The look follows [Ember](https://github.com/NYLLON-SOFTWARE/ember-cloudflare) (MIT), the same as Soldock: neutral grays, ink for the main action, thin borders, and almost no shadows. The app does not use the name, the logo, or the app icons of Ember. See [ADR 0017](docs/adr/0017-design-tokens-and-appearance.md).
+
+### Tokens
+
+The tokens are at the top of [`packages/web/src/styles/app.css`](packages/web/src/styles/app.css). The light values are on `:root`. The dark values are on `:root.dark`. Tailwind reads them through `@theme inline`, so `bg-background`, `text-muted-foreground`, and `border-border` follow the mode.
+
+| Token | Light | Dark | Use |
+| --- | --- | --- | --- |
+| `--background` | `#ffffff` | `#171717` | The canvas: the content of a page, dialogs, the sign-in card |
+| `--foreground` | `#171717` | `#f5f5f5` | Text |
+| `--surface` | `#fafafa` | `#1c1c1c` | The sidebar, the top bar, table headers, notes in a card, the sign-in page |
+| `--hover` | `#f2f2f2` | `#282828` | The hover and the current fill of a sidebar row, a menu item, or a button |
+| `--row-hover` | `#f8f8f8` | `#202020` | The hover of a table row and of a dashboard card |
+| `--card`, `--popover` | `#ffffff` | `#1c1c1c` | Cards, widgets, menus, and the account panel |
+| `--border` | `#e5e5e5` | `#343434` | Each divider line |
+| `--input` | `#d4d4d4` | `#404040` | The border of a text field |
+| `--muted-foreground` | `#6b6b6b` | `#a3a3a3` | Secondary text and icons that are not current |
+| `--primary`, `--primary-hover`, `--primary-foreground` | `#171717`, `#2e2e2e`, `#fafafa` | `#f5f5f5`, `#dedede`, `#171717` | The main button, the brand tile, the account avatar |
+| `--ring` | `#737373` | `#a3a3a3` | The border and the ring of a text field with the focus |
+| `--focus` | `#171717` | `#f5f5f5` | The 2px focus outline of each other control |
+| `--link` | `#0066ef` | `#43abff` | Text links |
+| `--positive` | `#166534` | `#4ade80` | Success text |
+| `--negative` | `#b91c1c` | `#fca5a5` | Error text |
+| `--destructive` | `#b91c1c` | `#b91c1c` | A destructive button, with white text |
+| `--warning` | `#daa038` | `#efb146` | The color of a warning. The text of a warning is `--foreground` |
+| `--chart-1` to `--chart-8` | blue `#2a78d6` first | blue `#3987e5` first | Chart series, in a fixed sequence |
+| `--chart-grid` | `#ececec` | `#2a2a2a` | Chart grid lines |
+
+- `--positive-soft`, `--negative-soft`, and `--warning-soft` are fills. `color-mix()` makes them from the color and `--background`. `--negative-border` and `--warning-border` are their borders.
+- `--control`, `--control-hover`, `--control-border`, and `--field` are the fills of buttons and text fields. They have dark values, so a component needs no rule for dark mode.
+- Radii: `--radius-lg` 10px (cards, dialogs), `--radius-md` 8px (buttons, fields, sidebar rows), and `--radius-sm` 6px (menu items). Only badges and avatars are round.
+- Shadows: `--shadow-xs` (buttons, fields), `--shadow-menu` (menus), and `--shadow-dialog`. The sidebar, the drawer, cards, and widgets have no shadow.
+- Text uses the system font stack. The interface text is 14px. The title of a page is 18px with weight 600, and the heading of a panel is 15px with weight 600. Table headers are 12px. The app loads no font file.
+- Each number column, KPI value, and count uses tabular figures (`.tabular`).
+- Use a token for each color. The theme removes the default Tailwind palette, so a class such as `text-rose-300` makes no CSS.
+
+### Contrast
+
+Each text color has a contrast ratio of 4.5:1 or more on each fill behind it, in the two modes. The lowest ratio is `--muted-foreground` on `--hover`: 4.76:1 in light mode and 5.84:1 in dark mode.
+
+Known limit: the border of a text field (`--input`) has a low contrast on the canvas. The ratio is 1.48:1 in light mode and 1.73:1 in dark mode. This is less than the 3:1 of WCAG 1.4.11. Each field has a visible label. With the focus, the border changes to `--ring`, which has 4.74:1 in light mode and 7.11:1 in dark mode.
+
+Three light chart colors (`--chart-3`, `--chart-4`, and `--chart-5`) have less than 3:1 on a white card. A chart with two or more series has a legend, and each chart has a tooltip with the values.
+
+### Appearance
+
+[`packages/web/src/lib/appearance.ts`](packages/web/src/lib/appearance.ts) keeps the Light, Dark, or System choice. The account panel at the bottom of the sidebar has the choice.
+
+- The choice is in `localStorage`, with the key `dash:appearance`. A missing value or an unknown value gives System. If the browser refuses the storage, the app follows the device.
+- The module sets the `dark` class, `data-appearance`, and `color-scheme` on `<html>`.
+- The server sends the full page. An inline script in `<head>` applies the choice before the first paint, so the page does not show the wrong colors and then change. Dash sets no `script-src` policy. If you add one, allow this script with a hash or a nonce.
+- The choice is a display setting of one browser. Thus it has no API.
+
+### Icons
+
+The icons are from [lucide-react](https://lucide.dev), with a stroke width of 1.75 (`ICON_STROKE` in `components/ui.tsx`). An icon is 14px to 20px.
+
+### Layout
+
+- The canvas (`--background`) has the content. The sidebar is on `--surface`, with a 1px line between the two. The content is not a card.
+- The sidebar has the brand mark, the workspace switcher, the navigation groups **Analytics** and **Organization**, and the account button. The account panel has the name and the email address, the Appearance choice, the **Profile** link, and **Sign out**.
+- A sidebar row is 36px high with a radius of 8px. The current row has the `--hover` fill.
+- Each page starts with `PageHeader`: the title, one line of description, and the actions at the right.
+- Settings, Profile, Members, Workspaces, API tokens, and Agents use panels. A panel has a heading (`.panel-title`) and a muted line (`.panel-note`). A card (`.card`) holds only a list or a form. Sign-in, register, invite, and the OAuth approval use one card of 420px on the surface, with fields and buttons 40px high.
+- A widget is a card with a header row: the title at the left, the **Snapshot** label and the **Copy link** button at the right. A KPI card shows the **Snapshot** label above its value. A dashboard grid row is 56px. A chart fills its card. A KPI card shows its label at the top and its value at the bottom. From 360px to 900px, two KPI cards share a row, and the value gets smaller in a narrow card.
+- The app has one breakpoint for the drawer: 900px. At 900px and below, a top bar has the menu button, and the sidebar opens as a drawer. Escape, the close button, and the backdrop close it.
+- A dropdown is the `Select` of [`components/Select.tsx`](packages/web/src/components/Select.tsx). Use it in place of the native `<select>`. The button has the look of a text field. The list opens below the button on the menu panel, or above it when the window has more space there. The list is in `<body>`, so a dialog or a table does not cut it.
+- At 900px and below, and for a touch screen (`pointer: coarse`), each control is 44px or more and text fields have 16px text. A checkbox keeps its size: the label around it is the 44px target.
+- No page scrolls sideways at 360px. A table scrolls in its own container.
+- `prefers-reduced-motion` stops the transitions.
 
 ## REST surface
 
-All routes except register/login require a session cookie or `Authorization: Bearer dash_live_…`.
+Most routes require a session cookie or `Authorization: Bearer dash_live_…`. Bootstrap, register, login, invitation preview and accept, healthz, and ping are public. The OAuth discovery, registration, and token endpoints are also public.
 
 | Method | Path | Notes |
 | --- | --- | --- |
-| POST | `/api/auth/register` | First user becomes admin |
+| GET | `/healthz` | Public. Confirms the app MongoDB is connected |
+| GET | `/ping` | Public. Confirms the app MongoDB is connected |
+| GET | `/api/auth/bootstrap` | Public. First-account setup and registration |
+| POST | `/api/auth/register` | The first user becomes admin. Registration is closed when users exist and the switch is off. When the domain list is not empty, the email domain must be on that list. |
+| POST | `/api/auth/invitation` | Public. Preview an invitation from its token |
+| POST | `/api/auth/invitation/accept` | Public. Create the invited account and set `dash_session`. Works while registration is off |
 | POST | `/api/auth/login` | Sets `dash_session` |
 | POST | `/api/auth/logout` | |
 | GET | `/api/auth/me` | |
 | PATCH | `/api/users/me` | Profile / password |
-| GET/PATCH | `/api/settings` | PATCH is admin-only |
+| GET | `/api/members` | Everyone in the organization |
+| PATCH | `/api/members/:id` | Change role. Admin session only. The last admin cannot be demoted |
+| GET/POST | `/api/invitations` | Admin session only. POST returns the link token once |
+| DELETE | `/api/invitations/:id` | Revoke. Admin session only |
+| GET/PATCH | `/api/settings` | PATCH is admin-only. `allowedEmailDomains` lists the email domains that can create accounts. An empty list allows every domain. |
 | GET/POST | `/api/data-sources` | POST is admin-only |
 | GET/PATCH/DELETE | `/api/data-sources/:id` | |
 | GET | `/api/data-sources/:id/schema` | |
 | POST | `/api/data-sources/:id/connect` | Connection test |
 | POST | `/api/data-sources/:id/query` | Structured query |
-| GET/POST | `/api/dashboards` | |
-| GET/PATCH/DELETE | `/api/dashboards/:id` | |
-| GET/POST | `/api/tokens` | Session only; token value shown once |
+| GET/POST/DELETE | `/api/dev-seed` | Answers 404 unless `DEMO_ENVIRONMENT` is `true`. Admin session only. GET returns the plan and the run state. POST starts a seed run, and DELETE starts a removal |
+| GET/POST | `/api/workspaces` | Session only. POST requires an organization admin |
+| PATCH | `/api/workspaces/:id` | Rename. Workspace manager session only |
+| GET/PUT | `/api/workspaces/:id/members` | Workspace manager session only. PUT sets viewer/editor access or removes access with a null role |
+| GET/POST | `/api/dashboards` | Selected workspace. POST requires editor access |
+| GET/PATCH/DELETE | `/api/dashboards/:id` | Selected workspace. PATCH and DELETE require editor access |
+| GET/POST | `/api/api-users` | Session only. GET lists your API users and their tokens. POST creates an API user in the selected workspace with its first token, shown once. Scopes are `read` and `write` |
+| DELETE | `/api/api-users/:id` | Session only. Deletes the API user and revokes all of its tokens |
+| POST | `/api/api-users/:id/tokens` | Session only. Issues one more token, shown once. An API user can have 10 active tokens |
+| DELETE | `/api/api-users/:id/tokens/:tokenId` | Session only. Revokes one token |
+| GET/POST | `/api/tokens` | Session only; token value shown once. POST issues agent tokens and requires the `mcp` scope |
 | DELETE | `/api/tokens/:id` | Revoke |
-| GET/POST | `/mcp` | Bearer token with `mcp` scope |
+| GET/POST | `/mcp` | Bearer token with `mcp` scope. A 401 has a `WWW-Authenticate` challenge that points to the OAuth metadata |
+| GET | `/.well-known/oauth-protected-resource` | Public. RFC 9728 metadata for `/mcp`. Also served at `/.well-known/oauth-protected-resource/mcp` |
+| GET | `/.well-known/oauth-authorization-server` | Public. RFC 8414 metadata |
+| POST | `/oauth/register` | Public. RFC 7591 dynamic client registration |
+| GET | `/oauth/authorize` | Consent page. The signed-in user creates the agent |
+| POST | `/oauth/token` | Public. Exchanges a code (PKCE S256) or a refresh token |
+| GET/POST | `/api/oauth/authorize` | Session only. The consent page checks the request and records the decision |
+
+## Organizations and workspaces
+
+Each Dash instance serves one organization. Accounts, organization settings, invitations, and data sources belong to that instance.
+
+Each user receives a personal workspace. Only its owner has access at first. The owner can share it with existing organization members.
+Organization admins can create shared workspaces and manage their access. Admins cannot access another person's personal workspace without an explicit grant.
+Viewers can read dashboards. Editors can create, change, and delete dashboards. Workspace managers control names and access.
+
+Select a workspace in the sidebar. Open **Workspaces** to manage access or copy a workspace link.
+A link retains the selected workspace, but it does not grant access. Without a workspace in the URL, Dash opens your personal workspace.
+
+Data sources remain available throughout the organization. Only organization admins can add, change, or remove them.
+Workspace privacy protects dashboards; it does not restrict access to data sources.
+
+Session API clients select a workspace with the `X-Dash-Workspace-Id` header. Without that header, dashboard requests use the user's personal workspace.
+New API tokens bind to the workspace selected at creation. Tokens cannot select another workspace. Each request checks current membership and token scopes.
+An API user acts as the person who created it. It can use dashboards only in its workspace. Data sources follow the organization access of that person. See [ADR 0016](docs/adr/0016-api-users-and-token-rotation.md).
+This change does not migrate existing dashboards or tokens. See [ADR 0009](docs/adr/0009-organization-workspaces.md).
 
 ## MCP
 
-Issue a token with the `mcp` scope, then point a client at `/mcp`. Tools include `list_data_sources`, `get_schema`, `query_data`, `list_dashboards`, `get_dashboard`, `create_dashboard`, and `add_chart_widget`.
+Open **Agents** (`/agents`). Connect an agent with OAuth or with a token. Each agent uses one workspace.
+
+To connect with OAuth, do these steps:
+
+1. Copy the MCP URL from the Agents page. The URL uses the current site address and the `/mcp` path.
+2. Give the URL to your agent, for example as a ChatGPT connector. Select OAuth as the authentication.
+3. The agent opens Dash in your browser. Sign in if Dash asks.
+4. Set the agent name and the workspace. Select **Create dashboards and add charts** to give the agent `write`.
+5. Select **Create agent**. Dash creates the agent and sends you back to the agent.
+
+The agent finds the OAuth settings itself, and it registers itself as an OAuth client. An OAuth access token expires after one hour, and the agent gets a new one with its refresh token. Each refresh token works once. The agent stops after 90 days without a refresh. An OAuth access token works only at `/mcp`. Dash finds its public address from `X-Forwarded-Proto` and `X-Forwarded-Host`. Set `DASH_PUBLIC_URL` when the reverse proxy does not send these headers. See [ADR 0014](docs/adr/0014-mcp-oauth.md).
+
+To connect with a token, issue an agent token on the Agents page. The token has the `read` and `mcp` scopes. Select **Create dashboards and add charts** to add `write`. New tokens use the selected workspace and expire after 90 days. Set the client authorization header to `Authorization: Bearer <token>`.
+
+The Agents page lists OAuth agents and API tokens with the `mcp` scope. Revoke an agent on the Agents page. The old `/agent-tokens` path opens the Agents page. Tools include `list_data_sources`, `get_schema`, `query_data`, `list_dashboards`, `get_dashboard`, `create_dashboard`, and `add_chart_widget`.
+
+`add_chart_widget` adds a live chart or a snapshot chart:
+
+- A live chart has `dataSourceId` and `resource`. Dash runs its query each time that the chart renders.
+- A snapshot chart has `rows` that the agent calculated, for example 24 hourly averages. Dash saves up to 1,000 rows, or 256 KiB of JSON, with the chart. The snapshots on one dashboard can use 2 MiB in total. The rows do not refresh, and the chart shows a **Snapshot** label with the save date.
+
+`create_dashboard`, `get_dashboard`, and `list_dashboards` return a `dashboardUrl`, and a `widgetUrl` for each widget. `add_chart_widget` also returns `widgetId` and `chartUrl`. The links use the public address of Dash.
+
+A widget link opens a view of the dashboard that shows only that widget. The widget can be a chart, a table, or a KPI. To show more than one widget, put their ids in the `widgets` value of the link, with commas between them. Each widget card has a **Copy link** button. A link opens only for a signed-in member of the workspace. See [ADR 0015](docs/adr/0015-snapshot-charts-and-links.md).
 
 ## Scripts
 
 | Command | |
 | --- | --- |
 | `pnpm dev` | Start `@dash/web` |
+| `pnpm dev:site` | Start the public website (`@dash/site`) on port 3001 |
+| `pnpm lint` | Biome lint and format check (`@dash/site`) |
 | `pnpm test:services:start` | Start warehouse clusters (Docker Compose) |
 | `pnpm test:services:stop` | Stop clusters and delete their data |
-| `pnpm test` | Run package tests. Postgres, MySQL, MongoDB, BigQuery, Databricks SQL, Redshift, and Stripe adapter tests use the clusters |
+| `pnpm test:shutdown` | Send SIGTERM to the built `@dash/web` server and make sure that it exits. Run `pnpm --filter @dash/web build` and start the clusters first |
+| `pnpm test` | Run package tests. Adapter tests and `@dash/web` app-database tests use the clusters |
 | `pnpm typecheck` | TypeScript across workspaces |
 | `pnpm build` | Production build |
+| `pnpm deploy:demo` | `wrangler deploy` of the app Worker and container (`demo.dash.io`) |
+| `pnpm deploy:dev` | `wrangler deploy` of the website Worker and container (`dev.dash.io`) |
 
 ## Adapter test clusters
 
@@ -203,6 +462,70 @@ Override the Postgres endpoint with `DASH_TEST_POSTGRES_HOST`, `DASH_TEST_POSTGR
 - [ADR 0003](docs/adr/0003-api-tokens.md) — sessions, tokens, encryption
 - [ADR 0004](docs/adr/0004-tanstack-charts.md) — TanStack Charts + `ChartSpec`
 - [ADR 0005](docs/adr/0005-adapter-test-clusters.md) — adapter tests use local clusters
+- [ADR 0006](docs/adr/0006-dev-workers-container.md) — app Worker and container
+- [ADR 0007](docs/adr/0007-mongodb-app-state.md) — app state in MongoDB
+- [ADR 0008](docs/adr/0008-team-invitations.md) — members and invitations
+- [ADR 0011](docs/adr/0011-public-website.md) — public website (Next.js)
+- [ADR 0012](docs/adr/0012-dash-cloud-accounts.md) — Dash Cloud accounts in the public website
+- [ADR 0013](docs/adr/0013-demo-host-and-dev-website.md) — the app on demo.dash.io, the website on dev.dash.io
+- [ADR 0017](docs/adr/0017-design-tokens-and-appearance.md) — design tokens, appearance, and the app shell
+
+## Deploys
+
+A push to `main` starts two deploys. Each deploy is a Cloudflare Worker in front of one container. You can also start a workflow manually. The deploy job runs only when the ref is `main`.
+
+| Host | Package | Workflow | Wrangler config | Worker |
+| --- | --- | --- | --- | --- |
+| `demo.dash.io` | `@dash/web` (the app) | `deploy-demo.yml` | `wrangler.jsonc` | `dash-development` |
+| `dev.dash.io` | `@dash/site` (the website) | `deploy-dev.yml` | `wrangler.site.jsonc` | `dash-site-development` |
+
+The two workflows use the same GitHub Actions secrets:
+
+| Secret | |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Workers Scripts edit, Containers edit, and DNS edit on the `dash.io` zone |
+| `CLOUDFLARE_ACCOUNT_ID` | Account that owns the Workers |
+
+`pnpm deploy:demo` and `pnpm deploy:dev` run the same deploys from your computer. `pnpm deploy` is pnpm's own command and does not run these scripts. Docker has to be running. See [ADR 0013](docs/adr/0013-demo-host-and-dev-website.md).
+
+### App on demo.dash.io
+
+`.github/workflows/deploy-demo.yml` runs `wrangler deploy`. Wrangler builds `Dockerfile`, pushes the image, and attaches the Worker to `https://demo.dash.io`. `workers.dev` is off.
+
+The container runs `node .output/server/index.mjs` from `@dash/web`. One instance named `dev` serves the host. Users, sessions, and saved data sources are stored in the MongoDB database named by `MONGODB_URI`, so they survive container sleep and the next image. The demo user is not seeded. Put Cloudflare Access in front of the hostname if the demo host should not be public.
+
+Cloudflare sends SIGTERM to the container when it sleeps and when a new image rolls out. The Node server then stops its listener and closes the MongoDB client and the cached data-source adapters, so the process exits. If a handle keeps the process alive for 10 seconds after the server closes, the server exits with code 1. A process that stays alive with no listener causes `Error proxying request to container` on each request.
+
+The workflow deploys the `dash-development` Worker without `DASH_SECRET` or `MONGODB_URI`. After that first deploy, set both on that Worker:
+
+```bash
+pnpm exec wrangler secret put DASH_SECRET
+pnpm exec wrangler secret put MONGODB_URI
+```
+
+Until either is set, requests to `demo.dash.io` return 500. Later deploys leave the secrets in place. `DASH_SECRET` encrypts saved data-source credentials and must not be `change-me-in-production`. `MONGODB_URI` is the MongoDB connection string for app state and must name a database (`mongodb://…/dash` or `mongodb+srv://…/dash`). Atlas SCRAM users live in `admin`; omit `authSource` and Dash authenticates there. Grant that user `readWrite` on the named database.
+
+Cloudflare logging is on for the Worker and the container. The Worker sends Workers Logs: one invocation log per request (method, URL, status, and headers) and its own structured lines. Those are `request blocked` with the reason when a secret is missing, `container started`, and `container stopped` or `container crashed` with the exit code. The container sends whatever the Node server writes to stdout and stderr. In the Cloudflare dashboard, Worker logs are under Workers & Pages → `dash-development` → Logs. Container logs are under Containers → `dash-development-dashcontainer`. Stream the Worker's logs live with:
+
+```bash
+pnpm exec wrangler tail dash-development
+```
+
+### Website on dev.dash.io
+
+`.github/workflows/deploy-dev.yml` runs `wrangler deploy --config wrangler.site.jsonc`. Wrangler builds `Dockerfile.site`, pushes the image, and attaches the Worker to `https://dev.dash.io`. `workers.dev` is off.
+
+The container runs the standalone Next.js server of `@dash/site` (`node packages/site/server.js`). One instance named `dev` serves the host. The Worker adds `X-Robots-Tag: noindex, nofollow` to each response, so search engines do not index this copy of the website.
+
+The marketing pages work immediately after the first deploy. Sign-up and sign-in need the Dash Cloud database. Set it on the `dash-site-development` Worker:
+
+```bash
+pnpm exec wrangler secret put DASH_CLOUD_MONGODB_URI --config wrangler.site.jsonc
+```
+
+`DASH_CLOUD_MONGODB_URI` must name a database (`mongodb+srv://…/dash_cloud`). Use a database that is not the app database of a Dash instance. Later deploys do not remove the secret.
+
+Cloudflare logs are on for this Worker and its container also. Worker logs are under Workers & Pages → `dash-site-development` → Logs. Container logs are under Containers → `dash-site-development-sitecontainer`. Next.js exits with code 143 when Cloudflare stops the instance, and the Worker logs that exit as `container stopped`.
 
 ## License
 

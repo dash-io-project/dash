@@ -1,0 +1,20 @@
+body { margin: 0; min-width: 0; }
+main { padding: 16px; width: 100%; max-width: var(--host-width, 100%); }
+header, nav { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+header { justify-content: space-between; margin-bottom: 16px; }
+h1 { font-size: 20px; font-weight: 600; }
+h2 { font-size: 16px; font-weight: 600; }
+nav button { border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; }
+button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button:disabled { opacity: .5; }
+.mcp-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; }
+.mcp-widget { display: flex; flex-direction: column; min-width: 0; padding: 16px; }
+.mcp-widget p { font-size: 12px; margin: 6px 0; overflow-wrap: anywhere; }
+.mcp-content { flex: 0 0 auto; min-height: 160px; height: 320px; max-height: 600px; overflow: auto; }
+.mcp-single { display: block; }
+.mcp-single .mcp-content { height: min(calc(var(--host-height, 700px) - 180px), 600px); }
+[role="alert"] { color: var(--negative); }
+@media (max-width: 640px) { .mcp-grid { display: block; } .mcp-widget { margin-bottom: 12px; } }
+
+.compact .mcp-grid { display: block; }
+.compact .mcp-widget { margin-bottom: 12px; }

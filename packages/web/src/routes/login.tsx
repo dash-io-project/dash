@@ -1,18 +1,64 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { AuthBootstrap } from "~/lib/bootstrap";
 import { api } from "~/lib/api";
-import { AuthCard, Field, PrimaryButton, TextInput } from "~/components/ui";
+import { cn } from "~/lib/cn";
+import { safeRedirectPath } from "~/lib/redirect";
+import { AuthCard, Button, Field, TextInput, FullPageMessage, buttonClass } from "~/components/ui";
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
+    redirect: typeof search.redirect === "string" && search.redirect ? search.redirect : undefined,
+  }),
   component: LoginPage,
 });
 
 function LoginPage() {
+  const bootstrap = useQuery({
+    queryKey: ["auth-bootstrap"],
+    queryFn: () => api<AuthBootstrap>("/api/auth/bootstrap"),
+  });
+
+  if (bootstrap.isPending) {
+    return <FullPageMessage>Loading…</FullPageMessage>;
+  }
+  if (bootstrap.isError || !bootstrap.data) {
+    const detail = bootstrap.error instanceof Error ? bootstrap.error.message : null;
+    return (
+      <FullPageMessage tone="error">
+        {detail ?? "Could not load sign-in."}
+      </FullPageMessage>
+    );
+  }
+  if (bootstrap.data.needsSetup) {
+    return <SetupPrompt />;
+  }
+  return <LoginForm allowRegistration={bootstrap.data.allowRegistration} />;
+}
+
+function SetupPrompt() {
+  return (
+    <AuthCard
+      title="Create the first account"
+      subtitle="This organization has no users yet. The first account is the administrator. Additional people register after that, until an admin turns registration off in Settings."
+    >
+      <Link
+        to="/register"
+        className={cn(buttonClass("primary"), "w-full")}
+      >
+        Create administrator
+      </Link>
+    </AuthCard>
+  );
+}
+
+function LoginForm({ allowRegistration }: { allowRegistration: boolean }) {
   const navigate = useNavigate();
+  const { redirect } = Route.useSearch();
   const queryClient = useQueryClient();
-  const [email, setEmail] = useState("admin@dash.dev");
-  const [password, setPassword] = useState("dashadmin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -26,6 +72,11 @@ function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       await queryClient.invalidateQueries({ queryKey: ["me"] });
+      const target = safeRedirectPath(redirect, window.location.origin);
+      if (target) {
+        window.location.assign(target);
+        return;
+      }
       await navigate({ to: "/dashboards" });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Login failed");
@@ -37,15 +88,23 @@ function LoginPage() {
   return (
     <AuthCard
       title="Welcome back"
-      subtitle="Local demo: admin@dash.dev / dashadmin"
+      subtitle={
+        redirect?.startsWith("/oauth/authorize")
+          ? "Sign in to continue. An agent wants to connect to Dash."
+          : "Sign in with your organization account."
+      }
       onSubmit={(event) => void onSubmit(event)}
       footer={
-        <>
-          New here?{" "}
-          <Link to="/register" className="text-accent">
-            Create an account
-          </Link>
-        </>
+        allowRegistration ? (
+          <>
+            New here?{" "}
+            <Link to="/register" className="link">
+              Create an account
+            </Link>
+          </>
+        ) : (
+          <>Need an account? Ask an administrator for an invite link.</>
+        )
       }
     >
       <Field label="Email">
@@ -66,10 +125,10 @@ function LoginPage() {
           required
         />
       </Field>
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-      <PrimaryButton type="submit" disabled={pending} className="w-full">
+      {error ? <p className="text-negative">{error}</p> : null}
+      <Button variant="primary" type="submit" disabled={pending} className="w-full">
         {pending ? "Signing in…" : "Log in"}
-      </PrimaryButton>
+      </Button>
     </AuthCard>
   );
 }

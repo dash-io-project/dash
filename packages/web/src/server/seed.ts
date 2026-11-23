@@ -1,167 +1,122 @@
-import type { DashboardWidget } from "@dash/core";
-import { countUsers, createUser } from "./auth.ts";
-import { getDb } from "./db.ts";
-import { getEnv } from "./env.ts";
-import { createDashboard, listDashboards } from "./services/dashboards.ts";
-import { createDataSource, listDataSources } from "./services/data-sources.ts";
-import { getSettings, updateSettings } from "./services/settings.ts";
+import { findUserByEmail } from "./auth.ts";
+import { verifyPassword } from "./crypto.ts";
+import { apiTokens, apiUsers, dashboards, getDb, nowIso, sessions, users } from "./db.ts";
+import { getSettings } from "./services/settings.ts";
 
-function demoWidgets(dataSourceId: string): DashboardWidget[] {
-  return [
-    {
-      id: "kpi-revenue",
-      type: "kpi",
-      title: "Trailing revenue",
-      layout: { x: 0, y: 0, w: 3, h: 2 },
-      dataSourceId,
-      query: { resource: "monthly_revenue", columns: ["revenue"] },
-      kpi: { aggregation: "sum", column: "revenue", format: "currency" },
-    },
-    {
-      id: "kpi-orders",
-      type: "kpi",
-      title: "Orders",
-      layout: { x: 3, y: 0, w: 3, h: 2 },
-      dataSourceId,
-      query: { resource: "monthly_revenue", columns: ["orders"] },
-      kpi: { aggregation: "sum", column: "orders", format: "number" },
-    },
-    {
-      id: "kpi-net",
-      type: "kpi",
-      title: "Net new accounts",
-      layout: { x: 6, y: 0, w: 3, h: 2 },
-      dataSourceId,
-      query: { resource: "monthly_signups", columns: ["net"] },
-      kpi: { aggregation: "sum", column: "net", format: "number" },
-    },
-    {
-      id: "kpi-arpu",
-      type: "kpi",
-      title: "Top SKU revenue",
-      layout: { x: 9, y: 0, w: 3, h: 2 },
-      dataSourceId,
-      query: { resource: "product_sales", columns: ["revenue"] },
-      kpi: { aggregation: "max", column: "revenue", format: "currency" },
-    },
-    {
-      id: "chart-revenue",
-      type: "chart",
-      title: "Revenue by region",
-      layout: { x: 0, y: 2, w: 8, h: 5 },
-      dataSourceId,
-      query: {
-        resource: "monthly_revenue",
-        columns: ["month", "region", "revenue"],
-        orderBy: [{ column: "month", direction: "asc" }],
-      },
-      chart: {
-        type: "area",
-        encode: { x: "month", y: "revenue", color: "region" },
-        smooth: true,
-        stacked: true,
-      },
-    },
-    {
-      id: "chart-mix",
-      type: "chart",
-      title: "Product mix",
-      layout: { x: 8, y: 2, w: 4, h: 5 },
-      dataSourceId,
-      query: {
-        resource: "product_sales",
-        columns: ["name", "revenue"],
-      },
-      chart: {
-        type: "donut",
-        encode: { name: "name", value: "revenue" },
-      },
-    },
-    {
-      id: "chart-signups",
-      type: "chart",
-      title: "Signups vs churn",
-      layout: { x: 0, y: 7, w: 6, h: 4 },
-      dataSourceId,
-      query: {
-        resource: "monthly_signups",
-        columns: ["month", "signups", "churned"],
-        orderBy: [{ column: "month", direction: "asc" }],
-      },
-      chart: {
-        type: "line",
-        encode: { x: "month", y: ["signups", "churned"] },
-        smooth: true,
-      },
-    },
-    {
-      id: "chart-products",
-      type: "chart",
-      title: "Units by product",
-      layout: { x: 6, y: 7, w: 6, h: 4 },
-      dataSourceId,
-      query: {
-        resource: "product_sales",
-        columns: ["name", "units"],
-        orderBy: [{ column: "units", direction: "desc" }],
-      },
-      chart: {
-        type: "bar",
-        encode: { x: "name", y: "units" },
-      },
-    },
-    {
-      id: "table-products",
-      type: "table",
-      title: "Product performance",
-      layout: { x: 0, y: 11, w: 12, h: 5 },
-      dataSourceId,
-      query: {
-        resource: "product_sales",
-        orderBy: [{ column: "revenue", direction: "desc" }],
-      },
-    },
-  ];
-}
+/** The published demo account. Startup removes it only while this password still matches. */
+const LEGACY_DEMO_EMAIL = "admin@dash.dev";
+const LEGACY_DEMO_PASSWORD = "dashadmin";
 
-let seeded = false;
-
-export async function ensureSeeded(): Promise<void> {
-  if (seeded) {
-    return;
-  }
-  getDb();
-  getSettings();
-  const { seedDemo } = getEnv();
-  if (!seedDemo) {
-    seeded = true;
-    return;
-  }
-  if (countUsers() === 0) {
-    const admin = await createUser({
-      email: "admin@dash.dev",
-      name: "Dash Admin",
-      password: "dashadmin",
-      role: "admin",
-    });
-    updateSettings({ name: "Dash", allowRegistration: true });
-    if (listDataSources().length === 0) {
-      const source = createDataSource({
-        name: "Sample warehouse",
-        description: "Built-in product analytics for trying Dash without a database.",
-        config: { kind: "demo" },
-        createdBy: admin.id,
-      });
-      if (listDashboards().length === 0) {
-        createDashboard({
-          name: "Growth overview",
-          description:
-            "Revenue, acquisition, and product mix from the sample warehouse. Duplicate it or ask Dash MCP to add charts.",
-          widgets: demoWidgets(source.id),
-          createdBy: admin.id,
-        });
+/**
+ * The built-in sample warehouse (`kind: "demo"`) is gone. Older app databases
+ * can still hold one, and its config has no adapter now. This step runs once:
+ * it deletes those sources and the widgets that read them. A dashboard with
+ * no widget left is deleted too. The demo source held no data of its own.
+ */
+async function retireDemoSources(): Promise<void> {
+  const db = await getDb();
+  const marker = db.collection<{ _id: string; complete: boolean }>("settings");
+  if (await marker.findOne({ _id: "demo-retired" })) return;
+  const sources = db.collection<{ _id: string; kind: string }>("data_sources");
+  const ids = (await sources.find({ kind: "demo" }).project<{ _id: string }>({ _id: 1 }).toArray()).map((row) => row._id);
+  if (ids.length > 0) {
+    const boards = await dashboards();
+    for (const board of await boards.find({ "widgets.dataSourceId": { $in: ids } }).toArray()) {
+      const widgets = board.widgets.filter((widget) => !widget.dataSourceId || !ids.includes(widget.dataSourceId));
+      if (widgets.length === 0) {
+        await boards.deleteOne({ _id: board._id });
+      } else {
+        await boards.updateOne({ _id: board._id }, { $set: { widgets, updatedAt: nowIso() } });
       }
     }
+    await sources.deleteMany({ _id: { $in: ids } });
   }
-  seeded = true;
+  await marker.updateOne({ _id: "demo-retired" }, { $set: { complete: true } }, { upsert: true });
+}
+
+/**
+ * Keep one admin when the legacy account is the only admin.
+ * The oldest active member receives the role. A pending account stays pending.
+ */
+async function keepAnotherAdmin(removedId: string): Promise<void> {
+  const collection = await users();
+  const others = await collection.countDocuments({
+    _id: { $ne: removedId },
+    role: "admin",
+    accountState: { $ne: "pending" },
+  });
+  if (others > 0) return;
+  await collection.findOneAndUpdate(
+    {
+      _id: { $ne: removedId },
+      role: { $ne: "admin" },
+      accountState: { $ne: "pending" },
+    },
+    { $set: { role: "admin" } },
+    { sort: { createdAt: 1, _id: 1 } },
+  );
+}
+
+/**
+ * Drop a first-admin record whose account is already gone.
+ * A live account keeps the record. A later member stays a member.
+ */
+async function releaseOrphanBootstrap(): Promise<void> {
+  const marker = (await getDb()).collection<{ _id: string; adminUserId?: string }>("settings");
+  const bootstrap = await marker.findOne({ _id: "bootstrap" });
+  if (!bootstrap?.adminUserId) return;
+  if (await (await users()).findOne({ _id: bootstrap.adminUserId })) return;
+  await marker.deleteOne({ _id: "bootstrap", adminUserId: bootstrap.adminUserId });
+}
+
+/**
+ * Older installs can still hold admin@dash.dev with the published password.
+ * This step runs once. It deletes that account, its sessions, its tokens, and its API users
+ * when the password still matches. An account with a different password stays.
+ * When that account is the only admin, another active member becomes admin first.
+ * The first-admin record goes before the account, so a stopped run can finish.
+ */
+async function retireLegacyDemoAdmin(): Promise<void> {
+  const db = await getDb();
+  const marker = db.collection<{ _id: string; complete: boolean; adminUserId?: string }>("settings");
+  if (await marker.findOne({ _id: "demo-admin-retired" })) return;
+  const user = await findUserByEmail(LEGACY_DEMO_EMAIL);
+  if (user && (await verifyPassword(LEGACY_DEMO_PASSWORD, user.passwordHash))) {
+    if (user.role === "admin") await keepAnotherAdmin(user._id);
+    await (await sessions()).deleteMany({ userId: user._id });
+    await (await apiTokens()).updateMany(
+      { userId: user._id, revokedAt: null },
+      { $set: { revokedAt: nowIso() } },
+    );
+    await (await apiUsers()).updateMany(
+      { ownerId: user._id, deletedAt: null },
+      { $set: { deletedAt: nowIso(), updatedAt: nowIso() } },
+    );
+    await marker.deleteOne({ _id: "bootstrap", adminUserId: user._id });
+    await (await users()).deleteOne({ _id: user._id });
+  }
+  await releaseOrphanBootstrap();
+  await marker.updateOne({ _id: "demo-admin-retired" }, { $set: { complete: true } }, { upsert: true });
+}
+
+let seedTask: Promise<void> | undefined;
+
+export function resetSeedForTests(): void {
+  seedTask = undefined;
+}
+
+async function seedOnce(): Promise<void> {
+  await getSettings();
+  await retireDemoSources();
+  await retireLegacyDemoAdmin();
+}
+
+export function ensureSeeded(): Promise<void> {
+  if (!seedTask) {
+    seedTask = seedOnce().catch((error: unknown) => {
+      seedTask = undefined;
+      throw error;
+    });
+  }
+  return seedTask;
 }

@@ -1,103 +1,193 @@
+import { useEffect, useId, useRef, useState } from "react";
 import type { PublicUser } from "@dash/core";
-import { Link, Navigate, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, Navigate, Outlet, useRouter, useRouterState } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import {
+  Bot,
+  Boxes,
   Database,
   KeyRound,
   LayoutDashboard,
-  LogOut,
+  Menu,
   Settings,
-  UserRound,
+  Users,
+  X,
+  type LucideIcon,
 } from "lucide-react";
-import { api } from "~/lib/api";
 import { fetchMe } from "~/lib/session";
 import { cn } from "~/lib/cn";
+import { AccountMenu } from "./AccountMenu";
+import { BrandMark, FullPageMessage, ICON_STROKE, IconButton } from "./ui";
+import { WorkspaceProvider, useWorkspace } from "./WorkspaceProvider";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
-const NAV = [
-  { to: "/dashboards", label: "Dashboards", icon: LayoutDashboard },
-  { to: "/data-sources", label: "Data sources", icon: Database, admin: true },
-  { to: "/tokens", label: "API tokens", icon: KeyRound },
-  { to: "/settings", label: "Settings", icon: Settings },
-  { to: "/profile", label: "Profile", icon: UserRound },
-] as const;
+interface NavItem {
+  to: "/dashboards" | "/data-sources" | "/workspaces" | "/members" | "/tokens" | "/agents" | "/settings";
+  label: string;
+  icon: LucideIcon;
+  /** Only an administrator sees the item. */
+  admin?: boolean;
+}
+
+// The Profile page has no row here. The account panel has its link.
+const NAV_GROUPS: readonly { label: string; items: readonly NavItem[] }[] = [
+  {
+    label: "Analytics",
+    items: [
+      { to: "/dashboards", label: "Dashboards", icon: LayoutDashboard },
+      { to: "/data-sources", label: "Data sources", icon: Database, admin: true },
+    ],
+  },
+  {
+    label: "Organization",
+    items: [
+      { to: "/workspaces", label: "Workspaces", icon: Boxes },
+      { to: "/members", label: "Members", icon: Users },
+      { to: "/tokens", label: "API tokens", icon: KeyRound },
+      { to: "/agents", label: "Agents", icon: Bot },
+      { to: "/settings", label: "Settings", icon: Settings },
+    ],
+  },
+];
+
+const DRAWER_LAYOUT = "(max-width: 900px)";
 
 export function AppShell({ user }: { user: PublicUser }) {
+  const { workspaces } = useWorkspace();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  // At 900px and below, the sidebar is a drawer. The menu button opens it.
+  const [navOpen, setNavOpen] = useState(false);
+  const sidebar = useRef<HTMLElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const sidebarId = useId();
 
-  async function logout() {
-    await api("/api/auth/logout", { method: "POST" });
-    queryClient.clear();
-    await navigate({ to: "/login" });
-  }
+  // A link in the drawer opens a page. The drawer then closes.
+  useEffect(() => {
+    setNavOpen(false);
+  }, [pathname]);
+
+  // Above 900px the page has no drawer. A phone that turns on its side can go above 900px.
+  useEffect(() => {
+    const drawerLayout = matchMedia(DRAWER_LAYOUT);
+    const close = () => setNavOpen(false);
+    drawerLayout.addEventListener("change", close);
+    return () => drawerLayout.removeEventListener("change", close);
+  }, []);
+
+  // The open drawer has the focus, and Escape closes it. When it closes, the focus
+  // goes back to the menu button.
+  useEffect(() => {
+    if (!navOpen) return;
+    const button = menuButton.current;
+    sidebar.current?.focus();
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setNavOpen(false);
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      // On a wide window the button does not show, and `focus` does nothing.
+      button?.focus();
+    };
+  }, [navOpen]);
 
   return (
-    <div className="min-h-screen lg:grid lg:h-screen lg:grid-cols-[16.5rem_1fr] lg:overflow-hidden">
-      <aside className="border-b border-line bg-ink-2/80 px-4 py-4 backdrop-blur lg:flex lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-r lg:px-5 lg:py-6">
-        <Link to="/dashboards" className="flex items-center gap-3 px-2">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent/15 text-accent">
-            <LayoutDashboard size={18} />
-          </span>
-          <span>
-            <span className="block text-sm font-semibold tracking-wide">Dash</span>
-            <span className="block text-xs text-mist">AI analytics</span>
-          </span>
+    <div className="shell">
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+      {/* The top bar shows at 900px and below. While the drawer is open, the top bar and
+          the page are inert: the Tab key stays in the drawer, and the page does not scroll. */}
+      <div className="shell-topbar" inert={navOpen}>
+        <IconButton
+          ref={menuButton}
+          label="Open menu"
+          aria-expanded={navOpen}
+          aria-controls={sidebarId}
+          onClick={() => setNavOpen(true)}
+        >
+          <Menu size={20} strokeWidth={ICON_STROKE} aria-hidden="true" />
+        </IconButton>
+        <Link to="/dashboards" className="flex items-center gap-2.5">
+          <BrandMark className="h-7 w-7" />
+          <span className="text-[15px] font-semibold">Dash</span>
         </Link>
-        <nav className="mt-6 flex gap-1 overflow-x-auto lg:mt-10 lg:flex-col">
-          {NAV.filter((item) => !("admin" in item && item.admin) || user.role === "admin").map(
-            (item) => {
-              const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2 text-sm whitespace-nowrap",
-                    active
-                      ? "bg-white/10 text-paper"
-                      : "text-mist hover:bg-white/5 hover:text-paper",
-                  )}
-                >
-                  <Icon size={16} />
-                  {item.label}
-                </Link>
-              );
-            },
-          )}
-        </nav>
-        <div className="mt-6 hidden items-center justify-between rounded-2xl border border-line bg-panel px-3 py-3 lg:mt-auto lg:flex">
-          <div>
-            <div className="text-sm font-medium">{user.name}</div>
-            <div className="text-xs text-mist">{user.email}</div>
+      </div>
+      <aside
+        ref={sidebar}
+        id={sidebarId}
+        tabIndex={-1}
+        aria-label="Sidebar"
+        className={cn("sidebar outline-none", navOpen && "sidebar-open")}
+      >
+        <div className="flex items-center justify-between gap-2 px-4 pt-4">
+          <Link to="/dashboards" className="flex min-w-0 items-center gap-2.5 rounded-md">
+            <BrandMark />
+            <span className="text-[15px] font-semibold">Dash</span>
+          </Link>
+          <IconButton label="Close menu" className="sidebar-close" onClick={() => setNavOpen(false)}>
+            <X size={20} strokeWidth={ICON_STROKE} aria-hidden="true" />
+          </IconButton>
+        </div>
+        {workspaces.length > 1 ? (
+          <div className="px-3 pt-4">
+            <WorkspaceSwitcher userId={user.id} />
           </div>
-          <button
-            type="button"
-            onClick={() => void logout()}
-            className="rounded-lg p-2 text-mist hover:bg-white/5 hover:text-paper"
-            aria-label="Log out"
-          >
-            <LogOut size={16} />
-          </button>
+        ) : null}
+        <nav aria-label="Main" className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-5">
+          {NAV_GROUPS.map((group) => {
+            const items = group.items.filter((item) => !item.admin || user.role === "admin");
+            return (
+              <div key={group.label}>
+                <div className="nav-heading">{group.label}</div>
+                <ul className="space-y-0.5">
+                  {items.map((item) => {
+                    const active = pathname === item.to || pathname.startsWith(`${item.to}/`);
+                    return (
+                      <li key={item.to}>
+                        <Link to={item.to} aria-current={active ? "page" : undefined} className="nav-item">
+                          <item.icon size={17} strokeWidth={ICON_STROKE} aria-hidden="true" className="shrink-0" />
+                          {item.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
+        </nav>
+        <div className="border-t border-border p-3">
+          <AccountMenu user={user} />
         </div>
       </aside>
-      <main className="min-w-0 px-4 py-6 lg:overflow-y-auto lg:px-10 lg:py-8">
+      <main id="main" tabIndex={-1} className="shell-main" inert={navOpen}>
         <Outlet />
       </main>
+      {navOpen ? (
+        <button
+          type="button"
+          className="shell-backdrop"
+          aria-label="Close menu"
+          tabIndex={-1}
+          onClick={() => setNavOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
 
 export function AuthedGate() {
   const me = useQuery({ queryKey: ["me"], queryFn: fetchMe });
+  const router = useRouter();
   if (me.isLoading) {
-    return (
-      <div className="grid min-h-screen place-items-center text-mist">Loading workspace…</div>
-    );
+    return <FullPageMessage>Loading workspace…</FullPageMessage>;
   }
   if (me.isError || !me.data) {
-    return <Navigate to="/login" />;
+    // Return to this page after sign-in, so that a shared dashboard or chart
+    // link still works. Read the location once: a subscription re-renders this
+    // gate on each navigation, and `Navigate` then navigates again in a loop.
+    return <Navigate to="/login" search={{ redirect: router.state.location.href }} />;
   }
-  return <AppShell user={me.data} />;
+  return <WorkspaceProvider key={me.data.id} user={me.data}><AppShell user={me.data} /></WorkspaceProvider>;
 }

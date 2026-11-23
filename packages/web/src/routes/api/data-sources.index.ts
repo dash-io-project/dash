@@ -9,7 +9,6 @@ import {
 import { testConnectionConfig } from "~/server/services/query";
 
 const configSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("demo") }),
   z.object({
     kind: z.literal("postgres"),
     connectionString: z.string().optional(),
@@ -108,7 +107,7 @@ export const Route = createFileRoute("/api/data-sources/")({
         if (isResponse(auth)) {
           return auth;
         }
-        return json({ dataSources: listDataSources() });
+        return json({ dataSources: await listDataSources() });
       },
       POST: async ({ request }) => {
         const auth = await requireUser(request, "write");
@@ -126,7 +125,7 @@ export const Route = createFileRoute("/api/data-sources/")({
         if (!test.ok) {
           return error(400, test.message, "connection_failed");
         }
-        const dataSource = createDataSource({
+        const dataSource = await createDataSource({
           name: parsed.data.name,
           description: parsed.data.description ?? "",
           config: parsed.data.config,

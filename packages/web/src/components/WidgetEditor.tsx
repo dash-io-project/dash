@@ -1,8 +1,20 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import type { AdapterSchema, ChartType, DashboardWidget, DataSourceRecord } from "@dash/core";
 import { CHART_TYPES } from "@dash/core";
 import { randomId } from "~/lib/id";
-import { Field, GhostButton, PrimaryButton, Select, TextInput } from "./ui";
+import { Select, type SelectOption } from "./Select";
+import { Button, Field, TextInput } from "./ui";
+
+const WIDGET_TYPE_OPTIONS: SelectOption<DashboardWidget["type"]>[] = [
+  { value: "chart", label: "Chart" },
+  { value: "table", label: "Table" },
+  { value: "kpi", label: "KPI" },
+];
+
+const CHART_TYPE_OPTIONS: SelectOption<ChartType>[] = CHART_TYPES.map((value) => ({
+  value,
+  label: value.charAt(0).toUpperCase() + value.slice(1),
+}));
 
 export function WidgetEditor({
   dataSources,
@@ -23,12 +35,18 @@ export function WidgetEditor({
   const [x, setX] = useState("");
   const [y, setY] = useState("");
   const [color, setColor] = useState("");
+  const headingId = useId();
 
   const resources = schemas[dataSourceId]?.resources ?? [];
   const columns = useMemo(
     () => resources.find((item) => item.name === resource)?.columns ?? [],
     [resource, resources],
   );
+  const columnOptions: SelectOption[] = columns.map((column) => ({
+    value: column.name,
+    label: column.name,
+    description: column.type,
+  }));
 
   function submit() {
     const widget: DashboardWidget = {
@@ -63,105 +81,90 @@ export function WidgetEditor({
   }
 
   return (
-    <div className="fixed inset-0 z-20 grid place-items-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-3xl border border-line bg-panel p-6">
-        <h2 className="text-lg font-semibold">Add widget</h2>
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-backdrop p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={headingId}
+        className="w-full max-w-lg rounded-lg border border-border bg-background p-6 shadow-dialog"
+      >
+        <h2 id={headingId} className="text-base font-semibold">
+          Add widget
+        </h2>
         <div className="mt-4 space-y-3">
           <Field label="Title">
             <TextInput value={title} onChange={(event) => setTitle(event.target.value)} />
           </Field>
           <Field label="Widget type">
-            <Select value={type} onChange={(event) => setType(event.target.value as DashboardWidget["type"])}>
-              <option value="chart">Chart</option>
-              <option value="table">Table</option>
-              <option value="kpi">KPI</option>
-            </Select>
+            <Select value={type} options={WIDGET_TYPE_OPTIONS} onValueChange={setType} />
           </Field>
           {type === "chart" ? (
             <Field label="Chart type">
-              <Select
-                value={chartType}
-                onChange={(event) => setChartType(event.target.value as ChartType)}
-              >
-                {CHART_TYPES.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </Select>
+              <Select value={chartType} options={CHART_TYPE_OPTIONS} onValueChange={setChartType} />
             </Field>
           ) : null}
           <Field label="Data source">
             <Select
               value={dataSourceId}
-              onChange={(event) => {
-                setDataSourceId(event.target.value);
+              placeholder="Select a data source"
+              options={dataSources.map((source) => ({ value: source.id, label: source.name }))}
+              onValueChange={(id) => {
+                setDataSourceId(id);
                 setResource("");
               }}
-            >
-              {dataSources.map((source) => (
-                <option key={source.id} value={source.id}>
-                  {source.name}
-                </option>
-              ))}
-            </Select>
+            />
           </Field>
           <Field label="Resource">
-            <Select value={resource} onChange={(event) => setResource(event.target.value)}>
-              <option value="">Select a table</option>
-              {resources.map((item) => (
-                <option key={item.name} value={item.name}>
-                  {item.namespace && /^[A-Za-z_][A-Za-z0-9_]*$/.test(item.name)
+            <Select
+              value={resource}
+              placeholder="Select a table"
+              options={resources.map((item) => ({
+                value: item.name,
+                label:
+                  item.namespace && /^[A-Za-z_][A-Za-z0-9_]*$/.test(item.name)
                     ? `${item.namespace}.${item.name}`
-                    : item.name}
-                </option>
-              ))}
-            </Select>
+                    : item.name,
+              }))}
+              onValueChange={setResource}
+            />
           </Field>
           {type !== "table" ? (
             <>
               <Field label={type === "chart" ? "X / name" : "Column"}>
-                <Select value={x} onChange={(event) => setX(event.target.value)}>
-                  <option value="">Select</option>
-                  {columns.map((column) => (
-                    <option key={column.name} value={column.name}>
-                      {column.name}
-                    </option>
-                  ))}
-                </Select>
+                <Select
+                  value={x}
+                  placeholder="Select a column"
+                  options={columnOptions}
+                  onValueChange={setX}
+                />
               </Field>
               <Field label={type === "chart" ? "Y / value" : "Value"}>
-                <Select value={y} onChange={(event) => setY(event.target.value)}>
-                  <option value="">Select</option>
-                  {columns.map((column) => (
-                    <option key={column.name} value={column.name}>
-                      {column.name}
-                    </option>
-                  ))}
-                </Select>
+                <Select
+                  value={y}
+                  placeholder="Select a column"
+                  options={columnOptions}
+                  onValueChange={setY}
+                />
               </Field>
             </>
           ) : null}
           {type === "chart" ? (
             <Field label="Series (optional)">
-              <Select value={color} onChange={(event) => setColor(event.target.value)}>
-                <option value="">None</option>
-                {columns.map((column) => (
-                  <option key={column.name} value={column.name}>
-                    {column.name}
-                  </option>
-                ))}
-              </Select>
+              <Select
+                value={color}
+                options={[{ value: "", label: "None" }, ...columnOptions]}
+                onValueChange={setColor}
+              />
             </Field>
           ) : null}
         </div>
         <div className="mt-6 flex justify-end gap-2">
-          <GhostButton type="button" onClick={onClose}>
+          <Button type="button" onClick={onClose}>
             Cancel
-          </GhostButton>
-          <PrimaryButton type="button" onClick={submit} disabled={!dataSourceId || !resource}>
+          </Button>
+          <Button variant="primary" type="button" onClick={submit} disabled={!dataSourceId || !resource}>
             Add widget
-          </PrimaryButton>
+          </Button>
         </div>
       </div>
     </div>

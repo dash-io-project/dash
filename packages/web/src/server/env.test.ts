@@ -1,84 +1,126 @@
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { getEnv, migrateLegacySqlite } from "./env.ts";
+import { databaseNameFromUri, getEnv, implicitAuthSource, parseEnvFile } from "./env.ts";
 
-describe("migrateLegacySqlite", () => {
-  it("moves a legacy database and its sidecars when the new file is absent", () => {
-    const root = mkdtempSync(join(tmpdir(), "dash-env-"));
-    const legacy = join(root, "core/data/dash.sqlite");
-    const target = join(root, "packages/web/data/dash.sqlite");
-    mkdirSync(join(root, "core/data"), { recursive: true });
-    writeFileSync(legacy, "sqlite-bytes");
-    writeFileSync(`${legacy}-wal`, "wal");
-    writeFileSync(`${legacy}-shm`, "shm");
-
-    expect(migrateLegacySqlite(target, legacy)).toBe(true);
-    expect(readFileSync(target, "utf8")).toBe("sqlite-bytes");
-    expect(readFileSync(`${target}-wal`, "utf8")).toBe("wal");
-    expect(readFileSync(`${target}-shm`, "utf8")).toBe("shm");
-    expect(existsSync(legacy)).toBe(false);
-    expect(existsSync(`${legacy}-wal`)).toBe(false);
-  });
-
-  it("leaves an existing database in place", () => {
-    const root = mkdtempSync(join(tmpdir(), "dash-env-"));
-    const legacy = join(root, "core/data/dash.sqlite");
-    const target = join(root, "packages/web/data/dash.sqlite");
-    mkdirSync(join(root, "core/data"), { recursive: true });
-    mkdirSync(join(root, "packages/web/data"), { recursive: true });
-    writeFileSync(legacy, "legacy");
-    writeFileSync(target, "current");
-
-    expect(migrateLegacySqlite(target, legacy)).toBe(false);
-    expect(readFileSync(target, "utf8")).toBe("current");
-    expect(readFileSync(legacy, "utf8")).toBe("legacy");
+describe("parseEnvFile", () => {
+  it("reads keys and keeps quoted values", () => {
+    expect(
+      parseEnvFile(`
+# comment
+export MONGODB_URI=mongodb://127.0.0.1:27017/dash
+DEMO_ENVIRONMENT="false"
+not a line
+`),
+    ).toEqual({
+      MONGODB_URI: "mongodb://127.0.0.1:27017/dash",
+      DEMO_ENVIRONMENT: "false",
+    });
   });
 });
 
-describe("getEnv database path", () => {
-  const previousCwd = process.cwd();
-  const previousPath = process.env.DASH_DATABASE_PATH;
+describe("databaseNameFromUri", () => {
+  it("reads the database path", () => {
+    expect(databaseNameFromUri("mongodb://127.0.0.1:27017/dash")).toBe("dash");
+    expect(
+      databaseNameFromUri(
+        "mongodb+srv://user:pass@cluster.example.net/dash_app?retryWrites=true&w=majority",
+      ),
+    ).toBe("dash_app");
+  });
+
+  it("rejects a URI without a database name", () => {
+    expect(() => databaseNameFromUri("mongodb://127.0.0.1:27017")).toThrow(/database name/);
+    expect(() => databaseNameFromUri("mongodb://127.0.0.1:27017/")).toThrow(/database name/);
+  });
+
+  it("rejects a URI that turns off TLS verification", () => {
+    expect(() =>
+      databaseNameFromUri("mongodb://127.0.0.1:27017/dash?tlsAllowInvalidCertificates=true"),
+    ).toThrow(/TLS verification/);
+  });
+
+  it("rejects a non-mongodb scheme", () => {
+    expect(() => databaseNameFromUri("postgres://127.0.0.1:5432/dash")).toThrow(/mongodb/);
+  });
+});
+
+describe("implicitAuthSource", () => {
+  it("uses admin for a user when the URI does not set authSource", () => {
+    expect(implicitAuthSource("mongodb+srv://dash:secret@cluster.example.net/dash")).toBe(
+      "admin",
+    );
+    expect(implicitAuthSource("mongodb://dash:dash@127.0.0.1:27029/dash")).toBe("admin");
+  });
+
+  it("leaves an explicit authSource and a URI without a user alone", () => {
+    expect(
+      implicitAuthSource("mongodb://dash:dash@127.0.0.1:27029/dash?authSource=admin"),
+    ).toBeUndefined();
+    expect(implicitAuthSource("mongodb://127.0.0.1:27017/dash")).toBeUndefined();
+  });
+});
+
+describe("getEnv", () => {
+  const previousUri = process.env.MONGODB_URI;
+  const previousSecret = process.env.DASH_SECRET;
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousSeed = process.env.DEMO_ENVIRONMENT;
 
   afterEach(() => {
-    process.chdir(previousCwd);
-    if (previousPath === undefined) delete process.env.DASH_DATABASE_PATH;
-    else process.env.DASH_DATABASE_PATH = previousPath;
+    if (previousSeed === undefined) delete process.env.DEMO_ENVIRONMENT;
+    else process.env.DEMO_ENVIRONMENT = previousSeed;
+    if (previousUri === undefined) delete process.env.MONGODB_URI;
+    else process.env.MONGODB_URI = previousUri;
+    if (previousSecret === undefined) delete process.env.DASH_SECRET;
+    else process.env.DASH_SECRET = previousSecret;
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
   });
 
-  it("moves core/data/dash.sqlite when the shipped relative path is in use", () => {
-    const root = mkdtempSync(join(tmpdir(), "dash-env-"));
-    const web = join(root, "packages/web");
-    mkdirSync(web, { recursive: true });
-    mkdirSync(join(root, "core/data"), { recursive: true });
-    writeFileSync(join(root, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n");
-    writeFileSync(join(root, "core/data/dash.sqlite"), "legacy");
-    process.chdir(web);
-    process.env.DASH_DATABASE_PATH = "./data/dash.sqlite";
-
-    const env = getEnv();
-
-    expect(env.databasePath).toBe(join(web, "data/dash.sqlite"));
-    expect(readFileSync(env.databasePath, "utf8")).toBe("legacy");
-    expect(existsSync(join(root, "core/data/dash.sqlite"))).toBe(false);
+  it("requires MONGODB_URI", () => {
+    delete process.env.MONGODB_URI;
+    delete process.env.NODE_ENV;
+    expect(() => getEnv()).toThrow(/MONGODB_URI must be set/);
   });
 
-  it("does not import the legacy database into a custom path", () => {
-    const root = mkdtempSync(join(tmpdir(), "dash-env-"));
-    const web = join(root, "packages/web");
-    const custom = join(root, "custom/dash.sqlite");
-    mkdirSync(web, { recursive: true });
-    mkdirSync(join(root, "core/data"), { recursive: true });
-    writeFileSync(join(root, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n");
-    writeFileSync(join(root, "core/data/dash.sqlite"), "legacy");
-    process.chdir(web);
-    process.env.DASH_DATABASE_PATH = custom;
+  it("returns the database named in MONGODB_URI", () => {
+    process.env.MONGODB_URI = "mongodb://dash:dash@127.0.0.1:27029/dash_app?authSource=admin";
+    delete process.env.NODE_ENV;
+    expect(getEnv().databaseName).toBe("dash_app");
+    expect(getEnv().mongoUri).toBe(process.env.MONGODB_URI);
+    expect(getEnv().authSource).toBeUndefined();
+  });
 
-    const env = getEnv();
+  it("authenticates Atlas-style users against admin", () => {
+    process.env.MONGODB_URI = "mongodb+srv://dash:secret@cluster.example.net/dash";
+    delete process.env.NODE_ENV;
+    expect(getEnv().authSource).toBe("admin");
+    expect(getEnv().databaseName).toBe("dash");
+  });
 
-    expect(env.databasePath).toBe(custom);
-    expect(existsSync(custom)).toBe(false);
-    expect(readFileSync(join(root, "core/data/dash.sqlite"), "utf8")).toBe("legacy");
+  it("requires TLS for a remote database in production", () => {
+    process.env.NODE_ENV = "production";
+    process.env.DASH_SECRET = "a-real-secret";
+    process.env.MONGODB_URI = "mongodb://127.0.0.1:27017/dash";
+    expect(getEnv().databaseName).toBe("dash");
+    process.env.MONGODB_URI = "mongodb://db.example.com:27017/dash?tls=true";
+    expect(getEnv().databaseName).toBe("dash");
+    process.env.MONGODB_URI = "mongodb+srv://user:pass@cluster.example.net/dash";
+    expect(getEnv().databaseName).toBe("dash");
+    process.env.MONGODB_URI = "mongodb://db.example.com:27017/dash";
+    expect(() => getEnv()).toThrow(/TLS/);
+  });
+
+  it("turns on the demo environment only for the string true", () => {
+    process.env.MONGODB_URI = "mongodb://127.0.0.1:27017/dash";
+    process.env.DASH_SECRET = "a-real-secret";
+    delete process.env.NODE_ENV;
+    delete process.env.DEMO_ENVIRONMENT;
+    expect(getEnv().demoEnvironment).toBe(false);
+    process.env.DEMO_ENVIRONMENT = "yes";
+    expect(getEnv().demoEnvironment).toBe(false);
+    process.env.DEMO_ENVIRONMENT = " TRUE ";
+    expect(getEnv().demoEnvironment).toBe(true);
+    process.env.NODE_ENV = "production";
+    expect(getEnv().demoEnvironment).toBe(true);
   });
 });

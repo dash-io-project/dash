@@ -3,6 +3,11 @@ packages:
 
 allowBuilds:
   esbuild: true
+  # workerd's postinstall copies the platform binary and executes it. Wrangler
+  # resolves the binary from @cloudflare/workerd-linux-64 directly, so the
+  # script stays off. The key has to be present: omitting it fails
+  # strictDepBuilds with "Ignored build scripts: workerd".
+  workerd: false
 
 strictDepBuilds: true
 dangerouslyAllowAllBuilds: false
@@ -13,21 +18,43 @@ minimumReleaseAgeStrict: true # fail instead of falling back to a too-new versio
 minimumReleaseAgeIgnoreMissingTime: false # missing publish-time metadata fails closed
 # Explicit cooldown exception for the Charts 1.0 adoption (2026-10-06).
 # Version-scoped so later Charts releases still wait out the window.
+# This list is the cooldown exception for GHSA-p4f5-76q4-ffq7.
+# Vite 8.3.7 needs Rolldown 1.2.18. Each entry names one version.
+# Later releases still wait for the 7-day window.
 minimumReleaseAgeExclude:
   - "@tanstack/charts@1.0.0"
+  - "vite@8.3.7"
+  - "rolldown@1.2.18"
+  - "@rolldown/binding-android-arm-eabi@1.2.18"
+  - "@rolldown/binding-android-arm64@1.2.18"
+  - "@rolldown/binding-darwin-arm64@1.2.18"
+  - "@rolldown/binding-darwin-x64@1.2.18"
+  - "@rolldown/binding-freebsd-x64@1.2.18"
+  - "@rolldown/binding-linux-arm-gnueabihf@1.2.18"
+  - "@rolldown/binding-linux-arm64-gnu@1.2.18"
+  - "@rolldown/binding-linux-arm64-musl@1.2.18"
+  - "@rolldown/binding-linux-ppc64-gnu@1.2.18"
+  - "@rolldown/binding-linux-s390x-gnu@1.2.18"
+  - "@rolldown/binding-linux-x64-gnu@1.2.18"
+  - "@rolldown/binding-linux-x64-musl@1.2.18"
+  - "@rolldown/binding-openharmony-arm64@1.2.18"
+  - "@rolldown/binding-win32-arm64-msvc@1.2.18"
+  - "@rolldown/binding-win32-x64-msvc@1.2.18"
 trustPolicy: no-downgrade # fail if a later version has weaker trust evidence
 
 # semver@6.3.1 fails trustPolicy: no-downgrade (no provenance;
 # later versions of the same package have attestations). Pin to a version that
 # already meets the gate — do not exclude first-party packages.
-#
-# seroval <1.6.11 is vulnerable to CVE-2026-116581, CVE-2026-116584,
-# CVE-2026-116582, and CVE-2026-116583. @tanstack/router-core and the Start
-# packages still depend on seroval ^1.6.7 / seroval-plugins ^1.6.7, and no
-# release requires >=1.6.11. Replace only the vulnerable releases. 1.6.11
-# (published 2026-10-18) is inside 1.6.x, satisfies those ranges, and is old
-# enough for the 7-day cooldown. 1.6.12 is not.
+# miniflare 5.20261019.2-beta requires undici 7.29.1.
+# Wrangler 4.152.0 depends on that miniflare release.
+# undici 7.30.1 fixes CVE-2026-109829, CVE-2026-87018, CVE-2026-109869, and CVE-2026-109383.
+# npm published 7.30.1 on 2026-10-15. The 7-day cooldown covers that release.
+# AIKIDO-2026-363572 affects seroval-plugins below 1.7.5.
+# Parents depend on seroval-plugins@^1.6.7 and seroval@^1.6.7.
+# No parent release requires 1.7.5 or later.
+# 1.7.7 is the newest release of each package outside the 7-day cooldown.
 overrides:
   semver@6.3.1: 7.8.5
-  "seroval@<1.6.11": 1.6.11
-  "seroval-plugins@<1.6.11": 1.6.11
+  undici@7.29.1: 7.30.1
+  "seroval-plugins@<1.7.5": 1.7.7
+  "seroval@<1.7.7": 1.7.7

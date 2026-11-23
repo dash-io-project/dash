@@ -2,18 +2,22 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import type { Dashboard } from "@dash/core";
-import { api } from "~/lib/api";
-import { GhostButton, PrimaryButton } from "~/components/ui";
+import { useWorkspace } from "~/components/WorkspaceProvider";
+import { PageBody, PageHeader } from "~/components/PageHeader";
+import { Button, EmptyState, ICON_STROKE } from "~/components/ui";
+import { McpConnectionBanner } from "~/components/mcp-connection-banner";
 
 export const Route = createFileRoute("/_authed/dashboards/")({
   component: DashboardsPage,
 });
 
 function DashboardsPage() {
+  const { workspace, workspaceApi: api } = useWorkspace();
+  const canEdit = workspace.role !== "viewer";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const dashboards = useQuery({
-    queryKey: ["dashboards"],
+    queryKey: ["dashboards", workspace.id],
     queryFn: async () => {
       const payload = await api<{ dashboards: Dashboard[] }>("/api/dashboards");
       return payload.dashboards;
@@ -29,7 +33,7 @@ function DashboardsPage() {
         widgets: [],
       }),
     });
-    await queryClient.invalidateQueries({ queryKey: ["dashboards"] });
+    await queryClient.invalidateQueries({ queryKey: ["dashboards", workspace.id] });
     await navigate({
       to: "/dashboards/$dashboardId",
       params: { dashboardId: payload.dashboard.id },
@@ -37,29 +41,34 @@ function DashboardsPage() {
   }
 
   return (
-    <div>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-mist">Workspace</p>
-          <h1 className="mt-1 text-3xl font-semibold">Dashboards</h1>
-        </div>
-        <PrimaryButton type="button" onClick={() => void createDashboard()}>
-          <span className="inline-flex items-center gap-2">
-            <Plus size={16} /> New dashboard
-          </span>
-        </PrimaryButton>
-      </div>
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
+    <>
+      <PageHeader
+        title="Dashboards"
+        description={`The dashboards of the workspace ${workspace.name}.`}
+        actions={
+          canEdit ? (
+            <Button variant="primary" type="button" onClick={() => void createDashboard()}>
+              <Plus size={16} strokeWidth={ICON_STROKE} aria-hidden="true" /> New dashboard
+            </Button>
+          ) : null
+        }
+      />
+      <PageBody className="space-y-6">
+      {dashboards.error ? <p role="alert" className="text-negative">{dashboards.error.message}</p> : null}
+      <McpConnectionBanner />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {(dashboards.data ?? []).map((dashboard) => (
           <Link
             key={dashboard.id}
             to="/dashboards/$dashboardId"
             params={{ dashboardId: dashboard.id }}
-            className="rounded-2xl border border-line bg-panel p-5 hover:border-accent/40"
+            className="card flex flex-col p-4 hover:bg-row-hover"
           >
-            <h2 className="text-lg font-medium">{dashboard.name}</h2>
-            <p className="mt-2 text-sm text-mist">{dashboard.description || "No description"}</p>
-            <p className="mt-4 text-xs text-mist">
+            <h2 className="font-semibold">{dashboard.name}</h2>
+            <p className="mt-1 line-clamp-2 text-[13px] text-muted-foreground">
+              {dashboard.description || "No description"}
+            </p>
+            <p className="tabular mt-auto pt-4 text-xs text-muted-foreground">
               {dashboard.widgets.length} widgets · updated{" "}
               {new Date(dashboard.updatedAt).toLocaleString()}
             </p>
@@ -67,13 +76,18 @@ function DashboardsPage() {
         ))}
       </div>
       {dashboards.data?.length === 0 ? (
-        <div className="mt-10 rounded-2xl border border-dashed border-line p-10 text-center">
-          <p className="text-mist">No dashboards yet.</p>
-          <GhostButton className="mt-4" type="button" onClick={() => void createDashboard()}>
-            Create the first page
-          </GhostButton>
-        </div>
+        <EmptyState
+          title="No dashboards yet."
+          action={
+            canEdit ? (
+              <Button type="button" onClick={() => void createDashboard()}>
+                Create the first page
+              </Button>
+            ) : null
+          }
+        />
       ) : null}
-    </div>
+      </PageBody>
+    </>
   );
 }

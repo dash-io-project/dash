@@ -6,10 +6,107 @@ All notable changes to Dash are documented here.
 
 ### Fixed
 
+- MCP App resources include CSS after Vite emits it. Charts have a fixed content height, and single-widget views show one title.
+
+### Added
+
+- `show_dashboard` and `show_widget` display read-only MCP Apps with one shared renderer. Both tools support refresh and direct Dash links. See [MCP Apps](docs/mcp-apps.md).
+
+- API users on the **API tokens** page. An API user is an identity for a script or a service. It can have more than one token, so a service can rotate its token without downtime. To rotate a token, create a new token first. Update the app with the new token. Then revoke the old token. Delete an API user to revoke all of its tokens. See [ADR 0016](docs/adr/0016-api-users-and-token-rotation.md).
+- `GET/POST /api/api-users`, `DELETE /api/api-users/:id`, `POST /api/api-users/:id/tokens`, and `DELETE /api/api-users/:id/tokens/:tokenId`. Only a browser session can use them.
+- `add_chart_widget` accepts `rows` for a snapshot chart. An agent can save data that it calculated, for example average tickets for each hour. Dash keeps up to 1,000 rows, or 256 KiB of JSON, with the widget. The snapshots on one dashboard can use 2 MiB in total. The rows do not refresh. The chart shows a **Snapshot** label with the save date. Give `rows`, or give `dataSourceId` and `resource`. Do not give both.
+- MCP dashboard responses include links. `create_dashboard`, `get_dashboard`, and `list_dashboards` return `dashboardUrl`, and `widgetUrl` for each widget. `add_chart_widget` also returns `widgetId` and `chartUrl`. See [ADR 0015](docs/adr/0015-snapshot-charts-and-links.md).
+- A widget link opens a view of the dashboard that shows only that widget. The link can name more than one widget, for example a chart and a table. Each widget card has a **Copy link** button. The view has a **Show all widgets** link.
+
+### Changed
+
+- The Dash app has a new look that follows Soldock: neutral grays, ink for the main action, thin borders, and almost no shadows. The colors are design tokens with light and dark values. See [ADR 0017](docs/adr/0017-design-tokens-and-appearance.md) and the **Design** section of the README.
+- The app has a Light, Dark, or System appearance. Select it in the account panel at the bottom of the sidebar. The browser keeps the choice in `localStorage` with the key `dash:appearance`. Before, the app had only a dark look.
+- The public website (`@dash/site`) has a new look that agrees with the app. It uses the token names and the token values of the app: neutral grays, ink for the main action, thin borders, and almost no shadows. The gradients, the glow shadows, and the round buttons are gone. See [ADR 0018](docs/adr/0018-website-design-tokens.md).
+- The website follows the light or dark mode of the device. It has no appearance setting.
+- The website uses the system font stack. It does not load the Outfit and JetBrains Mono fonts.
+- The website shows screenshots of the new app. The screenshot on the home page has a dark file for dark mode. The share image (`og.png`) and the icon use the bar chart mark.
+- Dash Cloud has three plans: Free ($0, 40 compute hours each month), Pro ($29, 300 hours, then $0.10 for each hour), and Business ($199, always on, with an uptime SLA). The prices are the Cloudflare cost with a 70% gross margin. No plan charges for each user. Before, Cloud had a placeholder price of $0.10 for each compute hour. See [ADR 0019](docs/adr/0019-dash-cloud-plans-and-prices.md).
+- The header nav has the links **Home**, **Pricing**, and **GitHub**, at the right before **Sign in**. The **Product** and **Open source** links are gone from the header. The footer keeps them.
+- The pricing page shows self-host and Enterprise below the three plan cards. The FAQ tells what a compute hour is and what happens after the included hours.
+- Sign-up creates an organization on the plan `free`, not `cloud`. The account page shows an older `cloud` organization as Free.
+- On the home page, the MCP tools and the self-host requirements are lists with a description for each item. The adapter tiles have neutral icons, and `adapters.ts` has no `color` field.
+- The sidebar has two groups, **Analytics** and **Organization**. The account button at the bottom opens a panel with the Appearance choice, the **Profile** link, and **Sign out**. Before, **Profile** was a row in the sidebar and the button had the name **Log out**.
+- At 900px and below, a top bar has a menu button that opens the sidebar as a drawer. Before, the navigation was a row that scrolled sideways.
+- Each page starts with the same header: the title, one line of description, and the actions at the right.
+- The app uses the system fonts. It does not load fonts from Google Fonts.
+- Charts use a new series palette with blue first, and they follow the appearance. A chart fills its widget card.
+- A dashboard grid row is 56px in place of 72px, so a dashboard is shorter. The stored layout of a widget does not change. A KPI card shows a small label and the value. The label is not uppercase. On a phone, two KPI cards share a row.
+- The **Copy link** button of a widget shows only an icon. Its accessible name stays **Copy link**.
+- Each dropdown in the app is a new select. Before, the app used the native select of the browser, which had a different look in each browser. The button has the look of a text field, with a chevron at the right. The list has the look of the workspace menu, with a check mark on the selected option. Some options have a muted second line, for example the access of a workspace member and the data type of a column. The keys follow the WAI-ARIA select-only combobox pattern: the arrow keys, Home, End, Enter, Space, Escape, and type-ahead.
+- A table widget aligns number columns to the right with tabular figures. The filter field has a search icon, and a sorted column header has an `aria-sort` value.
+- The **Remove** button of a data source is an outline button with red text. The confirmation dialog keeps the red button.
+- The favicon is the bar chart mark.
+- The product screenshots show the bar chart mark.
+- The **API tokens** page is for the REST API only. It does not show the MCP banner or offer the `mcp` scope. Agents stay on the **Agents** page.
+- **Breaking:** `POST /api/tokens` issues agent tokens only. A request without the `mcp` scope gets 400. Use `/api/api-users` for an API token.
+- An older token without the `mcp` scope becomes an API user when its owner opens the API tokens page. The token keeps its access.
+- A token writes its last-use time at most once a minute.
+- The **Agent tokens** page is now **Agents** (`/agents`) in the sidebar and in the page header. Connect an agent with OAuth or with a token on that page. The old `/agent-tokens` path opens the Agents page. The API tokens page does not list OAuth agents.
+- The **Team** page is now **Members** (`/members`) in the sidebar and in the page header. The old `/team` path opens the Members page. The website and the README also use **Members**.
+- Two API error messages use "member" in place of "team". `POST /api/invitations` returns "That email already belongs to a member". An API token request to invite a person or to change a role returns "Session authentication required to manage members".
+- The `demo.dash.io` Worker sends `X-Forwarded-Proto` and `X-Forwarded-Host` to the container. It replaces values that the client sent.
+- `DEMO_ENVIRONMENT` replaces `DASH_SEED_DEMO` and `DASH_SEED_DEV_SOURCES`. Set it to `true` to show **Sample company data**. `demo.dash.io` sets this value. The flag works in production.
+- A seed run skips a data source when its database is not available. The run writes the other sources.
+
+### Removed
+
+- **Breaking:** the built-in `demo` adapter and the `demo` data source kind. Dash does not seed a sample warehouse or a Growth overview dashboard. On the first request, Dash deletes stored `demo` data sources and the widgets that read them. It also deletes a dashboard that has no widget left.
+- **Breaking:** Dash does not create the `admin@dash.dev` account. Create the first account at `/register`. The login page does not show a demo password.
+
+### Fixed
+
+- The sidebar stays the full height of the window when you scroll a long dashboard. Before, the hidden status text of each widget card made the page taller than the window. The page then scrolled, and the sidebar stopped above the bottom of the window.
+- **Security:** an API token cannot change the profile, the password, or the organization settings. `PATCH /api/users/me` and `PATCH /api/settings` need a browser session. Before, a leaked `write` token could set a new password and take over the account.
+- A signed-out user who opens a Dash link returns to that link after sign-in. Before, Dash opened the dashboard list.
+- `add_chart_widget` reports "Dashboard not found" when the dashboard is deleted during the call. Before, the tool sent an empty result.
+- The dashboard page can save a dashboard after `add_chart_widget` adds a chart to it. Before, MongoDB stored each unset chart field as null, and the save failed with 400. The tool does not store unset fields now, and the save accepts the null fields of earlier charts.
+- A domain that finished before its database dropped does not hide a failed domain on another source.
+- Startup deletes `admin@dash.dev` when the password is still `dashadmin`. It also deletes that account's sessions and tokens. An account with a different password stays.
+- A timeout or a connection reset on a live data source fails that seed step. Only a refused connection, a missing name, or a missing database is skipped.
+- A missing BigQuery project is skipped. The seed run writes the other sources. A missing dataset is still created.
+- Startup gives the admin role to the oldest active member before it deletes `admin@dash.dev`, when that account is the only admin. A pending account is not promoted.
+- Startup clears the first-admin record before it deletes that account. A stopped cleanup still lets the next account become admin. A live administrator keeps the record.
+
+- A table widget fills its dashboard card and scrolls inside it. The header row stays in view during the scroll. Before, a long table ran past the bottom of its card and over the widgets below it.
+- The seeded "First response by priority" chart uses the short series names `median_minutes` and `sla_minutes`, so its legend fits in the card. The `mart_first_response_by_priority` columns have the same new names.
+- A concurrent first registration does not keep an account when its email domain is not on the list. Only the account that claims the first user skips the list.
+- A rejected registration cannot sign in when removal of that account fails. The account stays pending, and a later attempt removes it or accepts it.
+- A later registration does not remove the pending account that claimed the first admin. That account becomes the administrator.
+- A pending account that has started the first-admin claim is not removed before that claim is stored.
+- [dev.dash.io](https://dev.dash.io) does not fail each request with `Error proxying request to container` after the container gets SIGTERM. The Node server stopped its listener but stayed alive, because the MongoDB client and the cached data-source adapters kept their sockets open. Cloudflare then saw a running container and did not start a new one. A Nitro `close` hook now closes those clients, so the process exits. After the hook starts, a request that is still running cannot open a new database client or adapter. If a handle keeps the process alive for 10 seconds, the server exits with code 1. CI runs `pnpm test:shutdown` on the built server.
+- Cloud setup installs Aikido Safe Chain 1.5.27. Version 1.5.15 exits on pnpm 12, so the environment build fails and agents boot the default image.
+- Sidebar sections use a subtle blue selected state with a left accent and brighter icon. Keyboard focus gets its own inset outline, and the current section is announced to screen readers.
+- App MongoDB connections authenticate a URI user against `admin` when `authSource` is omitted, which is where Atlas stores SCRAM users. The database named in the URI is created on that first connection. A `dbAdmin` role still cannot store accounts; sign-in reports that the user needs `readWrite` on that database. MongoDB data-source connection strings follow the same `authSource` default.
+- `pnpm dev` reads `MONGODB_URI`, `DASH_SECRET`, and `DEMO_ENVIRONMENT` from the repo `.env`. Vite does not copy those unprefixed variables into the server process. Values already set in the environment win, and production ignores `.env`.
 - Databricks SQL sends integers outside the 32-bit range as `BIGINT`, keeps `DECIMAL` values and integers that do not fit a safe JavaScript number as strings, and inlines `LIMIT` and `OFFSET`. Query pages request one extra row so an exact page is not marked truncated. External result links are refused even when some rows arrived inline, repeated chunks are rejected, and closing the client or timing out cancels the warehouse statement. `http` is allowed only for loopback. Introspection normalizes DuckDB and Spark type names, skips unnamed columns, and stops after 10,000 columns unless a schema is set. The test cluster receives `DASH_TEST_DATABRICKS_TOKEN`, `DASH_TEST_DATABRICKS_WAREHOUSE`, `DASH_TEST_DATABRICKS_CATALOG`, and `DASH_TEST_DATABRICKS_SCHEMA`.
 
 ### Added
 
+- OAuth for MCP clients. Give an agent, for example a ChatGPT connector, the MCP URL and select OAuth. The agent opens Dash in the browser. The signed-in user sets the name, workspace, and access, then selects **Create agent**. Dash creates the agent at that time. Before, ChatGPT showed "Couldn't discover OAuth settings" because Dash served no OAuth metadata. New endpoints: `/.well-known/oauth-protected-resource` (RFC 9728), `/.well-known/oauth-authorization-server` (RFC 8414), `POST /oauth/register` (RFC 7591), the `/oauth/authorize` consent page, and `POST /oauth/token`. Dash accepts only the authorization code grant with PKCE S256. Access tokens expire after one hour and work only at `/mcp`. Each refresh token works once, and an agent stops after 90 days without a refresh. A wrong verifier does not use up a code. A second use of a code with its verifier revokes its agent. `/mcp` answers 401 with a `WWW-Authenticate` challenge. New optional variable: `DASH_PUBLIC_URL`. See [ADR 0014](docs/adr/0014-mcp-oauth.md).
+- Deploy of the public website (`@dash/site`) to [dev.dash.io](https://dev.dash.io). A second Cloudflare Worker, `dash-site-development`, sends each request to one container. The container runs the standalone Next.js server from the new `Dockerfile.site`. The config is `wrangler.site.jsonc`. The workflow `deploy-dev` and the script `pnpm deploy:dev` now deploy the website. `DASH_CLOUD_MONGODB_URI` is a Worker secret (`wrangler secret put DASH_CLOUD_MONGODB_URI --config wrangler.site.jsonc`). The marketing pages work without it. The Worker adds `X-Robots-Tag: noindex, nofollow` to each response. See [ADR 0013](docs/adr/0013-demo-host-and-dev-website.md).
+
+- Dash Cloud accounts in `@dash/site`. `/register/` creates an account and an organization on the Cloud plan. `/login/` signs in, and `/account/` shows the account and its organization. Accounts, organizations, and sessions live in the MongoDB database that `DASH_CLOUD_MONGODB_URI` names. Passwords use scrypt, and a session lasts 30 days in an `HttpOnly` cookie. After 10 failed sign-ins for one email, sign-in for that email stops for 15 minutes. The website now runs as a Node.js server (`pnpm --filter @dash/site start`), not as a static export. The marketing pages stay static. New dependencies of `@dash/site`: `mongodb` 7.7.0 and `zod` 4.6.7, the versions that `@dash/web` uses. See [ADR 0012](docs/adr/0012-dash-cloud-accounts.md).
+- Public website in the new `@dash/site` package (`packages/site`). The website tells visitors that Dash is open source under the MIT license and free to host. It also describes Dash Cloud, the paid hosted service. Pages: home, pricing, and open source. Dash Cloud bills by compute hour, with no charge for each user. The rate on the site is a placeholder. Dash Cloud runs in the website: sign-up is at `/register/` and sign-in is at `/login/`. The stack is Next.js 16, Tailwind CSS 4, Biome 2, and Vitest. `pnpm dev:site` starts it on port 3001, and `pnpm lint` runs Biome. CI runs `pnpm lint` and builds the website. See [ADR 0011](docs/adr/0011-public-website.md).
+- Demo seed for data sources. When `DEMO_ENVIRONMENT` is `true`, **Settings** shows **Sample company data**. An administrator can write the Fernway sample company into the configured Postgres, MongoDB, and BigQuery sources. The run adds six dashboards in a shared **Fernway** workspace. The numbers agree across sources: finance MRR equals the subscriptions, and collections equal the charges. Dash refuses a schema, dataset, or collection that it did not create. New endpoint: `GET/POST/DELETE /api/dev-seed`, for an admin session only. The generator is the new `@dash/seed` package, with `@faker-js/faker` 10.6.0. See [ADR 0010](docs/adr/0010-dev-seed-data-sources.md).
+- `@dash/adapter-bigquery` exports `BigQueryAdminClient` for dataset and table management, streaming inserts, and load jobs by multipart upload. Only the seed writer uses it. `@dash/adapter-postgres` exports `postgresPoolConfig`.
+- The Postgres test cluster creates an empty `fernway` database for development seeding.
+- Administrators can save the email domains that can create accounts. An empty list allows every domain. Open registration and invitations both use the list. The first account does not use the list.
+- The Agent tokens page creates and revokes tokens for MCP access. The banner shows the full MCP URL from the current site address, with a copy button.
+- Each Dash instance serves one organization with multiple workspaces. Each user receives a personal workspace that they can share with existing organization members.
+- Organization admins can create shared workspaces and manage viewer or editor access. Dashboard API and MCP requests check workspace access.
+- The sidebar has a workspace selector. Workspace links retain the selected workspace. New API tokens bind to that workspace.
+
+
+- Cloudflare logging for [dev.dash.io](https://dev.dash.io). `wrangler.jsonc` turns on Workers Logs, with invocation logs, for the `dash-development` Worker and turns on logs for its container, so the Node server's stdout and stderr reach the Cloudflare dashboard. The Worker logs `request blocked` with the reason when `DASH_SECRET` or `MONGODB_URI` is missing, `container started` when the instance boots, and `container stopped` or `container crashed` with the exit code.
+- Team page (`/team`) listing every member with their role. Roles are **Admin** and **User** (stored as `member`). Administrators can change a member's role; the last admin cannot be demoted. Administrators can invite people by email and role. Dash creates a single-use sign-up link to share, valid for 7 days, that works while open registration is off. Inviting the same email again replaces the open link. Pending invitations can be reissued or revoked. Invitation tokens are stored as SHA-256 and travel in the URL fragment. New endpoints: `GET /api/members`, `PATCH /api/members/:id`, `GET/POST /api/invitations`, `DELETE /api/invitations/:id`, and the public `POST /api/auth/invitation` and `POST /api/auth/invitation/accept`. Inviting and role changes require an admin session; API tokens cannot use them. See [ADR 0008](docs/adr/0008-team-invitations.md).
+- Public `GET /healthz` and `GET /ping` endpoints. Both run a MongoDB `ping` against the app database and return 503 when it is unreachable. A failed probe drops the cached client so the next check can reconnect.
+- Dev deploy to [dev.dash.io](https://dev.dash.io). A Cloudflare Worker proxies every request to one container running the `@dash/web` Node server. `wrangler` is a root dev dependency. GitHub Actions workflow `deploy-dev` runs `wrangler deploy` on pushes to `main`. The deploy does not require `DASH_SECRET`; that Worker secret is added after the Worker exists. The demo user is not seeded. Container disk resets when the instance sleeps or a new image rolls out.
 - `@dash/adapter-stripe` (`packages/stripe-adapter`) implementing `DataAdapter`. Structured queries read Stripe customers, charges, invoices, and subscriptions. Filters Stripe Search can express are sent as a search query. Sorts other than newest-first read every matching row before paging, and a query that is still incomplete after 10,000 rows fails. The connection test accepts a restricted key that can list any supported object. Summaries record live versus test for restricted keys. The secret key is omitted from connection summaries. `http` is allowed only for a loopback host, and redirects are not followed. The local test cluster is the `stripe` service in `docker-compose.test.yml` at `http://127.0.0.1:12119`.
 
 - `@dash/adapter-redshift` (`packages/redshift-adapter`) implementing `DataAdapter`. Structured queries compile to parameterized SQL over the PostgreSQL wire protocol. Connections encrypt by default. `sslmode=require` and `verify-ca` check the certificate chain without the host name, and `verify-full` checks both. Queries stop after 60 seconds. Null filters compile to `IS NULL` / `IS NOT NULL`. The local test cluster is the `redshift` service in `docker-compose.test.yml`, a PostgreSQL stand-in on `127.0.0.1:54399`.
@@ -27,6 +124,27 @@ All notable changes to Dash are documented here.
 
 ### Changed
 
+- Security: `@dash/web`, `@dash/site`, `@dash/seed`, and `@dash/adapter-mongodb` pin `mongodb` 7.8.0. The previous pin is 7.7.0. Release 7.8.0 fixes CVE-2026-126837. A forged DNS SRV answer can send a `mongodb+srv://` client to another host.
+- npm published 7.8.0 on 2026-10-30. That date is outside the 7-day cooldown. The workspace file keeps the current cooldown list. Rebuild the app image and the website image. Redeploy both services.
+
+- Security: the lockfile resolves `seroval-plugins` 1.7.7 in place of 1.6.11. The lockfile resolves `seroval` 1.7.7 in place of 1.6.11. `seroval-plugins` 1.7.7 fixes AIKIDO-2026-363572 and GHSA-fc89-m4rj-8472. No parent release requires 1.7.5, so overrides replace the older copies. npm published 1.7.7 on 2026-11-02. The 7-day cooldown applies, and this change adds no exclude.
+
+- **Breaking:** the app deploy moved from `dev.dash.io` to [demo.dash.io](https://demo.dash.io). The `dash-development` Worker keeps its name, its container, and its secrets. The app workflow is now `deploy-demo`, and the app script is now `pnpm deploy:demo`. `dev.dash.io` shows the website. Each app user signs in again on the new host. A manual run of a deploy workflow now deploys only from `main`.
+
+- Security: `@dash/site` depends on `next` 16.4.5. The previous pin was 16.4.3. This release fixes AIKIDO-2026-922418. It also fixes GHSA-mfr8-8qww-v76h, GHSA-vc7v-qv4w-wrv8, GHSA-rhh4-g77r-r9qj, GHSA-vvgp-ww4w-46vf, GHSA-pc58-hwjq-p385, GHSA-f3mh-rxg3-f5g2, and GHSA-7qx7-33qx-rqx2. npm published 16.4.5 on 2026-11-03. The 7-day cooldown applies. This change adds no exclude.
+- Security: the lockfile resolves `vite` 8.3.7 in place of 8.3.5. This release fixes GHSA-p4f5-76q4-ffq7. Vite 8.3.5 lets a network dev server read a file or run code. Vite 8.3.7 closes that path. The workspace file excludes 17 versions from the 7-day cooldown. Jared must approve that list.
+
+- The README screenshots show the Fernway sample company. The Executive overview and Customer support dashboards replace Growth overview and Regional revenue review.
+
+- The button to copy the MCP URL uses an icon and an accessible label.
+
+- The workspace menu uses icons and a selected marker. It appears only when the user has more than one workspace.
+
+- Security: the lockfile resolves `undici` 7.30.1 in place of 7.29.1. `miniflare` from `wrangler` 4.152.0 requires `undici` 7.29.1. `pnpm-workspace.yaml` overrides only that version. The release fixes CVE-2026-109829, CVE-2026-87018, CVE-2026-109869, and CVE-2026-109383. npm published 7.30.1 on 2026-10-15, so the 7-day cooldown applies. `trustPolicy: no-downgrade` accepts 7.30.1, and this change adds no exclude.
+- Data sources, team members, invitations, and settings belong to the organization. This change does not migrate existing dashboards or tokens.
+
+- The login page shows `admin@dash.dev` only when `DASH_SEED_DEMO` is enabled. With seeding off, the first account is created at `/register` and becomes the administrator.
+- App state (users, sessions, API tokens, settings, data sources, and dashboards) is stored in MongoDB. `MONGODB_URI` is required and must name a database. `dev.dash.io` reads it from a Worker secret (`wrangler secret put MONGODB_URI`); requests return 500 until `DASH_SECRET` and `MONGODB_URI` are both set. `DASH_DATABASE_PATH` is gone.
 - The data-source form can add an Amazon Redshift connection. Choosing Redshift starts with encryption on and clears a URI left over from another kind. Pasting a Redshift URI updates the SSL checkbox from `ssl` and `sslmode`. An explicit SSL flag overrides the URI. Explicit host, port, database, user, and password fields override the same parts of a URI.
 - MySQL executes queries with server-side prepared statements, keeping filter values and pagination parameters separate from SQL text.
 - MySQL validates identifiers again at the SQL construction boundary and emits only fixed `ASC`/`DESC` sort keywords. Invalid names are rejected rather than cleaned; bound filter values retain their original text.

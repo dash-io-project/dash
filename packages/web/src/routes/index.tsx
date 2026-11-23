@@ -1,5 +1,6 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { FullPageMessage } from "~/components/ui";
 import { fetchMe } from "~/lib/session";
 
 export const Route = createFileRoute("/")({
@@ -14,9 +15,7 @@ function HomeRedirect() {
   });
 
   if (me.isPending) {
-    return (
-      <div className="grid min-h-screen place-items-center text-mist">Loading workspace…</div>
-    );
+    return <FullPageMessage>Loading workspace…</FullPageMessage>;
   }
 
   if (me.data) {

@@ -1,0 +1,79 @@
+export type FeatureIcon =
+  | "dashboards"
+  | "data-sources"
+  | "workspaces"
+  | "members"
+  | "tokens"
+  | "api";
+
+export type Feature = {
+  id: string;
+  title: string;
+  description: string;
+  icon: FeatureIcon;
+  /** Optional product screenshot for a large card. */
+  screenshot?: {
+    src: string;
+    alt: string;
+    width: number;
+    height: number;
+  };
+};
+
+/** Product features that exist today. Do not add features that Dash does not have. */
+export const features: readonly Feature[] = [
+  {
+    id: "dashboards",
+    title: "Dynamic dashboards",
+    description:
+      "Chart widgets, KPI cards, and tables that you can sort and filter. Build a dashboard in minutes and share it with your workspace.",
+    icon: "dashboards",
+    screenshot: {
+      src: "/screenshots/customer-support.webp",
+      alt: "Customer support dashboard with KPI cards above a chart of tickets created and solved",
+      width: 1600,
+      height: 1000,
+    },
+  },
+  {
+    id: "data-sources",
+    title: "Your data, connected",
+    description:
+      "Connect Postgres, Snowflake, BigQuery, and more. Dash tests each connection on save and encrypts saved credentials.",
+    icon: "data-sources",
+    screenshot: {
+      src: "/screenshots/data-sources.webp",
+      alt: "Data sources page with the cards of a BigQuery connection and a MongoDB connection",
+      width: 1600,
+      height: 1000,
+    },
+  },
+  {
+    id: "workspaces",
+    title: "Workspaces",
+    description:
+      "One organization per instance, with personal and shared workspaces. Personal workspaces are private by default. Admins manage the shared ones.",
+    icon: "workspaces",
+  },
+  {
+    id: "members",
+    title: "Members",
+    description:
+      "Invite people with single-use links. Set User or Admin roles. Limit sign-up to the email domains that you allow.",
+    icon: "members",
+  },
+  {
+    id: "tokens",
+    title: "API tokens",
+    description:
+      "Hashed tokens with read, write, and mcp scopes. Tokens expire after 90 days, and you can revoke them at any time.",
+    icon: "tokens",
+  },
+  {
+    id: "api",
+    title: "REST API for everything",
+    description:
+      "Each action in the UI is also an endpoint. Session auth uses an httpOnly cookie. Health checks answer at /healthz and /ping.",
+    icon: "api",
+  },
+];

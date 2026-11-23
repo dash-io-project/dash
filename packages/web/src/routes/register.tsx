@@ -1,14 +1,75 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { AuthBootstrap } from "~/lib/bootstrap";
 import { api } from "~/lib/api";
-import { AuthCard, Field, PrimaryButton, TextInput } from "~/components/ui";
+import { AuthCard, Button, Field, TextInput, FullPageMessage } from "~/components/ui";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
 });
 
 function RegisterPage() {
+  const bootstrap = useQuery({
+    queryKey: ["auth-bootstrap"],
+    queryFn: () => api<AuthBootstrap>("/api/auth/bootstrap"),
+  });
+
+  if (bootstrap.isPending) {
+    return <FullPageMessage>Loading…</FullPageMessage>;
+  }
+  if (bootstrap.isError || !bootstrap.data) {
+    const detail = bootstrap.error instanceof Error ? bootstrap.error.message : null;
+    return (
+      <FullPageMessage tone="error">
+        {detail ?? "Could not load registration."}
+      </FullPageMessage>
+    );
+  }
+  if (!bootstrap.data.allowRegistration) {
+    return (
+      <AuthCard
+        title="Registration is closed"
+        subtitle="An administrator has turned off new accounts."
+        footer={
+          <Link to="/login" className="link">
+            Log in
+          </Link>
+        }
+      >
+        <p className="text-muted-foreground">Ask an administrator for an invite link if you need access to this organization.</p>
+      </AuthCard>
+    );
+  }
+
+  return (
+    <RegisterForm
+      needsSetup={bootstrap.data.needsSetup}
+      allowedEmailDomains={
+        bootstrap.data.needsSetup ? [] : bootstrap.data.allowedEmailDomains
+      }
+    />
+  );
+}
+
+function domainHint(domains: string[]): string | undefined {
+  const first = domains[0];
+  if (!first) {
+    return undefined;
+  }
+  if (domains.length === 1) {
+    return `Use an email at ${first}.`;
+  }
+  return `Use an email at one of these domains: ${domains.join(", ")}.`;
+}
+
+function RegisterForm({
+  needsSetup,
+  allowedEmailDomains,
+}: {
+  needsSetup: boolean;
+  allowedEmailDomains: string[];
+}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
@@ -16,6 +77,7 @@ function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const hint = domainHint(allowedEmailDomains);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -27,6 +89,7 @@ function RegisterPage() {
         body: JSON.stringify({ name, email, password }),
       });
       await queryClient.invalidateQueries({ queryKey: ["me"] });
+      await queryClient.invalidateQueries({ queryKey: ["auth-bootstrap"] });
       await navigate({ to: "/dashboards" });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Registration failed");
@@ -37,13 +100,17 @@ function RegisterPage() {
 
   return (
     <AuthCard
-      title="Create your workspace"
-      subtitle="The first account becomes the administrator."
+      title={needsSetup ? "Create the administrator" : "Create your account"}
+      subtitle={
+        needsSetup
+          ? "The first account becomes the administrator. You can invite others later, or turn registration off in Settings."
+          : "Join this organization. An administrator can close registration at any time."
+      }
       onSubmit={(event) => void onSubmit(event)}
       footer={
         <>
           Already have an account?{" "}
-          <Link to="/login" className="text-accent">
+          <Link to="/login" className="link">
             Log in
           </Link>
         </>
@@ -61,6 +128,7 @@ function RegisterPage() {
           required
         />
       </Field>
+      {hint ? <p className="text-muted-foreground">{hint}</p> : null}
       <Field label="Password">
         <TextInput
           type="password"
@@ -71,10 +139,10 @@ function RegisterPage() {
           required
         />
       </Field>
-      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
-      <PrimaryButton type="submit" disabled={pending} className="w-full">
-        {pending ? "Creating…" : "Create account"}
-      </PrimaryButton>
+      {error ? <p className="text-negative">{error}</p> : null}
+      <Button variant="primary" type="submit" disabled={pending} className="w-full">
+        {pending ? "Creating…" : needsSetup ? "Create administrator" : "Create account"}
+      </Button>
     </AuthCard>
   );
 }

@@ -1,11 +1,23 @@
 import {
   type ApiTokenScope,
+  type PublicApiToken,
   type PublicUser,
   isApiTokenFormat,
   publicTokenPrefix,
 } from "@dash/core";
 import { getEnv } from "./env.ts";
-import { all, get, nowIso, run } from "./db.ts";
+import { getWorkspace } from "./services/workspaces.ts";
+import { MongoServerError } from "mongodb";
+import {
+  apiTokens,
+  apiUsers,
+  getDb,
+  nowIso,
+  sessions,
+  users,
+  type ApiTokenDoc,
+  type UserDoc,
+} from "./db.ts";
 import {
   generateApiToken,
   generateSessionToken,
@@ -23,48 +35,32 @@ import {
   parseCookies,
 } from "./http.ts";
 
-interface UserRow {
-  id: string;
-  email: string;
-  name: string;
-  role: PublicUser["role"];
-  password_hash: string;
-  created_at: string;
+export class EmailTakenError extends Error {
+  constructor() {
+    super("Email already registered");
+    this.name = "EmailTakenError";
+  }
 }
 
-interface SessionRow {
-  id: string;
-  user_id: string;
-  token_hash: string;
-  expires_at: string;
-}
-
-interface TokenRow {
-  id: string;
-  user_id: string;
-  name: string;
-  token_hash: string;
-  prefix: string;
-  scopes: string;
-  expires_at: string | null;
-  last_used_at: string | null;
-  revoked_at: string | null;
-  created_at: string;
-}
-
-function toPublicUser(row: UserRow): PublicUser {
+export function toPublicUser(row: UserDoc): PublicUser {
   return {
-    id: row.id,
+    id: row._id,
     email: row.email,
     name: row.name,
     role: row.role,
-    createdAt: row.created_at,
+    createdAt: row.createdAt,
   };
 }
 
-export function countUsers(): number {
-  const row = get<{ count: number }>("SELECT COUNT(*) AS count FROM users");
-  return Number(row?.count ?? 0);
+/** A pending account cannot sign in. Older documents have no state and stay active. */
+export function isActiveAccount(user: Pick<UserDoc, "accountState">): boolean {
+  return user.accountState !== "pending";
+}
+
+export function countUsers(): Promise<number> {
+  return users().then((collection) =>
+    collection.countDocuments({ accountState: { $ne: "pending" } }),
+  );
 }
 
 export async function createUser(input: {
@@ -72,14 +68,29 @@ export async function createUser(input: {
   name: string;
   password: string;
   role: PublicUser["role"];
+  accountState?: "pending";
 }): Promise<PublicUser> {
   const id = randomId();
   const createdAt = nowIso();
   const passwordHash = await hashPassword(input.password);
-  run(
-    "INSERT INTO users (id, email, name, role, password_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-    [id, input.email, input.name, input.role, passwordHash, createdAt],
-  );
+  try {
+    await (
+      await users()
+    ).insertOne({
+      _id: id,
+      email: input.email,
+      name: input.name,
+      role: input.role,
+      passwordHash,
+      createdAt,
+      ...(input.accountState === "pending" ? { accountState: "pending" as const } : {}),
+    });
+  } catch (error) {
+    if (error instanceof MongoServerError && error.code === 11000) {
+      throw new EmailTakenError();
+    }
+    throw error;
+  }
   return {
     id,
     email: input.email,
@@ -89,159 +100,301 @@ export async function createUser(input: {
   };
 }
 
-export function findUserByEmail(email: string): UserRow | undefined {
-  return get<UserRow>("SELECT * FROM users WHERE email = ?", [email]);
+/** Replace the name and password on a pending account. An active account is left unchanged. */
+export async function revisePendingAccount(
+  userId: string,
+  input: { name: string; password: string },
+): Promise<boolean> {
+  const passwordHash = await hashPassword(input.password);
+  const result = await (
+    await users()
+  ).updateOne(
+    { _id: userId, accountState: "pending" },
+    { $set: { name: input.name, passwordHash } },
+  );
+  return result.matchedCount === 1;
 }
 
-export function findUserById(id: string): UserRow | undefined {
-  return get<UserRow>("SELECT * FROM users WHERE id = ?", [id]);
+/** Mark a pending account active and return it. */
+export async function activateAccount(userId: string): Promise<PublicUser> {
+  const row = await (
+    await users()
+  ).findOneAndUpdate(
+    { _id: userId },
+    { $set: { accountState: "active" } },
+    { returnDocument: "after" },
+  );
+  if (!row || !isActiveAccount(row)) {
+    throw new Error("User not found");
+  }
+  return toPublicUser(row);
+}
+
+async function bootstrapAdminId(): Promise<string | undefined> {
+  const settings = (await getDb()).collection<{ _id: string; adminUserId?: string }>("settings");
+  const doc = await settings.findOne({ _id: "bootstrap" });
+  return doc?.adminUserId;
+}
+
+/**
+ * Activate the account that already claimed the first admin.
+ * Return undefined when this account does not own that claim.
+ */
+export async function finishBootstrapAdmin(userId: string): Promise<PublicUser | undefined> {
+  if ((await bootstrapAdminId()) !== userId) {
+    return undefined;
+  }
+  const row = await (
+    await users()
+  ).findOneAndUpdate(
+    { _id: userId },
+    { $set: { role: "admin", accountState: "active", bootstrapClaim: true } },
+    { returnDocument: "after" },
+  );
+  return row ? toPublicUser(row) : undefined;
+}
+
+/** Remove a pending account. Skip an account that started the first-admin claim. */
+export async function releasePendingAccount(userId: string): Promise<void> {
+  await (
+    await users()
+  ).deleteOne({
+    _id: userId,
+    accountState: "pending",
+    bootstrapClaim: { $ne: true },
+  });
+}
+
+export async function findUserByEmail(email: string): Promise<UserDoc | undefined> {
+  const row = await (await users()).findOne({ email });
+  return row ?? undefined;
+}
+
+export async function findUserById(id: string): Promise<UserDoc | undefined> {
+  const row = await (await users()).findOne({ _id: id });
+  return row ?? undefined;
+}
+
+async function writeBootstrapAdminId(userId: string): Promise<boolean> {
+  const settings = (await getDb()).collection<{ _id: string; adminUserId?: string }>("settings");
+  try {
+    const doc = await settings.findOneAndUpdate(
+      { _id: "bootstrap" },
+      { $setOnInsert: { adminUserId: userId } },
+      { upsert: true, returnDocument: "after" },
+    );
+    return doc?.adminUserId === userId;
+  } catch (error) {
+    if (!(error instanceof MongoServerError) || error.code !== 11000) {
+      throw error;
+    }
+    return (await settings.findOne({ _id: "bootstrap" }))?.adminUserId === userId;
+  }
+}
+
+async function clearBootstrapClaim(userId: string): Promise<void> {
+  await (
+    await users()
+  ).updateOne({ _id: userId, accountState: "pending" }, { $unset: { bootstrapClaim: "" } });
+}
+
+/**
+ * The first successful claim on an empty app database becomes admin.
+ * The user row records the claim before the bootstrap document is written.
+ * Later callers are not promoted.
+ */
+export async function grantInitialAdmin(userId: string): Promise<boolean> {
+  const marked = await (
+    await users()
+  ).updateOne({ _id: userId, bootstrapClaim: { $ne: true } }, { $set: { bootstrapClaim: true } });
+  if (marked.matchedCount !== 1) {
+    const user = await findUserById(userId);
+    if (!user?.bootstrapClaim) {
+      return false;
+    }
+  }
+  const won = await writeBootstrapAdminId(userId);
+  if (!won) {
+    await clearBootstrapClaim(userId);
+    return false;
+  }
+  const result = await (
+    await users()
+  ).updateOne(
+    { _id: userId },
+    { $set: { role: "admin", accountState: "active", bootstrapClaim: true } },
+  );
+  if (result.matchedCount !== 1) {
+    throw new Error("The first account was not activated");
+  }
+  return true;
+}
+
+export async function assertUserExists(userId: string): Promise<void> {
+  const user = await findUserById(userId);
+  if (!user || !isActiveAccount(user)) {
+    throw new Error("User not found");
+  }
 }
 
 export async function authenticatePassword(
   email: string,
   password: string,
 ): Promise<PublicUser | undefined> {
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
   if (!user) {
     return undefined;
   }
-  const ok = await verifyPassword(password, user.password_hash);
-  if (!ok) {
+  const ok = await verifyPassword(password, user.passwordHash);
+  if (!ok || !isActiveAccount(user)) {
     return undefined;
   }
   return toPublicUser(user);
 }
 
-export function createSession(userId: string): string {
+export async function createSession(userId: string): Promise<string> {
+  await assertUserExists(userId);
   const token = generateSessionToken();
   const expires = new Date(Date.now() + SESSION_TTL_MS).toISOString();
-  run(
-    "INSERT INTO sessions (id, user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?)",
-    [randomId(), userId, hashSecret(token), expires, nowIso()],
-  );
+  await (
+    await sessions()
+  ).insertOne({
+    _id: randomId(),
+    userId,
+    tokenHash: hashSecret(token),
+    expiresAt: expires,
+    createdAt: nowIso(),
+  });
   return token;
 }
 
-export function deleteSessionByToken(token: string): void {
-  run("DELETE FROM sessions WHERE token_hash = ?", [hashSecret(token)]);
+export async function deleteSessionByToken(token: string): Promise<void> {
+  await (await sessions()).deleteOne({ tokenHash: hashSecret(token) });
 }
 
-function sessionUser(token: string): PublicUser | undefined {
-  const hash = hashSecret(token);
-  const session = get<SessionRow>(
-    "SELECT * FROM sessions WHERE token_hash = ?",
-    [hash],
-  );
+async function sessionUser(token: string): Promise<PublicUser | undefined> {
+  const collection = await sessions();
+  const session = await collection.findOne({ tokenHash: hashSecret(token) });
   if (!session) {
     return undefined;
   }
-  if (new Date(session.expires_at).getTime() <= Date.now()) {
-    run("DELETE FROM sessions WHERE id = ?", [session.id]);
+  if (new Date(session.expiresAt).getTime() <= Date.now()) {
+    await collection.deleteOne({ _id: session._id });
     return undefined;
   }
-  const user = findUserById(session.user_id);
-  return user ? toPublicUser(user) : undefined;
+  const user = await findUserById(session.userId);
+  return user && isActiveAccount(user) ? toPublicUser(user) : undefined;
 }
 
-export function listTokens(userId: string) {
-  const rows = all<TokenRow>(
-    "SELECT * FROM api_tokens WHERE user_id = ? AND revoked_at IS NULL ORDER BY created_at DESC",
-    [userId],
-  );
-  return rows.map((row) => ({
-    id: row.id,
+/** A token write of `lastUsedAt` happens at most once in this interval. */
+const LAST_USED_WRITE_INTERVAL_MS = 60_000;
+
+export function toPublicToken(row: ApiTokenDoc): PublicApiToken {
+  return {
+    workspaceId: row.workspaceId,
+    id: row._id,
+    kind: row.kind ?? "token",
+    apiUserId: row.apiUserId ?? null,
+    clientName: row.clientName ?? null,
     name: row.name,
     prefix: row.prefix,
-    scopes: JSON.parse(row.scopes) as ApiTokenScope[],
-    createdAt: row.created_at,
-    lastUsedAt: row.last_used_at,
-    expiresAt: row.expires_at,
-  }));
+    scopes: row.scopes as ApiTokenScope[],
+    createdAt: row.createdAt,
+    lastUsedAt: row.lastUsedAt,
+    expiresAt: row.expiresAt,
+  };
 }
 
-export function issueApiToken(input: {
+export async function listTokens(userId: string) {
+  const rows = await (await apiTokens())
+    .find({ userId, revokedAt: null })
+    .sort({ createdAt: -1 })
+    .toArray();
+  return rows.map(toPublicToken);
+}
+
+export async function issueApiToken(input: {
   userId: string;
+  workspaceId: string;
   name: string;
   scopes: ApiTokenScope[];
   expiresAt: string | null;
-}): { token: string; record: ReturnType<typeof listTokens>[number] } {
+}): Promise<{ token: string; record: Awaited<ReturnType<typeof listTokens>>[number] }> {
+  await assertUserExists(input.userId);
+  await getWorkspace(toPublicUser((await findUserById(input.userId))!), input.workspaceId);
   const token = generateApiToken();
   const id = randomId();
   const createdAt = nowIso();
   const prefix = publicTokenPrefix(token);
-  run(
-    `INSERT INTO api_tokens (id, user_id, name, token_hash, prefix, scopes, expires_at, last_used_at, revoked_at, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?)`,
-    [
-      id,
-      input.userId,
-      input.name,
-      hashSecret(token),
-      prefix,
-      JSON.stringify(input.scopes),
-      input.expiresAt,
-      createdAt,
-    ],
-  );
-  return {
-    token,
-    record: {
-      id,
-      name: input.name,
-      prefix,
-      scopes: input.scopes,
-      createdAt,
-      lastUsedAt: null,
-      expiresAt: input.expiresAt,
-    },
+  const record = {
+    _id: id,
+    kind: "token" as const,
+    workspaceId: input.workspaceId,
+    userId: input.userId,
+    name: input.name,
+    tokenHash: hashSecret(token),
+    prefix,
+    scopes: input.scopes,
+    expiresAt: input.expiresAt,
+    lastUsedAt: null,
+    revokedAt: null,
+    createdAt,
   };
+  await (await apiTokens()).insertOne(record);
+  return { token, record: toPublicToken(record) };
 }
 
-export function revokeApiToken(userId: string, tokenId: string): boolean {
-  const row = get<TokenRow>(
-    "SELECT * FROM api_tokens WHERE id = ? AND user_id = ? AND revoked_at IS NULL",
-    [tokenId, userId],
+export async function revokeApiToken(userId: string, tokenId: string): Promise<boolean> {
+  const result = await (
+    await apiTokens()
+  ).updateOne(
+    { _id: tokenId, userId, revokedAt: null },
+    { $set: { revokedAt: nowIso() } },
   );
-  if (!row) {
-    return false;
-  }
-  run("UPDATE api_tokens SET revoked_at = ? WHERE id = ?", [nowIso(), tokenId]);
-  return true;
+  return result.matchedCount === 1;
 }
 
-function tokenAuth(token: string): AuthContext | undefined {
+async function tokenAuth(token: string): Promise<AuthContext | undefined> {
   if (!isApiTokenFormat(token)) {
     return undefined;
   }
-  const hash = hashSecret(token);
-  const row = get<TokenRow>(
-    "SELECT * FROM api_tokens WHERE token_hash = ? AND revoked_at IS NULL",
-    [hash],
-  );
+  const collection = await apiTokens();
+  const row = await collection.findOne({ tokenHash: hashSecret(token), revokedAt: null });
   if (!row) {
     return undefined;
   }
-  if (row.expires_at && new Date(row.expires_at).getTime() <= Date.now()) {
+  if (row.expiresAt && new Date(row.expiresAt).getTime() <= Date.now()) {
+    return undefined;
+  }
+  if (row.accessTokenExpiresAt && new Date(row.accessTokenExpiresAt).getTime() <= Date.now()) {
     return undefined;
   }
   const presented = hashSecret(token);
-  if (!safeEqualHex(presented, row.token_hash)) {
+  if (!safeEqualHex(presented, row.tokenHash)) {
     return undefined;
   }
-  const user = findUserById(row.user_id);
-  if (!user) {
+  // A deleted API user stops all of its tokens, also before each token gets `revokedAt`.
+  if (row.apiUserId && !(await (await apiUsers()).findOne({ _id: row.apiUserId, deletedAt: null }))) {
     return undefined;
   }
-  run("UPDATE api_tokens SET last_used_at = ? WHERE id = ?", [nowIso(), row.id]);
+  const user = await findUserById(row.userId);
+  if (!user || !isActiveAccount(user)) {
+    return undefined;
+  }
+  if (!row.lastUsedAt || Date.parse(row.lastUsedAt) <= Date.now() - LAST_USED_WRITE_INTERVAL_MS) {
+    await collection.updateOne({ _id: row._id }, { $set: { lastUsedAt: nowIso() } });
+  }
   return {
     user: toPublicUser(user),
-    scopes: JSON.parse(row.scopes) as ApiTokenScope[],
+    scopes: row.scopes as ApiTokenScope[],
     via: "token",
-    tokenId: row.id,
+    tokenKind: row.kind ?? "token",
+    tokenId: row._id,
+    workspaceId: row.workspaceId,
   };
 }
 
-export function resolveAuth(request: Request): AuthContext | undefined {
+export async function resolveAuth(request: Request): Promise<AuthContext | undefined> {
   const token = bearerToken(request);
   if (token) {
     return tokenAuth(token);
@@ -251,7 +404,7 @@ export function resolveAuth(request: Request): AuthContext | undefined {
   if (!sessionToken) {
     return undefined;
   }
-  const user = sessionUser(sessionToken);
+  const user = await sessionUser(sessionToken);
   if (!user) {
     return undefined;
   }
@@ -266,20 +419,16 @@ export async function updateUser(
   userId: string,
   patch: { name?: string; password?: string },
 ): Promise<PublicUser> {
-  const user = findUserById(userId);
+  const user = await findUserById(userId);
   if (!user) {
     throw new Error("User not found");
   }
   const name = patch.name?.trim() || user.name;
-  let passwordHash = user.password_hash;
+  let passwordHash = user.passwordHash;
   if (patch.password) {
     passwordHash = await hashPassword(patch.password);
   }
-  run("UPDATE users SET name = ?, password_hash = ? WHERE id = ?", [
-    name,
-    passwordHash,
-    userId,
-  ]);
+  await (await users()).updateOne({ _id: userId }, { $set: { name, passwordHash } });
   return { ...toPublicUser(user), name };
 }
 

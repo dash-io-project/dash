@@ -1,4 +1,4 @@
-import type { ApiTokenScope, PublicUser, UserRole } from "@dash/core";
+import type { ApiTokenKind, ApiTokenScope, PublicUser, UserRole, Workspace } from "@dash/core";
 
 export const SESSION_COOKIE = "dash_session";
 export const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
@@ -7,7 +7,14 @@ export interface AuthContext {
   user: PublicUser;
   scopes: ApiTokenScope[];
   via: "session" | "token";
+  /** Set when `via` is `token`. An `oauth` token works only at the MCP endpoint. */
+  tokenKind?: ApiTokenKind;
   tokenId?: string;
+  workspaceId?: string;
+}
+
+export interface WorkspaceAuthContext extends AuthContext {
+  workspace: Workspace;
 }
 
 export function json(data: unknown, init: ResponseInit = {}): Response {

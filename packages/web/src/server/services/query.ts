@@ -27,9 +27,7 @@ async function openAndTest(config: ConnectionConfig): Promise<ConnectionTestResu
   try {
     return await adapter.testConnection();
   } finally {
-    if (config.kind !== "demo") {
-      await adapter.close();
-    }
+    await adapter.close();
   }
 }
 
@@ -37,7 +35,7 @@ export async function queryDataSource(
   dataSourceId: string,
   query: AdapterQuery,
 ): Promise<AdapterQueryResult> {
-  const config = getDataSourceConfig(dataSourceId);
+  const config = await getDataSourceConfig(dataSourceId);
   if (!config) {
     throw new Error("Data source not found");
   }
@@ -48,7 +46,7 @@ export async function queryDataSource(
 export async function schemaForDataSource(
   dataSourceId: string,
 ): Promise<AdapterSchema> {
-  const config = getDataSourceConfig(dataSourceId);
+  const config = await getDataSourceConfig(dataSourceId);
   if (!config) {
     throw new Error("Data source not found");
   }
@@ -57,7 +55,7 @@ export async function schemaForDataSource(
 }
 
 export async function testDataSourceConnection(dataSourceId: string) {
-  const config = getDataSourceConfig(dataSourceId);
+  const config = await getDataSourceConfig(dataSourceId);
   if (!config) {
     throw new Error("Data source not found");
   }

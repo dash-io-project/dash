@@ -7,7 +7,7 @@ name: dash-test
 
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgres:17.11-alpine3.24@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
     container_name: dash-test-postgres
     environment:
       POSTGRES_USER: dash
@@ -33,7 +33,7 @@ services:
       start_period: 10s
 
   mysql:
-    image: mysql:8.4
+    image: mysql:8.4.11@sha256:0f51e63e537a1f176423fa03ef559aabe6fa4372a53160a44bc7e75da7d15364
     container_name: dash-test-mysql
     command:
       [
@@ -66,8 +66,13 @@ services:
       start_period: 40s
 
   mongodb:
-    image: mongo:7.0
+    image: mongo:8.2.12@sha256:e0ce8c35124d4a9f9785532d1f268f39e9728ffa1cb38f46fa482436424c4bd3
     container_name: dash-test-mongodb
+    # Each isolated test database opens its own collection and index files.
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
     environment:
       MONGO_INITDB_ROOT_USERNAME: dash
       MONGO_INITDB_ROOT_PASSWORD: dash
@@ -107,10 +112,11 @@ services:
       start_period: 10s
 
   bigquery:
-    image: ghcr.io/goccy/bigquery-emulator:0.8.1
+    image: ghcr.io/goccy/bigquery-emulator:0.8.1@sha256:f4e428d265a93dc5ce36c294e1c584c7c9b384117d47ab8ddbb63d8d50b7f393
     container_name: dash-test-bigquery
-    # In-memory emulator capped like a micro instance: 256 MiB and half a CPU.
-    # The image entrypoint is the emulator binary; replace it so the fixture
+    # In-memory emulator with 1 GiB and half a CPU. It keeps every job and
+    # loaded row in memory. At 256 MiB, a second development seed load
+    # stopped the process. The image entrypoint is the emulator binary; replace it so the fixture
     # view can be created after the YAML seed is loaded.
     entrypoint: ["bash", "/opt/dash/entrypoint.sh"]
     ports:
@@ -119,10 +125,10 @@ services:
       - ./docker/bigquery/seed.yaml:/seed/analytics.yaml:ro
       - ./docker/bigquery/entrypoint.sh:/opt/dash/entrypoint.sh:ro
       - ./docker/bigquery/healthcheck.sh:/opt/dash/healthcheck.sh:ro
-    mem_limit: 256m
+    mem_limit: 1g
     cpus: 0.5
-    # The emulator retains every jobs.query. A 2s probe filled this 256 MiB
-    # cap in about 15 minutes and the process was OOM-killed. Probe quickly
+    # The emulator retains every jobs.query. A 2s probe filled a 256 MiB cap
+    # in about 15 minutes and the process was OOM-killed. Probe quickly
     # during startup, then every 30s.
     healthcheck:
       test: ["CMD", "bash", "/opt/dash/healthcheck.sh", "view"]
@@ -133,7 +139,7 @@ services:
       start_interval: 2s
 
   redshift:
-    image: postgres:17-alpine
+    image: postgres:17.11-alpine3.24@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
     container_name: dash-test-redshift
     environment:
       POSTGRES_USER: dash

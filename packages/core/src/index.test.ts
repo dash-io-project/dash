@@ -5,16 +5,35 @@ import {
   DATA_SOURCE_KINDS,
   isApiTokenFormat,
   isApiTokenScope,
+  USER_ROLE_LABELS,
+  USER_ROLES,
   isChartType,
   isDataSourceKind,
+  isUserRole,
   publicTokenPrefix,
 } from "./index.ts";
+
+describe("user roles", () => {
+  it("labels every role and shows member as User", () => {
+    for (const role of USER_ROLES) {
+      expect(USER_ROLE_LABELS[role]).toEqual(expect.any(String));
+    }
+    expect(USER_ROLE_LABELS.admin).toBe("Admin");
+    expect(USER_ROLE_LABELS.member).toBe("User");
+  });
+
+  it("accepts known roles only", () => {
+    expect(isUserRole("admin")).toBe(true);
+    expect(isUserRole("member")).toBe(true);
+    expect(isUserRole("owner")).toBe(false);
+    expect(isUserRole("user")).toBe(false);
+  });
+});
 
 describe("data source kinds", () => {
   it("includes shipping adapters and reserved future kinds", () => {
     expect(DATA_SOURCE_KINDS).toContain("postgres");
     expect(DATA_SOURCE_KINDS).toContain("snowflake");
-    expect(DATA_SOURCE_KINDS).toContain("demo");
     expect(DATA_SOURCE_KINDS).toContain("mysql");
     expect(DATA_SOURCE_KINDS).toContain("mongodb");
     expect(DATA_SOURCE_KINDS).toContain("bigquery");

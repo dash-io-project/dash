@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { USER_ROLE_LABELS } from "@dash/core";
 import { api } from "~/lib/api";
 import { fetchMe } from "~/lib/session";
-import { Field, PrimaryButton, TextInput } from "~/components/ui";
+import { PageBody, PageHeader } from "~/components/PageHeader";
+import { Button, Card, Field, Panel, TextInput } from "~/components/ui";
 
 export const Route = createFileRoute("/_authed/profile")({
   component: ProfilePage,
@@ -32,43 +34,44 @@ function ProfilePage() {
   });
 
   if (!me.data) {
-    return <div className="text-mist">Loading profile…</div>;
+    return <PageBody className="text-muted-foreground">Loading profile…</PageBody>;
   }
 
   return (
-    <div className="max-w-xl">
-      <h1 className="text-3xl font-semibold">Profile</h1>
-      <div className="mt-8 space-y-4 rounded-2xl border border-line bg-panel p-6">
-        <Field label="Name">
-          <TextInput
-            value={name ?? me.data.name}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </Field>
-        <Field label="Email">
-          <TextInput value={me.data.email} disabled />
-        </Field>
-        <Field label="Role">
-          <TextInput value={me.data.role} disabled />
-        </Field>
-        <Field label="New password">
-          <TextInput
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Leave blank to keep the current password"
-          />
-        </Field>
-        {message ? <p className="text-sm text-accent">{message}</p> : null}
-        {save.isError ? (
-          <p className="text-sm text-rose-300">
-            {save.error instanceof Error ? save.error.message : "Update failed"}
-          </p>
-        ) : null}
-        <PrimaryButton type="button" onClick={() => save.mutate()} disabled={save.isPending}>
-          {save.isPending ? "Saving…" : "Save profile"}
-        </PrimaryButton>
-      </div>
-    </div>
+    <>
+      <PageHeader title="Profile" description="Your name and your password in Dash." />
+      <PageBody column="narrow">
+        <Panel title="Account" note="You cannot change your email address or your role here.">
+          <Card className="space-y-4 p-5">
+            <Field label="Name">
+              <TextInput value={name ?? me.data.name} onChange={(event) => setName(event.target.value)} />
+            </Field>
+            <Field label="Email">
+              <TextInput value={me.data.email} disabled />
+            </Field>
+            <Field label="Role">
+              <TextInput value={USER_ROLE_LABELS[me.data.role]} disabled />
+            </Field>
+            <Field label="New password">
+              <TextInput
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Leave blank to keep the current password"
+              />
+            </Field>
+            {message ? <p className="text-positive">{message}</p> : null}
+            {save.isError ? (
+              <p className="text-negative">
+                {save.error instanceof Error ? save.error.message : "Update failed"}
+              </p>
+            ) : null}
+            <Button variant="primary" type="button" onClick={() => save.mutate()} disabled={save.isPending}>
+              {save.isPending ? "Saving…" : "Save profile"}
+            </Button>
+          </Card>
+        </Panel>
+      </PageBody>
+    </>
   );
 }

@@ -1,0 +1,391 @@
+@import "tailwindcss";
+
+/* Dash website. The names and the values of the colors are the tokens of the Dash app
+   (packages/web/src/styles/app.css). The website has no appearance setting. It follows the
+   device: the light values are on `:root`, and `prefers-color-scheme: dark` selects the dark
+   values. docs/adr/0018 records the decision. */
+
+:root {
+  color-scheme: light dark;
+  --background: #ffffff;
+  --foreground: #171717;
+  --surface: #fafafa;
+  --hover: #f2f2f2;
+  --card: #ffffff;
+  --border: #e5e5e5;
+  --input: #d4d4d4;
+  --muted-foreground: #6b6b6b;
+  --primary: #171717;
+  --primary-hover: #2e2e2e;
+  --primary-foreground: #fafafa;
+  --ring: #737373;
+  --focus: #171717;
+  --link: #0066ef;
+  --positive: #166534;
+  --negative: #b91c1c;
+  --control: var(--background);
+  --control-hover: var(--hover);
+  --control-border: var(--border);
+  --field: transparent;
+  --negative-soft: color-mix(in srgb, var(--negative) 10%, var(--background));
+  --negative-border: color-mix(in srgb, var(--negative) 25%, var(--border));
+  --header-height: 60px;
+}
+
+/* The dark colors. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #171717;
+    --foreground: #f5f5f5;
+    --surface: #1c1c1c;
+    --hover: #282828;
+    --card: #1c1c1c;
+    --border: #343434;
+    --input: #404040;
+    --muted-foreground: #a3a3a3;
+    --primary: #f5f5f5;
+    --primary-hover: #dedede;
+    --primary-foreground: #171717;
+    --ring: #a3a3a3;
+    --focus: #f5f5f5;
+    --link: #43abff;
+    --positive: #4ade80;
+    --negative: #fca5a5;
+    --control: rgb(64 64 64 / 0.3);
+    --control-hover: rgb(64 64 64 / 0.5);
+    --control-border: var(--input);
+    --field: rgb(64 64 64 / 0.3);
+  }
+}
+
+/* Tailwind reads the tokens from here. `--color-*: initial` removes the default palette,
+   so a class such as `text-rose-300` makes no CSS. */
+@theme inline {
+  --color-*: initial;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-hover: var(--hover);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-focus: var(--focus);
+  --color-link: var(--link);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+  --color-negative-border: var(--negative-border);
+}
+
+/* The radii, the shadows and the fonts have the same value in the two modes. */
+@theme static {
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-menu: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-dialog: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+@layer base {
+  html {
+    scroll-padding-top: calc(var(--header-height) + 1.5rem);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* A person who asks for less motion gets no smooth scroll. The few transitions change
+     only a color, and a moving part uses the `motion-safe` variant. */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.015em;
+  }
+
+  button,
+  summary {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  code,
+  kbd,
+  pre {
+    font-family: var(--font-mono);
+  }
+
+  /* The icons have the stroke width of the app. */
+  .lucide {
+    stroke-width: 1.75;
+  }
+
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  details > summary {
+    list-style: none;
+  }
+
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+}
+
+/* These classes have the rules of the same classes in the app. The website has larger
+   text, so the default button and the text field are 40px high. */
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--control-border);
+    border-radius: var(--radius-md);
+    background: var(--control);
+    color: var(--foreground);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.25;
+    white-space: nowrap;
+    box-shadow: var(--shadow-xs);
+    transition: background-color 0.15s;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: var(--control-hover);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+  }
+
+  .btn-primary {
+    border-color: transparent;
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+  }
+
+  .btn-ghost {
+    border-color: transparent;
+    background: none;
+    box-shadow: none;
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--hover);
+  }
+
+  .btn-sm {
+    min-height: 34px;
+    padding: 0 12px;
+    gap: 6px;
+    font-size: 0.875rem;
+  }
+
+  .btn-lg {
+    min-height: 44px;
+    padding: 0 20px;
+  }
+
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--foreground);
+  }
+
+  .icon-btn:hover {
+    background: var(--hover);
+  }
+
+  .link {
+    color: var(--link);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .field-label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--foreground);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .input {
+    display: block;
+    width: 100%;
+    min-height: 40px;
+    padding: 6px 12px;
+    border: 1px solid var(--input);
+    border-radius: var(--radius-md);
+    background: var(--field);
+    color: var(--foreground);
+    box-shadow: var(--shadow-xs);
+  }
+
+  .input::placeholder {
+    color: var(--muted-foreground);
+  }
+
+  /* A text field with the focus: a darker border and a soft ring. */
+  .input:focus-visible {
+    border-color: var(--ring);
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 50%, transparent);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 22px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  .badge-primary {
+    border-color: transparent;
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  .card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--card);
+  }
+
+  .brand-mark {
+    display: block;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+  }
+
+  /* A small tile for an icon, at the top of a card or a list row. */
+  .icon-tile {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--foreground);
+  }
+
+  /* A name of code in a sentence, or a chip with a command. */
+  .code-chip {
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--foreground);
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+  }
+
+  .skip-link {
+    position: absolute;
+    top: -100px;
+    left: 8px;
+    z-index: 100;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-weight: 600;
+  }
+
+  .skip-link:focus {
+    top: 8px;
+  }
+}
+
+/* Page gutter and width. */
+@utility container-x {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 75rem;
+  padding-inline: 1.25rem;
+
+  @media (min-width: 40rem) {
+    padding-inline: 2rem;
+  }
+}
+
+/* The vertical space of a page section. */
+@utility section-y {
+  padding-block: 4.5rem;
+
+  @media (min-width: 40rem) {
+    padding-block: 6rem;
+  }
+}
+
+/* Small label above a heading. */
+@utility eyebrow {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+
+/* A number that keeps its width, for prices and counts. */
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}

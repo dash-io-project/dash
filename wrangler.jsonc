@@ -1,0 +1,54 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "dash-development",
+  "main": "packages/container-worker/src/index.ts",
+  "compatibility_date": "2026-10-19",
+  "workers_dev": false,
+  "upload_source_maps": true,
+  // Workers Logs: console output and one invocation log per request, kept in the dashboard.
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
+  "vars": {
+    "DEMO_ENVIRONMENT": "true"
+  },
+  "routes": [
+    {
+      "pattern": "demo.dash.io",
+      "custom_domain": true
+    }
+  ],
+  "containers": [
+    {
+      "class_name": "DashContainer",
+      "image": "./Dockerfile",
+      "max_instances": 1,
+      "instance_type": "basic",
+      "rollout_step_percentage": 100,
+      // Container stdout and stderr from the Node server.
+      "observability": {
+        "logs": {
+          "enabled": true
+        }
+      }
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DASH_CONTAINER",
+        "class_name": "DashContainer"
+      }
+    ]
+  },
+  "exports": {
+    "DashContainer": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  }
+}

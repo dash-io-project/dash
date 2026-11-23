@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { API_TOKEN_SCOPES, type ApiTokenScope } from "@dash/core";
 import { issueApiToken, listTokens } from "~/server/auth";
-import { isResponse, requireUser } from "~/server/guard";
+import { isResponse, requireUser, requireWorkspace } from "~/server/guard";
 import { error, json, readJson } from "~/server/http";
 
 const createSchema = z.object({
@@ -22,10 +22,10 @@ export const Route = createFileRoute("/api/tokens/")({
         if (auth.via === "token") {
           return error(403, "Session authentication required to manage tokens", "forbidden");
         }
-        return json({ tokens: listTokens(auth.user.id) });
+        return json({ tokens: await listTokens(auth.user.id) });
       },
       POST: async ({ request }) => {
-        const auth = await requireUser(request, "write");
+        const auth = await requireWorkspace(request, "read");
         if (isResponse(auth)) {
           return auth;
         }
@@ -36,11 +36,16 @@ export const Route = createFileRoute("/api/tokens/")({
         if (!parsed.success) {
           return error(400, "Invalid token payload", "invalid_body");
         }
+        // This route issues agent tokens. An API token belongs to an API user, so that it can rotate.
+        if (!parsed.data.scopes.includes("mcp")) {
+          return error(400, "An agent token needs the mcp scope. Use /api/api-users for an API token.", "invalid_scope");
+        }
         const expiresAt = parsed.data.expiresInDays
           ? new Date(Date.now() + parsed.data.expiresInDays * 86_400_000).toISOString()
           : null;
-        const issued = issueApiToken({
+        const issued = await issueApiToken({
           userId: auth.user.id,
+          workspaceId: auth.workspace.id,
           name: parsed.data.name,
           scopes: parsed.data.scopes as ApiTokenScope[],
           expiresAt,
