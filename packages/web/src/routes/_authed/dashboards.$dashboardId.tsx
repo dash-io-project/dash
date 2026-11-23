@@ -157,8 +157,8 @@ function DashboardPage() {
         </div>
       </div>
       <div className="dash-grid mt-8">
-        {dashboard.widgets.map((widget) => (
-          <WidgetCard key={widget.id} widget={widget} />
+        {dashboard.widgets.map((widget, index) => (
+          <WidgetCard key={widget.id} widget={widget} index={index} />
         ))}
       </div>
       {dashboard.widgets.length === 0 ? (
