@@ -48,6 +48,13 @@ function attributeValues(html: string, name: string): string[] {
   );
 }
 
+/** Reads the href of each anchor. A resource link is not a page. */
+function anchorHrefs(html: string): string[] {
+  return [...html.matchAll(/<a\b[^>]*?\shref="([^"]*)"/g)].map((match) =>
+    (match[1] ?? "").replaceAll("&amp;", "&"),
+  );
+}
+
 // An address that changes before launch must change in `src/lib/site.ts` only.
 const allowedExternal = new Set<string>([
   ...Object.values(site).filter((value) => /^https?:\/\//.test(value)),
@@ -63,7 +70,7 @@ describe.each([...rendered.keys()])("page %s", (key) => {
   const html = rendered.get(key) ?? "";
 
   test("each internal link opens a page of the site, and each anchor exists there", () => {
-    const internal = attributeValues(html, "href").filter((href) => /^[/#]/.test(href));
+    const internal = anchorHrefs(html).filter((href) => /^[/#]/.test(href));
     expect(internal.length).toBeGreaterThan(0);
 
     for (const href of internal) {
@@ -78,7 +85,7 @@ describe.each([...rendered.keys()])("page %s", (key) => {
   });
 
   test("each external link uses an address from src/lib/site.ts", () => {
-    const external = attributeValues(html, "href").filter((href) => !/^[/#]/.test(href));
+    const external = anchorHrefs(html).filter((href) => !/^[/#]/.test(href));
     for (const href of external) {
       expect(allowedExternal, `${href} is not in src/lib/site.ts`).toContain(address(href));
     }

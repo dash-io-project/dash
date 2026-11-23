@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     description: site.description,
     images: ["/og.png"],
   },
-  icons: { icon: "/icon.svg" },
+  icons: { icon: "/logo.png" },
   robots: { index: true, follow: true },
 };
 
