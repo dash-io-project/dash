@@ -23,7 +23,7 @@ The public website (`packages/site`) had the old look of the app: a dark navy pa
 - The page has almost no shadows. Buttons and fields use `--shadow-xs`. Only the product screenshot at the top of a page and the mobile menu have a larger shadow. The website has no gradient, no glow, and no entry animation.
 - Sections change between `--background` and `--surface`, with one `--border` line between them. A group of cells shows thin lines between the cells.
 - The product screenshots come from `docs/screenshots/`. They are WebP files in `packages/site/public/screenshots/`. The screenshot on the home page has a dark file, and a `picture` element selects it in dark mode. The other screenshots have only a light file.
-- The brand mark, `icon.svg`, and `og.png` use the ink tile of the app.
+- The brand mark is `logo.png`. It is a bar chart with a line. The website icon uses the same file. `og.png` shows that mark.
 - The change adds no dependency.
 
 ## Consequences

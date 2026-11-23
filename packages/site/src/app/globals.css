@@ -308,14 +308,11 @@
   }
 
   .brand-mark {
-    display: inline-grid;
-    place-items: center;
+    display: block;
     flex: none;
     width: 28px;
     height: 28px;
-    border-radius: var(--radius-md);
-    background: var(--primary);
-    color: var(--primary-foreground);
+    object-fit: contain;
   }
 
   /* A small tile for an icon, at the top of a card or a list row. */

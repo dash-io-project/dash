@@ -25,7 +25,7 @@ All notable changes to Dash are documented here.
 - The public website (`@dash/site`) has a new look that agrees with the app. It uses the token names and the token values of the app: neutral grays, ink for the main action, thin borders, and almost no shadows. The gradients, the glow shadows, and the round buttons are gone. See [ADR 0018](docs/adr/0018-website-design-tokens.md).
 - The website follows the light or dark mode of the device. It has no appearance setting.
 - The website uses the system font stack. It does not load the Outfit and JetBrains Mono fonts.
-- The website shows screenshots of the new app. The screenshot on the home page has a dark file for dark mode. The share image (`og.png`) and the icon use the ink brand mark.
+- The website shows screenshots of the new app. The screenshot on the home page has a dark file for dark mode. The share image (`og.png`) and the icon use the bar chart mark.
 - Dash Cloud has three plans: Free ($0, 40 compute hours each month), Pro ($29, 300 hours, then $0.10 for each hour), and Business ($199, always on, with an uptime SLA). The prices are the Cloudflare cost with a 70% gross margin. No plan charges for each user. Before, Cloud had a placeholder price of $0.10 for each compute hour. See [ADR 0019](docs/adr/0019-dash-cloud-plans-and-prices.md).
 - The header nav has the links **Home**, **Pricing**, and **GitHub**, at the right before **Sign in**. The **Product** and **Open source** links are gone from the header. The footer keeps them.
 - The pricing page shows self-host and Enterprise below the three plan cards. The FAQ tells what a compute hour is and what happens after the included hours.
@@ -41,7 +41,8 @@ All notable changes to Dash are documented here.
 - Each dropdown in the app is a new select. Before, the app used the native select of the browser, which had a different look in each browser. The button has the look of a text field, with a chevron at the right. The list has the look of the workspace menu, with a check mark on the selected option. Some options have a muted second line, for example the access of a workspace member and the data type of a column. The keys follow the WAI-ARIA select-only combobox pattern: the arrow keys, Home, End, Enter, Space, Escape, and type-ahead.
 - A table widget aligns number columns to the right with tabular figures. The filter field has a search icon, and a sorted column header has an `aria-sort` value.
 - The **Remove** button of a data source is an outline button with red text. The confirmation dialog keeps the red button.
-- The favicon is the chart line on an ink tile.
+- The favicon is the bar chart mark.
+- The product screenshots show the bar chart mark.
 - The **API tokens** page is for the REST API only. It does not show the MCP banner or offer the `mcp` scope. Agents stay on the **Agents** page.
 - **Breaking:** `POST /api/tokens` issues agent tokens only. A request without the `mcp` scope gets 400. Use `/api/api-users` for an API token.
 - An older token without the `mcp` scope becomes an API user when its owner opens the API tokens page. The token keeps its access.

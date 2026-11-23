@@ -4,20 +4,16 @@ import { cn } from "~/lib/cn";
 /** The stroke width of each lucide icon in the app. */
 export const ICON_STROKE = 1.75;
 
-/** The mark of Dash: the chart line of `public/favicon.svg`, in the text color of its tile. */
+/** The mark of Dash. The image is `public/logo.png`. */
 export function BrandMark({ className }: { className?: string }) {
   return (
-    <span className={cn("brand-mark", className)}>
-      <svg viewBox="0 0 32 32" width="100%" height="100%" fill="none" aria-hidden="true" focusable="false">
-        <path
-          d="M7 21.5 12.5 14l4 4.5L25 10"
-          stroke="currentColor"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </span>
+    <img
+      src="/logo.png"
+      alt=""
+      width={32}
+      height={29}
+      className={cn("brand-mark", className)}
+    />
   );
 }
 
