@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@dash/adapter-bigquery": "workspace:*",
+    "@dash/adapter-cassandra": "workspace:*",
     "@dash/adapter-cockroachdb": "workspace:*",
     "@dash/adapter-couchbase": "workspace:*",
     "@dash/adapter-databricks": "workspace:*",

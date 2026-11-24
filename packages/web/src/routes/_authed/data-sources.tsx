@@ -53,7 +53,8 @@ type SourceKind =
   | "opensearch"
   | "cockroachdb"
   | "couchbase"
-  | "neo4j";
+  | "neo4j"
+  | "cassandra";
 
 type ReadPreference =
   | "primary"
@@ -79,6 +80,7 @@ const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "opensearch", label: "Amazon OpenSearch" },
   { value: "couchbase", label: "Couchbase" },
   { value: "neo4j", label: "Neo4j" },
+  { value: "cassandra", label: "Apache Cassandra" },
 ];
 
 const READ_PREFERENCE_OPTIONS: SelectOption<ReadPreference>[] = [
@@ -108,6 +110,7 @@ const URI_PLACEHOLDER: Record<SourceKind, string> = {
   opensearch: "https://user:password@search-domain.us-east-1.es.amazonaws.com?region=us-east-1",
   couchbase: "couchbase://user:password@127.0.0.1:11210/bucket?scope=_default",
   neo4j: "bolt://user:password@localhost:7687",
+  cassandra: "cassandra://user:password@127.0.0.1:9042/analytics?dc=datacenter1",
 };
 
 function sslFromDb2Uri(value: string): boolean | undefined {
@@ -246,6 +249,8 @@ const emptyForm = {
   sslCa: "",
   bucket: "",
   scope: "_default",
+  keyspace: "",
+  localDataCenter: "datacenter1",
 };
 
 function DataSourcesPage() {
@@ -504,6 +509,23 @@ function DataSourcesPage() {
                             password: form.password,
                             encryption: form.encryption,
                           }
+                    : form.kind === "cassandra"
+                      ? form.useConnectionString
+                        ? {
+                            kind: "cassandra" as const,
+                            connectionString: form.connectionString.trim(),
+                            ssl: form.ssl,
+                          }
+                        : {
+                            kind: "cassandra" as const,
+                            host: form.host,
+                            port: Number(form.port),
+                            keyspace: form.keyspace.trim() || undefined,
+                            localDataCenter: form.localDataCenter.trim() || undefined,
+                            user: form.user || undefined,
+                            password: form.password || undefined,
+                            ssl: form.ssl,
+                          }
                 : form.useConnectionString
                   ? {
                       kind: "postgres" as const,
@@ -580,7 +602,7 @@ function DataSourcesPage() {
       <p className="max-w-3xl text-muted-foreground">
         Paste a connection URI, or enter the fields. Dash tests Postgres, MySQL, MariaDB, CockroachDB, IBM Db2,
         SAP HANA, Snowflake, MongoDB, Amazon DocumentDB, BigQuery, Databricks SQL, Redshift, Stripe,
-        OpenSearch, Couchbase, and Neo4j on save.
+        OpenSearch, Couchbase, Neo4j, and Cassandra on save.
         {isAdmin ? null : " Only administrators can add or remove sources."}
       </p>
 
@@ -597,7 +619,7 @@ function DataSourcesPage() {
             ) : null
           }
         >
-          Add a connection for PostgreSQL, MySQL, MariaDB, CockroachDB, IBM Db2, SAP HANA, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, OpenSearch, Couchbase, or Neo4j.
+          Add a connection for PostgreSQL, MySQL, MariaDB, CockroachDB, IBM Db2, SAP HANA, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, OpenSearch, Couchbase, Neo4j, or Cassandra.
         </EmptyState>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -700,7 +722,9 @@ function DataSourcesPage() {
                                       ? "11210"
                                       : kind === "neo4j"
                                         ? "7687"
-                                        : form.port,
+                                        : kind === "cassandra"
+                                          ? "9042"
+                                          : form.port,
                     user:
                       kind === "postgres"
                         ? "postgres"
@@ -737,6 +761,8 @@ function DataSourcesPage() {
                     secretAccessKey: "",
                     sessionToken: "",
                     authSource: form.authSource || "admin",
+                    localDataCenter:
+                      kind === "cassandra" ? form.localDataCenter || "datacenter1" : form.localDataCenter,
                     useConnectionString: true,
                   });
                 }}
@@ -1625,6 +1651,80 @@ function DataSourcesPage() {
                   usingUri={form.useConnectionString}
                   onChange={(useConnectionString) => setForm({ ...form, useConnectionString })}
                 />
+              </>
+            ) : form.kind === "cassandra" ? (
+              <>
+                {form.useConnectionString ? (
+                  <ConnectionUriField
+                    kind="cassandra"
+                    value={form.connectionString}
+                    onChange={(connectionString) => setForm({ ...form, connectionString })}
+                  />
+                ) : (
+                  <>
+                    <div className="grid grid-cols-3 gap-3">
+                      <Field label="Host">
+                        <TextInput
+                          value={form.host}
+                          onChange={(event) => setForm({ ...form, host: event.target.value })}
+                          required
+                        />
+                      </Field>
+                      <Field label="Port">
+                        <TextInput
+                          value={form.port}
+                          onChange={(event) => setForm({ ...form, port: event.target.value })}
+                          required
+                        />
+                      </Field>
+                      <Field label="Keyspace">
+                        <TextInput
+                          value={form.keyspace}
+                          onChange={(event) => setForm({ ...form, keyspace: event.target.value })}
+                          required
+                        />
+                      </Field>
+                    </div>
+                    <Field label="Local data center">
+                      <TextInput
+                        value={form.localDataCenter}
+                        onChange={(event) =>
+                          setForm({ ...form, localDataCenter: event.target.value })
+                        }
+                        placeholder="datacenter1"
+                      />
+                    </Field>
+                    <Field label="User">
+                      <TextInput
+                        value={form.user}
+                        onChange={(event) => setForm({ ...form, user: event.target.value })}
+                        required
+                      />
+                    </Field>
+                    <Field label="Password">
+                      <TextInput
+                        type="password"
+                        value={form.password}
+                        onChange={(event) => setForm({ ...form, password: event.target.value })}
+                      />
+                    </Field>
+                  </>
+                )}
+                <ConnectionModeToggle
+                  usingUri={form.useConnectionString}
+                  onChange={(useConnectionString) => setForm({ ...form, useConnectionString })}
+                />
+                <label className="check-row flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={form.ssl}
+                    onChange={(event) => setForm({ ...form, ssl: event.target.checked })}
+                  />
+                  Use SSL
+                </label>
+                <p className="text-[13px] text-muted-foreground">
+                  The local cluster uses port 39042, keyspace dash, and data center datacenter1.
+                </p>
               </>
             ) : null}
             {error ? <p className="text-negative">{error}</p> : null}

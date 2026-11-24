@@ -17,7 +17,8 @@ Each warehouse adapter is its own package under `packages/` and implements
 (`@dash/adapter-hana`). CockroachDB ships as `packages/cockroachdb-adapter`
 (`@dash/adapter-cockroachdb`). Couchbase ships as `packages/couchbase-adapter`
 (`@dash/adapter-couchbase`). Neo4j ships as `packages/neo4j-adapter`
-(`@dash/adapter-neo4j`).
+(`@dash/adapter-neo4j`). Apache Cassandra ships as `packages/cassandra-adapter`
+(`@dash/adapter-cassandra`).
 
 ## Shipping
 
@@ -39,6 +40,7 @@ Each warehouse adapter is its own package under `packages/` and implements
 | `@dash/adapter-cockroachdb` | `packages/cockroachdb-adapter` | `cockroachdb` | MVP |
 | `@dash/adapter-couchbase` | `packages/couchbase-adapter` | `couchbase` | MVP |
 | `@dash/adapter-neo4j` | `packages/neo4j-adapter` | `neo4j` | MVP |
+| `@dash/adapter-cassandra` | `packages/cassandra-adapter` | `cassandra` | MVP |
 | — | — | `clickhouse` | Planned |
 
 The web app does not ship a built-in sample adapter. To get realistic data in
@@ -48,7 +50,7 @@ new writer in `packages/seed/src/writers` and add its kind to `SEEDABLE_KINDS`.
 
 ## Testing
 
-Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch, DocumentDB, CockroachDB, Couchbase, and Neo4j adapter tests run against the local clusters in `docker-compose.test.yml`.
+Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch, DocumentDB, CockroachDB, Couchbase, Neo4j, and Cassandra adapter tests run against the local clusters in `docker-compose.test.yml`.
 
 IBM Db2 adapter tests run in process. The community image `icr.io/db2_community/db2` does not fit this CI job. The image needs about 7 GB of disk and about 4 GB of memory. The container needs privileged mode. The first start takes several minutes.
 
@@ -77,7 +79,8 @@ CockroachDB listens on `127.0.0.1:26229`
 `/tmp/dash-test-cockroach-certs/ca.crt`. Couchbase listens at
 `couchbase://dash:dashdash@127.0.0.1:11299/dash?scope=analytics&network=external`.
 Neo4j listens at `bolt://neo4j:dash@127.0.0.1:17687` (database `neo4j`).
-The root README lists the
+Cassandra listens on `127.0.0.1:39042`
+(`dash` / `dash`, keyspace `dash`, local data center `datacenter1`). The root README lists the
 environment overrides. When an
 engine can run locally, add it to that Compose file and point the package
 tests at it.

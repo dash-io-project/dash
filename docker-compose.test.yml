@@ -305,6 +305,36 @@ services:
       retries: 20
       start_period: 90s
 
+  cassandra:
+    image: cassandra:5.0@sha256:7ec032283c56c9ea7c022007b2fecdf5ca69c7a9871e0634f41ae05833dc1638
+    container_name: dash-test-cassandra
+    # Cassandra 5.0.9. The wrapper enables password auth and loads the fixture.
+    # The native port matches the published host port so the driver can reconnect.
+    user: "0:0"
+    entrypoint: ["bash", "/opt/dash/entrypoint.sh"]
+    environment:
+      MAX_HEAP_SIZE: 384M
+      MAX_DIRECT_MEMORY_SIZE: 256M
+      CASSANDRA_NATIVE_PORT: ${DASH_TEST_CASSANDRA_PORT:-39042}
+      CASSANDRA_BROADCAST_RPC_ADDRESS: 127.0.0.1
+      JVM_EXTRA_OPTS: -Dcassandra.superuser_setup_delay_ms=0
+    ports:
+      - "127.0.0.1:${DASH_TEST_CASSANDRA_PORT:-39042}:${DASH_TEST_CASSANDRA_PORT:-39042}"
+    volumes:
+      - dash-test-cassandra:/var/lib/cassandra
+      - ./docker/cassandra/entrypoint.sh:/opt/dash/entrypoint.sh:ro
+      - ./docker/cassandra/init.cql:/opt/dash/init.cql:ro
+      - ./docker/cassandra/healthcheck.sh:/opt/dash/healthcheck.sh:ro
+    mem_limit: 1280m
+    cpus: 1
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD", "bash", "/opt/dash/healthcheck.sh"]
+      interval: 5s
+      timeout: 15s
+      retries: 36
+      start_period: 120s
+
   stripe:
     build:
       context: ./docker/stripe
@@ -408,3 +438,4 @@ volumes:
   dash-test-documentdb:
   dash-test-couchbase:
   dash-test-neo4j:
+  dash-test-cassandra:

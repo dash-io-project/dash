@@ -179,6 +179,17 @@ const patchSchema = z.object({
         encryption: z.boolean().optional(),
       }),
       z.object({
+        kind: z.literal("cassandra"),
+        connectionString: z.string().optional(),
+        host: z.string().optional(),
+        port: z.number().int().optional(),
+        keyspace: z.string().optional(),
+        localDataCenter: z.string().optional(),
+        user: z.string().optional(),
+        password: z.string().optional(),
+        ssl: z.boolean().optional(),
+      }),
+      z.object({
         kind: z.literal("bigquery"),
         projectId: z.string().min(1),
         dataset: z.string().optional(),
