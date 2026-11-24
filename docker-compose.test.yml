@@ -225,6 +225,34 @@ services:
       retries: 40
       start_period: 15s
 
+  documentdb:
+    build:
+      context: ./docker/documentdb
+    image: dash-test-documentdb:local
+    container_name: dash-test-documentdb
+    # Amazon DocumentDB has no local image. This service speaks the MongoDB
+    # wire protocol with TLS. The adapter tests pass the generated CA as
+    # caBundle. Production clusters use the Amazon RDS global bundle.
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: dash
+      MONGO_INITDB_ROOT_PASSWORD: dash
+      MONGO_INITDB_DATABASE: dash
+    ports:
+      - "127.0.0.1:${DASH_TEST_DOCUMENTDB_PORT:-27099}:27017"
+    volumes:
+      - dash-test-documentdb:/data/db
+      - ./docker/documentdb/runtime:/opt/dash/runtime
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    healthcheck:
+      test: ["CMD", "bash", "/opt/dash/healthcheck.sh"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 40s
+
   stripe:
     build:
       context: ./docker/stripe
@@ -286,3 +314,4 @@ volumes:
   dash-test-mariadb:
   dash-test-mongodb:
   dash-test-redshift:
+  dash-test-documentdb:

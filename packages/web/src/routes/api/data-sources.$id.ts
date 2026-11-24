@@ -90,6 +90,21 @@ const patchSchema = z.object({
         tls: z.boolean().optional(),
       }),
       z.object({
+        kind: z.literal("documentdb"),
+        connectionString: z.string().optional(),
+        host: z.string().optional(),
+        port: z.number().int().optional(),
+        database: z.string().optional(),
+        user: z.string().optional(),
+        password: z.string().optional(),
+        authSource: z.string().optional(),
+        replicaSet: z.string().max(128).optional(),
+        readPreference: z
+          .enum(["primary", "primaryPreferred", "secondary", "secondaryPreferred", "nearest"])
+          .optional(),
+        caBundle: z.string().max(512 * 1024).optional(),
+      }),
+      z.object({
         kind: z.literal("databricks"),
         connectionString: z.string().optional(),
         host: z.string().optional(),

@@ -85,6 +85,34 @@ export interface MongoConnectionConfig {
   tls?: boolean;
 }
 
+export type DocumentDbReadPreference =
+  | "primary"
+  | "primaryPreferred"
+  | "secondary"
+  | "secondaryPreferred"
+  | "nearest";
+
+export interface DocumentDbConnectionConfig {
+  kind: "documentdb";
+  connectionString?: string;
+  host?: string;
+  port?: number;
+  database?: string;
+  user?: string;
+  password?: string;
+  /** Authentication database. The default is `admin` when a user is set. */
+  authSource?: string;
+  /** Replica set name. Amazon DocumentDB clusters use `rs0`. */
+  replicaSet?: string;
+  /** Read preference. Amazon DocumentDB samples use `secondaryPreferred`. */
+  readPreference?: DocumentDbReadPreference;
+  /**
+   * PEM CA bundle. Omit this field to use the Amazon RDS global bundle.
+   * The text replaces that bundle. It cannot contain a private key.
+   */
+  caBundle?: string;
+}
+
 export interface DatabricksConnectionConfig {
   kind: "databricks";
   connectionString?: string;
@@ -186,6 +214,7 @@ export type ConnectionConfig =
   | Db2ConnectionConfig
   | SnowflakeConnectionConfig
   | MongoConnectionConfig
+  | DocumentDbConnectionConfig
   | BigQueryConnectionConfig
   | DatabricksConnectionConfig
   | RedshiftConnectionConfig

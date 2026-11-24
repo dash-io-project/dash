@@ -254,6 +254,28 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@24.19.2)(vite@8.3.7(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0))
 
+  packages/documentdb-adapter:
+    dependencies:
+      '@dash/core':
+        specifier: workspace:*
+        version: link:../core
+      mongodb:
+        specifier: 7.8.0
+        version: 7.8.0
+      mongodb-connection-string-url:
+        specifier: 7.0.2
+        version: 7.0.2
+    devDependencies:
+      '@types/node':
+        specifier: ^24.19.2
+        version: 24.19.2
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@24.19.2)(vite@8.3.7(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0))
+
   packages/mariadb-adapter:
     dependencies:
       '@dash/core':
@@ -506,6 +528,9 @@ importers:
       '@dash/adapter-db2':
         specifier: workspace:*
         version: link:../db2-adapter
+      '@dash/adapter-documentdb':
+        specifier: workspace:*
+        version: link:../documentdb-adapter
       '@dash/adapter-mariadb':
         specifier: workspace:*
         version: link:../mariadb-adapter

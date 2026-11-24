@@ -48,6 +48,8 @@ export type {
   BigQueryConnectionConfig,
   DatabricksConnectionConfig,
   Db2ConnectionConfig,
+  DocumentDbConnectionConfig,
+  DocumentDbReadPreference,
   MariadbConnectionConfig,
   MongoConnectionConfig,
   MysqlConnectionConfig,
