@@ -1,6 +1,7 @@
 import { type ConnectionConfig, type DataAdapter } from "@dash/core";
 import { BigQueryAdapter } from "@dash/adapter-bigquery";
 import { CassandraAdapter } from "@dash/adapter-cassandra";
+import { ClickHouseAdapter } from "@dash/adapter-clickhouse";
 import { CockroachAdapter } from "@dash/adapter-cockroachdb";
 import { CouchbaseAdapter } from "@dash/adapter-couchbase";
 import { DatabricksAdapter } from "@dash/adapter-databricks";
@@ -66,6 +67,8 @@ function createAdapter(config: ConnectionConfig): DataAdapter {
       return CouchbaseAdapter.fromConfig(config);
     case "neo4j":
       return Neo4jAdapter.fromConfig(config);
+    case "clickhouse":
+      return ClickHouseAdapter.fromConfig(config);
   }
 }
 

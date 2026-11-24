@@ -8,7 +8,7 @@ export type Adapter = {
   note: string;
 };
 
-/** Data source adapters that ship today. ClickHouse is planned and is not in this list. */
+/** Data source adapters that ship today. */
 export const adapters: readonly Adapter[] = [
   { id: "postgres", name: "Postgres", kind: "sql", note: "Relational database" },
   { id: "cockroachdb", name: "CockroachDB", kind: "sql", note: "Distributed SQL database" },
@@ -48,6 +48,7 @@ export const adapters: readonly Adapter[] = [
     kind: "warehouse",
     note: "Cloud warehouse",
   },
+  { id: "clickhouse", name: "ClickHouse", kind: "sql", note: "Analytical database" },
   { id: "stripe", name: "Stripe", kind: "saas", note: "Payments and billing" },
   { id: "opensearch", name: "Amazon OpenSearch", kind: "document", note: "Search and analytics" },
   { id: "couchbase", name: "Couchbase", kind: "document", note: "Document database" },

@@ -55,7 +55,8 @@ type SourceKind =
   | "couchbase"
   | "neo4j"
   | "cassandra"
-  | "oracle";
+  | "oracle"
+  | "clickhouse";
 
 type ReadPreference =
   | "primary"
@@ -73,6 +74,7 @@ const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "hana", label: "SAP HANA" },
   { value: "oracle", label: "Oracle Database" },
   { value: "redshift", label: "Amazon Redshift" },
+  { value: "clickhouse", label: "ClickHouse" },
   { value: "snowflake", label: "Snowflake" },
   { value: "mongodb", label: "MongoDB" },
   { value: "documentdb", label: "Amazon DocumentDB" },
@@ -102,6 +104,7 @@ const URI_PLACEHOLDER: Record<SourceKind, string> = {
   hana: "hana://user:password@host:30015/DB?schema=ANALYTICS&encrypt=true&sslValidateCertificate=true",
   oracle: "oracle://user:password@db.adb.region.oraclecloud.com:1522/service_high.adb.oraclecloud.com",
   redshift: "redshift://user:password@cluster.redshift.amazonaws.com:5439/analytics?sslmode=require",
+  clickhouse: "https://user:password@host.clickhouse.cloud:8443/analytics",
   snowflake: "snowflake://user:password@account/database/schema?warehouse=COMPUTE_WH",
   mongodb: "mongodb://user:password@host:27017/analytics?authSource=admin",
   documentdb:
@@ -200,6 +203,32 @@ function sslFromOracleUri(value: string): boolean | undefined {
     return undefined;
   }
   return undefined;
+}
+
+function sslFromClickHouseUri(value: string): boolean | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol === "https:") {
+      return true;
+    }
+    if (url.protocol === "http:") {
+      return false;
+    }
+    const ssl = url.searchParams.get("ssl")?.toLowerCase();
+    if (ssl === "false" || ssl === "0") {
+      return false;
+    }
+    if (ssl === "true" || ssl === "1" || url.protocol === "clickhouse:") {
+      return true;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function ConnectionUriField({
@@ -420,6 +449,22 @@ function DataSourcesPage() {
                         password: form.password,
                         ssl: form.ssl,
                       }
+                  : form.kind === "clickhouse"
+                    ? form.useConnectionString
+                      ? {
+                          kind: "clickhouse" as const,
+                          connectionString: form.connectionString.trim(),
+                          ssl: form.ssl,
+                        }
+                      : {
+                          kind: "clickhouse" as const,
+                          host: form.host,
+                          port: Number(form.port),
+                          database: form.database,
+                          user: form.user,
+                          password: form.password,
+                          ssl: form.ssl,
+                        }
                   : form.kind === "db2"
                     ? form.useConnectionString
                       ? {
@@ -754,7 +799,7 @@ function DataSourcesPage() {
                     ...form,
                     kind,
                     connectionString: "",
-                    ssl: kind === "redshift" || kind === "cockroachdb",
+                    ssl: kind === "redshift" || kind === "cockroachdb" || kind === "clickhouse",
                     encryption: kind === "neo4j" ? form.encryption : false,
                     encrypt: kind === "hana" ? true : form.encrypt,
                     validateCertificate: kind === "hana" ? true : form.validateCertificate,
@@ -781,7 +826,9 @@ function DataSourcesPage() {
                                           ? "9042"
                                           : kind === "oracle"
                                             ? "1521"
-                                            : form.port,
+                                            : kind === "clickhouse"
+                                              ? "8443"
+                                              : form.port,
                     user:
                       kind === "postgres"
                         ? "postgres"
@@ -830,7 +877,8 @@ function DataSourcesPage() {
             form.kind === "mariadb" ||
             form.kind === "redshift" ||
             form.kind === "db2" ||
-            form.kind === "cockroachdb" ? (
+            form.kind === "cockroachdb" ||
+            form.kind === "clickhouse" ? (
               <>
                 {form.useConnectionString ? (
                   <ConnectionUriField
@@ -842,8 +890,15 @@ function DataSourcesPage() {
                           ? sslFromRedshiftUri(connectionString)
                           : form.kind === "db2"
                             ? sslFromDb2Uri(connectionString)
-                            : undefined;
-                      if (form.kind !== "redshift" && form.kind !== "db2" && form.kind !== "cockroachdb") {
+                            : form.kind === "clickhouse"
+                              ? sslFromClickHouseUri(connectionString)
+                              : undefined;
+                      if (
+                        form.kind !== "redshift" &&
+                        form.kind !== "db2" &&
+                        form.kind !== "cockroachdb" &&
+                        form.kind !== "clickhouse"
+                      ) {
                         setForm({ ...form, connectionString });
                         return;
                       }
@@ -932,8 +987,15 @@ function DataSourcesPage() {
                     ? "Require TLS and verify the server certificate"
                     : form.kind === "redshift"
                       ? "Require SSL and verify the server certificate"
-                      : "Use SSL"}
+                      : form.kind === "clickhouse"
+                        ? "Use HTTPS"
+                        : "Use SSL"}
                 </label>
+                {form.kind === "clickhouse" ? (
+                  <p className="text-[13px] text-muted-foreground">
+                    ClickHouse Cloud uses HTTPS on port 8443. Plain HTTP is port 8123.
+                  </p>
+                ) : null}
                 {form.kind === "cockroachdb" ? (
                   <Field label="CA certificate">
                     <TextArea

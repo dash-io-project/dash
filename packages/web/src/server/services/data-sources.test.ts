@@ -914,4 +914,49 @@ describe("data source records", () => {
     });
     expect(JSON.stringify(malformed.summary)).not.toContain("super-secret");
   });
+
+  it("summarizes a ClickHouse source without the password", async () => {
+    const admin = await createUser({
+      email: "clickhouse-admin@example.com",
+      name: "Admin",
+      password: "password123",
+      role: "admin",
+    });
+    const created = await createDataSource({
+      name: "Analytics",
+      description: "ClickHouse",
+      config: {
+        kind: "clickhouse",
+        connectionString: "https://reader:super-secret@abc.clickhouse.cloud:8443/analytics",
+      },
+      createdBy: admin.id,
+    });
+    expect(created.kind).toBe("clickhouse");
+    expect(created.summary).toEqual({
+      host: "abc.clickhouse.cloud",
+      port: 8443,
+      database: "analytics",
+      user: "reader",
+      ssl: true,
+    });
+    expect(JSON.stringify(created.summary)).not.toContain("super-secret");
+
+    const rejected = await createDataSource({
+      name: "Unsafe ClickHouse",
+      description: "Rejected setting",
+      config: {
+        kind: "clickhouse",
+        connectionString: "clickhouse://reader:super-secret@abc.clickhouse.cloud/analytics?readonly=0",
+      },
+      createdBy: admin.id,
+    });
+    expect(rejected.summary).toEqual({
+      host: "",
+      port: "",
+      database: "",
+      user: "",
+      ssl: false,
+    });
+    expect(JSON.stringify(rejected.summary)).not.toContain("super-secret");
+  });
 });
