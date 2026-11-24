@@ -80,7 +80,7 @@ function compileFilter(filter: AdapterFilter, values: unknown[]): string {
     case "lte":
       return `${column} <= ${next()}`;
     case "like":
-      return `${column} COLLATE BINARY_CS LIKE ${next()}`;
+      return `${column} COLLATE BINARY LIKE ${next()}`;
     case "ilike":
       return `LOWER(${column}) LIKE LOWER(${next()})`;
     case "in": {

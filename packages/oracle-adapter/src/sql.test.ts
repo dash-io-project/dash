@@ -121,7 +121,7 @@ describe("compileSelect", () => {
       limit: 10,
     });
     expect(compiled.text).toBe(
-      'SELECT "ID" FROM "ORDERS" WHERE "STATUS" COLLATE BINARY_CS LIKE :p0 ORDER BY NULL OFFSET :p1 ROWS FETCH NEXT :p2 ROWS ONLY',
+      'SELECT "ID" FROM "ORDERS" WHERE "STATUS" COLLATE BINARY LIKE :p0 ORDER BY NULL OFFSET :p1 ROWS FETCH NEXT :p2 ROWS ONLY',
     );
     expect(compiled.values).toEqual(["p%", 0, 10]);
   });
