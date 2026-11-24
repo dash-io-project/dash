@@ -165,6 +165,15 @@ const patchSchema = z.object({
         apiEndpoint: z.string().optional(),
       }),
       z.object({
+        kind: z.literal("dynamodb"),
+        connectionString: z.string().optional(),
+        region: z.string().optional(),
+        accessKeyId: z.string().optional(),
+        secretAccessKey: z.string().optional(),
+        sessionToken: z.string().optional(),
+        endpoint: z.string().optional(),
+      }),
+      z.object({
         kind: z.literal("opensearch"),
         node: z.string().optional(),
         connectionString: z.string().optional(),

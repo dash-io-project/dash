@@ -254,4 +254,16 @@ describe("testConnectionConfig", () => {
     expect(result.message).not.toContain("super-secret");
     expect(result.message).not.toMatch(/options/i);
   });
+
+  it("rejects a DynamoDB URI that sets an unknown parameter", async () => {
+    const result = await testConnectionConfig({
+      kind: "dynamodb",
+      connectionString: "dynamodb://AKIAIOSFODNN7EXAMPLE:super-secret@us-east-1?debug=1",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.latencyMs).toBe(0);
+    expect(result.message).toMatch(/unsupported dynamodb connection parameter/i);
+    expect(result.message).not.toContain("super-secret");
+    expect(result.message).not.toMatch(/debug/i);
+  });
 });

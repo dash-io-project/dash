@@ -65,6 +65,7 @@ export type {
   SnowflakeConnectionConfig,
   StripeConnectionConfig,
   OracleConnectionConfig,
+  DynamoDbConnectionConfig,
 } from "./datasource.ts";
 
 export type {

@@ -10,7 +10,8 @@ Each warehouse adapter is its own package under `packages/` and implements
 (`@dash/adapter-bigquery`). Databricks SQL ships as `packages/databricks-adapter`
 (`@dash/adapter-databricks`). Amazon Redshift ships as `packages/redshift-adapter`
 (`@dash/adapter-redshift`). Stripe ships as `packages/stripe-adapter`
-(`@dash/adapter-stripe`). IBM Db2 ships as `packages/db2-adapter`
+(`@dash/adapter-stripe`). DynamoDB ships as `packages/dynamodb-adapter`
+(`@dash/adapter-dynamodb`). IBM Db2 ships as `packages/db2-adapter`
 (`@dash/adapter-db2`). Amazon OpenSearch ships as `packages/opensearch-adapter`
 (`@dash/adapter-opensearch`). Amazon DocumentDB ships as `packages/documentdb-adapter`
 (`@dash/adapter-documentdb`). SAP HANA ships as `packages/hana-adapter`
@@ -45,6 +46,7 @@ Each warehouse adapter is its own package under `packages/` and implements
 | `@dash/adapter-cassandra` | `packages/cassandra-adapter` | `cassandra` | MVP |
 | `@dash/adapter-oracle` | `packages/oracle-adapter` | `oracle` | MVP |
 | `@dash/adapter-clickhouse` | `packages/clickhouse-adapter` | `clickhouse` | MVP |
+| `@dash/adapter-dynamodb` | `packages/dynamodb-adapter` | `dynamodb` | MVP |
 
 The web app does not ship a built-in sample adapter. To get realistic data in
 development, seed the configured sources from **Settings** (see the README).
@@ -53,7 +55,7 @@ new writer in `packages/seed/src/writers` and add its kind to `SEEDABLE_KINDS`.
 
 ## Testing
 
-Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch, DocumentDB, CockroachDB, Couchbase, Neo4j, Cassandra, Oracle, and ClickHouse adapter tests run against the local clusters in `docker-compose.test.yml`.
+Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch, DocumentDB, CockroachDB, Couchbase, Neo4j, Cassandra, Oracle, ClickHouse, and DynamoDB adapter tests run against the local clusters in `docker-compose.test.yml`.
 
 IBM Db2 adapter tests run in process. The community image `icr.io/db2_community/db2` does not fit this CI job. The image needs about 7 GB of disk and about 4 GB of memory. The container needs privileged mode. The first start takes several minutes.
 
@@ -87,7 +89,8 @@ Cassandra listens on `127.0.0.1:39042`
 Oracle listens on `127.0.0.1:15219`
 (`oracle://dash:Dash_test1@127.0.0.1:15219/FREEPDB1`). ClickHouse listens on
 `http://127.0.0.1:18123`
-(`clickhouse://dash:dash@127.0.0.1:18123/dash?ssl=false`). The root README lists the
+(`clickhouse://dash:dash@127.0.0.1:18123/dash?ssl=false`). DynamoDB Local listens on `http://127.0.0.1:8009`
+(access key `dash`, secret `dashsecret`, region `us-east-1`). The root README lists the
 environment overrides. When an
 engine can run locally, add it to that Compose file and point the package
 tests at it.

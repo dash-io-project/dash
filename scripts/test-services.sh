@@ -23,6 +23,7 @@ action=${1:-}
 case "$action" in
   start)
     "${compose[@]}" up -d --wait --remove-orphans
+    pnpm --filter @dash/adapter-dynamodb exec node --experimental-strip-types src/seed-cluster.ts
     echo "PostgreSQL test cluster is ready at postgres://dash:dash@127.0.0.1:${DASH_TEST_POSTGRES_PORT:-54329}/dash"
     echo "MySQL test cluster is ready at mysql://dash:dash@127.0.0.1:${DASH_TEST_MYSQL_PORT:-33029}/dash"
     echo "MariaDB test cluster is ready at mariadb://dash:dash@127.0.0.1:${DASH_TEST_MARIADB_PORT:-33039}/dash"
@@ -39,6 +40,7 @@ case "$action" in
     echo "Neo4j test cluster is ready at bolt://neo4j:dash@127.0.0.1:${DASH_TEST_NEO4J_PORT:-17687} (database neo4j)"
     echo "Cassandra test cluster is ready at cassandra://dash:dash@127.0.0.1:${DASH_TEST_CASSANDRA_PORT:-39042}/dash?dc=datacenter1"
     echo "Oracle test cluster is ready at oracle://dash:Dash_test1@127.0.0.1:${DASH_TEST_ORACLE_PORT:-15219}/FREEPDB1"
+    echo "DynamoDB test cluster is ready at http://127.0.0.1:${DASH_TEST_DYNAMODB_PORT:-8009}"
     ;;
   stop)
     "${compose[@]}" down --volumes --remove-orphans

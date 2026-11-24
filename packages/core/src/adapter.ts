@@ -2,7 +2,7 @@
  * Adapter kinds Dash knows about. `postgres`, `mysql`, `mariadb`, `db2`, `hana`,
  * `snowflake`, `mongodb`, `bigquery`, `databricks`, `redshift`, `stripe`,
  * `opensearch`, `documentdb`, `cockroachdb`, `couchbase`, `neo4j`, `cassandra`,
- * `oracle`, and `clickhouse` ship.
+ * `oracle`, `clickhouse`, and `dynamodb` ship.
  */
 export const DATA_SOURCE_KINDS = [
   "postgres",
@@ -24,6 +24,7 @@ export const DATA_SOURCE_KINDS = [
   "cassandra",
   "oracle",
   "clickhouse",
+  "dynamodb",
 ] as const;
 
 export type DataSourceKind = (typeof DATA_SOURCE_KINDS)[number];
@@ -55,6 +56,8 @@ export interface AdapterResource {
 export interface AdapterSchema {
   kind: DataSourceKind;
   resources: AdapterResource[];
+  /** True when the engine has more resources than `resources` includes. */
+  truncated?: boolean;
 }
 
 export const FILTER_OPERATORS = [
