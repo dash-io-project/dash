@@ -8,6 +8,7 @@ import {
   Plus,
   Search,
   Server,
+  Share2,
   Snowflake,
 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
@@ -31,6 +32,7 @@ const icons: Record<string, IconComponent> = {
   stripe: CreditCard,
   opensearch: Search,
   couchbase: Server,
+  neo4j: Share2,
 };
 
 const tileClasses = "flex items-center gap-4 bg-card p-5";

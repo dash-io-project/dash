@@ -6,8 +6,9 @@ import { DatabricksAdapter } from "@dash/adapter-databricks";
 import { Db2Adapter } from "@dash/adapter-db2";
 import { DocumentDbAdapter } from "@dash/adapter-documentdb";
 import { HanaAdapter } from "@dash/adapter-hana";
-import { MongoAdapter } from "@dash/adapter-mongodb";
 import { MariadbAdapter } from "@dash/adapter-mariadb";
+import { MongoAdapter } from "@dash/adapter-mongodb";
+import { Neo4jAdapter } from "@dash/adapter-neo4j";
 import { MysqlAdapter } from "@dash/adapter-mysql";
 import { PostgresAdapter } from "@dash/adapter-postgres";
 import { RedshiftAdapter } from "@dash/adapter-redshift";
@@ -57,6 +58,8 @@ function createAdapter(config: ConnectionConfig): DataAdapter {
       return OpenSearchAdapter.fromConfig(config);
     case "couchbase":
       return CouchbaseAdapter.fromConfig(config);
+    case "neo4j":
+      return Neo4jAdapter.fromConfig(config);
   }
 }
 

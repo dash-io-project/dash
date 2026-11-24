@@ -25,6 +25,7 @@
     "@dash/adapter-mongodb": "workspace:*",
     "@dash/adapter-opensearch": "workspace:*",
     "@dash/adapter-mysql": "workspace:*",
+    "@dash/adapter-neo4j": "workspace:*",
     "@dash/adapter-postgres": "workspace:*",
     "@dash/adapter-redshift": "workspace:*",
     "@dash/adapter-snowflake": "workspace:*",

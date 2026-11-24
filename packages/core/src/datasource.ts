@@ -249,6 +249,24 @@ export interface CouchbaseConnectionConfig {
   network?: "default" | "external";
 }
 
+export interface Neo4jConnectionConfig {
+  kind: "neo4j";
+  connectionString?: string;
+  /** Bolt host. The adapter builds `bolt://` or `bolt+s://` from this host. */
+  host?: string;
+  port?: number;
+  /** Database name. The default is `neo4j`. */
+  database?: string;
+  user?: string;
+  password?: string;
+  /**
+   * Encrypt the session and check the server certificate.
+   * `bolt+s://` and `neo4j+s://` already encrypt.
+   * The local fixture uses `bolt://` with no encryption.
+   */
+  encryption?: boolean;
+}
+
 export interface BigQueryConnectionConfig {
   kind: "bigquery";
   projectId: string;
@@ -286,4 +304,5 @@ export type ConnectionConfig =
   | StripeConnectionConfig
   | OpenSearchConnectionConfig
   | CockroachConnectionConfig
-  | CouchbaseConnectionConfig;
+  | CouchbaseConnectionConfig
+  | Neo4jConnectionConfig;
