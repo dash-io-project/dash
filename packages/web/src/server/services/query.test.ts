@@ -41,6 +41,16 @@ describe("testConnectionConfig", () => {
     expect(result.message).not.toContain("super-secret");
   });
 
+  it("reports an invalid MariaDB connection URI as a failed connection test", async () => {
+    const result = await testConnectionConfig({
+      kind: "mariadb",
+      connectionString: "mysql://localhost/dash",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.latencyMs).toBe(0);
+    expect(result.message).toMatch(/mariadb:\/\//);
+  });
+
   it("reports an invalid MySQL connection URI as a failed connection test", async () => {
     const result = await testConnectionConfig({
       kind: "mysql",

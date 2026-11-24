@@ -36,6 +36,7 @@ describe("data source kinds", () => {
     expect(DATA_SOURCE_KINDS).toContain("snowflake");
     expect(DATA_SOURCE_KINDS).toContain("mysql");
     expect(DATA_SOURCE_KINDS).toContain("db2");
+    expect(DATA_SOURCE_KINDS).toContain("mariadb");
     expect(DATA_SOURCE_KINDS).toContain("mongodb");
     expect(DATA_SOURCE_KINDS).toContain("bigquery");
     expect(DATA_SOURCE_KINDS).toContain("databricks");

@@ -30,6 +30,16 @@ const configSchema = z.discriminatedUnion("kind", [
     ssl: z.boolean().optional(),
   }),
   z.object({
+    kind: z.literal("mariadb"),
+    connectionString: z.string().optional(),
+    host: z.string().optional(),
+    port: z.number().int().optional(),
+    database: z.string().optional(),
+    user: z.string().optional(),
+    password: z.string().optional(),
+    ssl: z.boolean().optional(),
+  }),
+  z.object({
     kind: z.literal("db2"),
     connectionString: z.string().optional(),
     host: z.string().optional(),

@@ -40,6 +40,7 @@ export const Route = createFileRoute("/_authed/data-sources")({
 type SourceKind =
   | "postgres"
   | "mysql"
+  | "mariadb"
   | "db2"
   | "snowflake"
   | "mongodb"
@@ -52,6 +53,7 @@ type SourceKind =
 const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "postgres", label: "PostgreSQL" },
   { value: "mysql", label: "MySQL" },
+  { value: "mariadb", label: "MariaDB" },
   { value: "db2", label: "IBM Db2" },
   { value: "redshift", label: "Amazon Redshift" },
   { value: "snowflake", label: "Snowflake" },
@@ -65,6 +67,7 @@ const KIND_OPTIONS: SelectOption<SourceKind>[] = [
 const URI_PLACEHOLDER: Record<SourceKind, string> = {
   postgres: "postgres://user:password@localhost:5432/analytics",
   mysql: "mysql://user:password@localhost:3306/analytics",
+  mariadb: "mariadb://user:password@localhost:3306/analytics",
   db2: "db2://db2inst1:password@localhost:50000/DASH?schema=DASH",
   redshift: "redshift://user:password@cluster.redshift.amazonaws.com:5439/analytics?sslmode=require",
   snowflake: "snowflake://user:password@account/database/schema?warehouse=COMPUTE_WH",
@@ -280,15 +283,15 @@ function DataSourcesPage() {
                     authSource: form.user ? form.authSource || "admin" : undefined,
                     tls: form.tls,
                   }
-              : form.kind === "mysql"
+              : form.kind === "mysql" || form.kind === "mariadb"
                 ? form.useConnectionString
                   ? {
-                      kind: "mysql" as const,
+                      kind: form.kind,
                       connectionString: form.connectionString.trim(),
                       ssl: form.ssl,
                     }
                   : {
-                      kind: "mysql" as const,
+                      kind: form.kind,
                       host: form.host,
                       port: Number(form.port),
                       database: form.database,
@@ -446,8 +449,8 @@ function DataSourcesPage() {
       />
       <PageBody className="space-y-6">
       <p className="max-w-3xl text-muted-foreground">
-        Paste a connection URI, or enter the fields. Dash tests Postgres, MySQL, IBM Db2, Snowflake, MongoDB,
-        BigQuery, Databricks SQL, Redshift, Stripe, and OpenSearch on save.
+        Paste a connection URI, or enter the fields. Dash tests Postgres, MySQL, MariaDB, IBM Db2, Snowflake,
+        MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, and OpenSearch on save.
         {isAdmin ? null : " Only administrators can add or remove sources."}
       </p>
 
@@ -464,7 +467,7 @@ function DataSourcesPage() {
             ) : null
           }
         >
-          Add a PostgreSQL, MySQL, IBM Db2, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, or OpenSearch connection to start querying.
+          Add a PostgreSQL, MySQL, MariaDB, IBM Db2, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, or OpenSearch connection to start querying.
         </EmptyState>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -550,7 +553,7 @@ function DataSourcesPage() {
                         ? "27017"
                         : kind === "postgres"
                           ? "5432"
-                          : kind === "mysql"
+                          : kind === "mysql" || kind === "mariadb"
                             ? "3306"
                             : kind === "redshift"
                               ? "5439"
@@ -581,7 +584,11 @@ function DataSourcesPage() {
                 }}
               />
             </Field>
-            {form.kind === "postgres" || form.kind === "mysql" || form.kind === "redshift" || form.kind === "db2" ? (
+            {form.kind === "postgres" ||
+            form.kind === "mysql" ||
+            form.kind === "mariadb" ||
+            form.kind === "redshift" ||
+            form.kind === "db2" ? (
               <>
                 {form.useConnectionString ? (
                   <ConnectionUriField

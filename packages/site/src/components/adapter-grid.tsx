@@ -17,6 +17,7 @@ type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 const icons: Record<string, IconComponent> = {
   postgres: Database,
   mysql: Database,
+  mariadb: Database,
   db2: Database,
   snowflake: Snowflake,
   mongodb: Leaf,
