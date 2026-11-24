@@ -253,6 +253,29 @@ services:
       retries: 40
       start_period: 40s
 
+  cockroachdb:
+    image: cockroachdb/cockroach:v26.4.1@sha256:13331054ac7b815bcf7d4396e3416d3ef53522be308b5c4a8155079f35fe58a1
+    container_name: dash-test-cockroachdb
+    # One secure CockroachDB node. SQL requires TLS.
+    # Adapter tests read the CA certificate from the host path.
+    entrypoint: ["/bin/sh", "/opt/dash/entrypoint.sh"]
+    ports:
+      - "127.0.0.1:${DASH_TEST_COCKROACHDB_PORT:-26229}:26257"
+    volumes:
+      - /tmp/dash-test-cockroach-certs:/certs
+      - ./docker/cockroachdb/entrypoint.sh:/opt/dash/entrypoint.sh:ro
+      - ./docker/cockroachdb/init.sql:/opt/dash/init.sql:ro
+      - ./docker/cockroachdb/fixture.sql:/opt/dash/fixture.sql:ro
+      - ./docker/cockroachdb/healthcheck.sh:/opt/dash/healthcheck.sh:ro
+    mem_limit: 1536m
+    cpus: 0.75
+    healthcheck:
+      test: ["CMD", "/bin/sh", "/opt/dash/healthcheck.sh"]
+      interval: 2s
+      timeout: 5s
+      retries: 40
+      start_period: 25s
+
   stripe:
     build:
       context: ./docker/stripe

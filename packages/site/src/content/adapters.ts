@@ -11,6 +11,7 @@ export type Adapter = {
 /** Data source adapters that ship today. ClickHouse is planned and is not in this list. */
 export const adapters: readonly Adapter[] = [
   { id: "postgres", name: "Postgres", kind: "sql", note: "Relational database" },
+  { id: "cockroachdb", name: "CockroachDB", kind: "sql", note: "Distributed SQL database" },
   { id: "mysql", name: "MySQL", kind: "sql", note: "Relational database" },
   { id: "mariadb", name: "MariaDB", kind: "sql", note: "Relational database" },
   { id: "db2", name: "IBM Db2", kind: "sql", note: "Relational database" },

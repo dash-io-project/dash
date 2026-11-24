@@ -1,6 +1,7 @@
 import { bigQueryEndpoint, isGoogleApiHost } from "@dash/adapter-bigquery";
 import { db2PublicSummary } from "@dash/adapter-db2";
 import { databricksPublicSummary } from "@dash/adapter-databricks";
+import { cockroachPublicSummary } from "@dash/adapter-cockroachdb";
 import { hanaPublicSummary } from "@dash/adapter-hana";
 import { redshiftPublicSummary } from "@dash/adapter-redshift";
 import { openSearchPublicSummary } from "@dash/adapter-opensearch";
@@ -128,6 +129,9 @@ function summarize(config: ConnectionConfig): DataSourceRecord["summary"] {
   }
   if (config.kind === "redshift") {
     return redshiftPublicSummary(config);
+  }
+  if (config.kind === "cockroachdb") {
+    return cockroachPublicSummary(config);
   }
   if (config.kind === "stripe") {
     return stripePublicSummary(config);

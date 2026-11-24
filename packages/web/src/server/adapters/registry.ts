@@ -1,5 +1,6 @@
 import { type ConnectionConfig, type DataAdapter } from "@dash/core";
 import { BigQueryAdapter } from "@dash/adapter-bigquery";
+import { CockroachAdapter } from "@dash/adapter-cockroachdb";
 import { DatabricksAdapter } from "@dash/adapter-databricks";
 import { Db2Adapter } from "@dash/adapter-db2";
 import { DocumentDbAdapter } from "@dash/adapter-documentdb";
@@ -29,6 +30,8 @@ function createAdapter(config: ConnectionConfig): DataAdapter {
       return SnowflakeAdapter.fromConfig(config);
     case "postgres":
       return PostgresAdapter.fromConfig(config);
+    case "cockroachdb":
+      return CockroachAdapter.fromConfig(config);
     case "mysql":
       return MysqlAdapter.fromConfig(config);
     case "db2":

@@ -94,6 +94,7 @@ packages/stripe-adapter/     @dash/adapter-stripe
 packages/db2-adapter/        @dash/adapter-db2
 packages/opensearch-adapter/ @dash/adapter-opensearch
 packages/documentdb-adapter/ @dash/adapter-documentdb
+packages/cockroachdb-adapter/ @dash/adapter-cockroachdb
 ```
 
 Workspaces are declared in the root `pnpm-workspace.yaml`.
@@ -223,6 +224,7 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] IBM Db2 adapter (`@dash/adapter-db2`)
 - [x] Amazon OpenSearch adapter (`@dash/adapter-opensearch`)
 - [x] Amazon DocumentDB adapter (`@dash/adapter-documentdb`)
+- [x] CockroachDB adapter (`@dash/adapter-cockroachdb`)
 - [ ] ClickHouse adapter
 - [x] Public website (`@dash/site`): open source and Dash Cloud pages, pricing
 - [x] Dash Cloud accounts in `@dash/site`: sign-up, sign-in, sessions, account page
@@ -241,7 +243,7 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] Dynamic dashboard pages
 - [x] Chart widgets (TanStack Charts)
 - [x] Sortable and filterable tables (TanStack Table)
-- [x] Data sources page (admin): add and remove sources (Postgres, MySQL, MariaDB, IBM Db2, Snowflake, MongoDB, Amazon DocumentDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch)
+- [x] Data sources page (admin): add and remove sources (Postgres, MySQL, MariaDB, CockroachDB, IBM Db2, SAP HANA, Snowflake, MongoDB, Amazon DocumentDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch)
 - [x] Demo seed: the Fernway sample company in Postgres, MongoDB, and BigQuery sources (`DEMO_ENVIRONMENT`)
 - [ ] Real-time multi-user dashboard collaboration
 - [x] Light, Dark, and System appearance, selected in the account panel
@@ -441,7 +443,7 @@ A widget link opens a view of the dashboard that shows only that widget. The wid
 
 ## Adapter test clusters
 
-Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch, and DocumentDB adapter tests run against the Compose cluster. The Redshift service is a PostgreSQL wire-protocol stand-in. The Stripe service is a list-API fixture. The OpenSearch service is the official OpenSearch image with the security plugin off. The DocumentDB service is a MongoDB wire-protocol stand-in with TLS. Amazon DocumentDB has no local image. Add the next local engine beside them in `docker-compose.test.yml` when that adapter can run here.
+Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch, DocumentDB, and CockroachDB adapter tests run against the Compose cluster. The Redshift service is a PostgreSQL wire-protocol stand-in. The Stripe service is a list-API fixture. The OpenSearch service is the official OpenSearch image with the security plugin off. The DocumentDB service is a MongoDB wire-protocol stand-in with TLS. Amazon DocumentDB has no local image. CockroachDB is a single secure node. Add the next local engine beside them in `docker-compose.test.yml` when that adapter can run here.
 
 IBM Db2 tests run in process. The community image `icr.io/db2_community/db2` does not fit this CI job. The image needs about 7 GB of disk and about 4 GB of memory. The container needs privileged mode. The first start takes several minutes.
 
@@ -464,9 +466,9 @@ pnpm test:services:stop
 | User | `dash` | `dash` | `dash` | `dash` | `dash` |
 | Password | `dash` | `dash` | `dash` | `dash` | `dash` |
 
-Databricks SQL listens at `http://127.0.0.1:14439` with token `dash`, warehouse `dash`, catalog `dash`, and schema `analytics`. Stripe listens at `http://127.0.0.1:12119`. OpenSearch listens at `http://127.0.0.1:9209`. The security plugin is off, so the cluster does not check a password. DocumentDB listens at `mongodb://dash:dash@127.0.0.1:27099/dash?authSource=admin` with TLS. After the cluster starts, the test CA is `docker/documentdb/runtime/ca.pem`. Pass that file as `caBundle`. An empty CA bundle uses the Amazon RDS global bundle.
+Databricks SQL listens at `http://127.0.0.1:14439` with token `dash`, warehouse `dash`, catalog `dash`, and schema `analytics`. Stripe listens at `http://127.0.0.1:12119`. OpenSearch listens at `http://127.0.0.1:9209`. The security plugin is off, so the cluster does not check a password. DocumentDB listens at `mongodb://dash:dash@127.0.0.1:27099/dash?authSource=admin` with TLS. After the cluster starts, the test CA is `docker/documentdb/runtime/ca.pem`. Pass that file as `caBundle`. An empty CA bundle uses the Amazon RDS global bundle. CockroachDB listens on `127.0.0.1:26229`. The user and the password are `dash`, and the database is `dash`. The CA file is `/tmp/dash-test-cockroach-certs/ca.crt`.
 
-Override the Postgres endpoint with `DASH_TEST_POSTGRES_HOST`, `DASH_TEST_POSTGRES_PORT`, `DASH_TEST_POSTGRES_DATABASE`, `DASH_TEST_POSTGRES_USER`, and `DASH_TEST_POSTGRES_PASSWORD`. Override MySQL with `DASH_TEST_MYSQL_HOST`, `DASH_TEST_MYSQL_PORT`, `DASH_TEST_MYSQL_DATABASE`, `DASH_TEST_MYSQL_USER`, and `DASH_TEST_MYSQL_PASSWORD`. Override MariaDB with `DASH_TEST_MARIADB_HOST`, `DASH_TEST_MARIADB_PORT`, `DASH_TEST_MARIADB_DATABASE`, `DASH_TEST_MARIADB_USER`, and `DASH_TEST_MARIADB_PASSWORD`. Override MongoDB with `DASH_TEST_MONGODB_HOST`, `DASH_TEST_MONGODB_PORT`, `DASH_TEST_MONGODB_DATABASE`, `DASH_TEST_MONGODB_USER`, `DASH_TEST_MONGODB_PASSWORD`, and `DASH_TEST_MONGODB_AUTH_SOURCE`. Override Databricks SQL with `DASH_TEST_DATABRICKS_HOST`, `DASH_TEST_DATABRICKS_PORT`, `DASH_TEST_DATABRICKS_HTTP_PATH`, `DASH_TEST_DATABRICKS_TOKEN`, `DASH_TEST_DATABRICKS_WAREHOUSE`, `DASH_TEST_DATABRICKS_CATALOG`, and `DASH_TEST_DATABRICKS_SCHEMA`. Override Redshift with `DASH_TEST_REDSHIFT_HOST`, `DASH_TEST_REDSHIFT_PORT`, `DASH_TEST_REDSHIFT_DATABASE`, `DASH_TEST_REDSHIFT_USER`, and `DASH_TEST_REDSHIFT_PASSWORD`. Override Stripe with `DASH_TEST_STRIPE_HOST`, `DASH_TEST_STRIPE_PORT`, and `DASH_TEST_STRIPE_KEY`. Override OpenSearch with `DASH_TEST_OPENSEARCH_NODE`, or with `DASH_TEST_OPENSEARCH_HOST` and `DASH_TEST_OPENSEARCH_PORT`. Override DocumentDB with `DASH_TEST_DOCUMENTDB_HOST`, `DASH_TEST_DOCUMENTDB_PORT`, `DASH_TEST_DOCUMENTDB_DATABASE`, `DASH_TEST_DOCUMENTDB_USER`, `DASH_TEST_DOCUMENTDB_PASSWORD`, `DASH_TEST_DOCUMENTDB_AUTH_SOURCE`, and `DASH_TEST_DOCUMENTDB_CA_FILE`. The port values are the host ports Compose publishes. Databricks token, warehouse, catalog, and schema are passed into the container; the HTTP path has to use that warehouse id. The Stripe key is passed into the fixture as `DASH_STRIPE_KEY`. These credentials are for the local test clusters only.
+Override the Postgres endpoint with `DASH_TEST_POSTGRES_HOST`, `DASH_TEST_POSTGRES_PORT`, `DASH_TEST_POSTGRES_DATABASE`, `DASH_TEST_POSTGRES_USER`, and `DASH_TEST_POSTGRES_PASSWORD`. Override MySQL with `DASH_TEST_MYSQL_HOST`, `DASH_TEST_MYSQL_PORT`, `DASH_TEST_MYSQL_DATABASE`, `DASH_TEST_MYSQL_USER`, and `DASH_TEST_MYSQL_PASSWORD`. Override MariaDB with `DASH_TEST_MARIADB_HOST`, `DASH_TEST_MARIADB_PORT`, `DASH_TEST_MARIADB_DATABASE`, `DASH_TEST_MARIADB_USER`, and `DASH_TEST_MARIADB_PASSWORD`. Override MongoDB with `DASH_TEST_MONGODB_HOST`, `DASH_TEST_MONGODB_PORT`, `DASH_TEST_MONGODB_DATABASE`, `DASH_TEST_MONGODB_USER`, `DASH_TEST_MONGODB_PASSWORD`, and `DASH_TEST_MONGODB_AUTH_SOURCE`. Override Databricks SQL with `DASH_TEST_DATABRICKS_HOST`, `DASH_TEST_DATABRICKS_PORT`, `DASH_TEST_DATABRICKS_HTTP_PATH`, `DASH_TEST_DATABRICKS_TOKEN`, `DASH_TEST_DATABRICKS_WAREHOUSE`, `DASH_TEST_DATABRICKS_CATALOG`, and `DASH_TEST_DATABRICKS_SCHEMA`. Override Redshift with `DASH_TEST_REDSHIFT_HOST`, `DASH_TEST_REDSHIFT_PORT`, `DASH_TEST_REDSHIFT_DATABASE`, `DASH_TEST_REDSHIFT_USER`, and `DASH_TEST_REDSHIFT_PASSWORD`. Override Stripe with `DASH_TEST_STRIPE_HOST`, `DASH_TEST_STRIPE_PORT`, and `DASH_TEST_STRIPE_KEY`. Override OpenSearch with `DASH_TEST_OPENSEARCH_NODE`, or with `DASH_TEST_OPENSEARCH_HOST` and `DASH_TEST_OPENSEARCH_PORT`. Override DocumentDB with `DASH_TEST_DOCUMENTDB_HOST`, `DASH_TEST_DOCUMENTDB_PORT`, `DASH_TEST_DOCUMENTDB_DATABASE`, `DASH_TEST_DOCUMENTDB_USER`, `DASH_TEST_DOCUMENTDB_PASSWORD`, `DASH_TEST_DOCUMENTDB_AUTH_SOURCE`, and `DASH_TEST_DOCUMENTDB_CA_FILE`. Override CockroachDB with `DASH_TEST_COCKROACHDB_HOST`, `DASH_TEST_COCKROACHDB_PORT`, `DASH_TEST_COCKROACHDB_DATABASE`, `DASH_TEST_COCKROACHDB_USER`, `DASH_TEST_COCKROACHDB_PASSWORD`, and `DASH_TEST_COCKROACHDB_CA`. The port values are the host ports Compose publishes. Databricks token, warehouse, catalog, and schema are passed into the container; the HTTP path has to use that warehouse id. The Stripe key is passed into the fixture as `DASH_STRIPE_KEY`. These credentials are for the local test clusters only.
 
 ## Architecture notes
 

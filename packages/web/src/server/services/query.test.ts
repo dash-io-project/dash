@@ -153,6 +153,33 @@ describe("testConnectionConfig", () => {
     expect(result.message).not.toMatch(/debug/i);
   });
 
+  it("rejects a CockroachDB URI that sets driver options without echoing the password", async () => {
+    const result = await testConnectionConfig({
+      kind: "cockroachdb",
+      connectionString: "cockroachdb://dash:super-secret@db.example.com/analytics?options=-c",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.latencyMs).toBe(0);
+    expect(result.message).toMatch(/unsupported cockroachdb connection parameter/i);
+    expect(result.message).not.toContain("super-secret");
+    expect(result.message).not.toMatch(/options/i);
+  });
+
+  it("reports an invalid CockroachDB host without echoing the password", async () => {
+    const result = await testConnectionConfig({
+      kind: "cockroachdb",
+      host: "not a host",
+      database: "dash",
+      user: "dash",
+      password: "super-secret",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.latencyMs).toBe(0);
+    expect(result.message).toMatch(/host/i);
+    expect(result.message).not.toContain("not a host");
+    expect(result.message).not.toContain("super-secret");
+  });
+
   it("rejects a Stripe URI that names another host without echoing the key", async () => {
     const result = await testConnectionConfig({
       kind: "stripe",

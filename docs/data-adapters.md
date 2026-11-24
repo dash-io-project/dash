@@ -14,7 +14,8 @@ Each warehouse adapter is its own package under `packages/` and implements
 (`@dash/adapter-db2`). Amazon OpenSearch ships as `packages/opensearch-adapter`
 (`@dash/adapter-opensearch`). Amazon DocumentDB ships as `packages/documentdb-adapter`
 (`@dash/adapter-documentdb`). SAP HANA ships as `packages/hana-adapter`
-(`@dash/adapter-hana`).
+(`@dash/adapter-hana`). CockroachDB ships as `packages/cockroachdb-adapter`
+(`@dash/adapter-cockroachdb`).
 
 ## Shipping
 
@@ -33,6 +34,7 @@ Each warehouse adapter is its own package under `packages/` and implements
 | `@dash/adapter-db2` | `packages/db2-adapter` | `db2` | MVP |
 | `@dash/adapter-opensearch` | `packages/opensearch-adapter` | `opensearch` | MVP |
 | `@dash/adapter-documentdb` | `packages/documentdb-adapter` | `documentdb` | MVP |
+| `@dash/adapter-cockroachdb` | `packages/cockroachdb-adapter` | `cockroachdb` | MVP |
 | — | — | `clickhouse` | Planned |
 
 The web app does not ship a built-in sample adapter. To get realistic data in
@@ -42,7 +44,7 @@ new writer in `packages/seed/src/writers` and add its kind to `SEEDABLE_KINDS`.
 
 ## Testing
 
-Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch, and DocumentDB adapter tests run against the local clusters in `docker-compose.test.yml`.
+Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch, DocumentDB, and CockroachDB adapter tests run against the local clusters in `docker-compose.test.yml`.
 
 IBM Db2 adapter tests run in process. The community image `icr.io/db2_community/db2` does not fit this CI job. The image needs about 7 GB of disk and about 4 GB of memory. The container needs privileged mode. The first start takes several minutes.
 
@@ -66,7 +68,9 @@ stand-in listens on `127.0.0.1:54399`
 The DocumentDB stand-in listens on
 `127.0.0.1:27099` (`mongodb://dash:dash@127.0.0.1:27099/dash?authSource=admin`, TLS).
 Amazon DocumentDB has no local image. The stand-in speaks the MongoDB wire protocol.
-The root README lists the
+CockroachDB listens on `127.0.0.1:26229`
+(`dash` / `dash`, database `dash`). The CA file is
+`/tmp/dash-test-cockroach-certs/ca.crt`. The root README lists the
 environment overrides. When an
 engine can run locally, add it to that Compose file and point the package
 tests at it.
