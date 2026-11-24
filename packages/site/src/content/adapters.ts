@@ -54,6 +54,7 @@ export const adapters: readonly Adapter[] = [
   { id: "couchbase", name: "Couchbase", kind: "document", note: "Document database" },
   { id: "neo4j", name: "Neo4j", kind: "graph", note: "Graph database" },
   { id: "cassandra", name: "Apache Cassandra", kind: "sql", note: "Wide-column database" },
+  { id: "dynamodb", name: "DynamoDB", kind: "document", note: "Key-value database" },
 ];
 
 export const adapterCount = adapters.length;

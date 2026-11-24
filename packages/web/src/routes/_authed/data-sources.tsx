@@ -56,7 +56,8 @@ type SourceKind =
   | "neo4j"
   | "cassandra"
   | "oracle"
-  | "clickhouse";
+  | "clickhouse"
+  | "dynamodb";
 
 type ReadPreference =
   | "primary"
@@ -85,6 +86,7 @@ const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "couchbase", label: "Couchbase" },
   { value: "neo4j", label: "Neo4j" },
   { value: "cassandra", label: "Apache Cassandra" },
+  { value: "dynamodb", label: "Amazon DynamoDB" },
 ];
 
 const READ_PREFERENCE_OPTIONS: SelectOption<ReadPreference>[] = [
@@ -117,6 +119,7 @@ const URI_PLACEHOLDER: Record<SourceKind, string> = {
   couchbase: "couchbase://user:password@127.0.0.1:11210/bucket?scope=_default",
   neo4j: "bolt://user:password@localhost:7687",
   cassandra: "cassandra://user:password@127.0.0.1:9042/analytics?dc=datacenter1",
+  dynamodb: "dynamodb://accessKeyId:secretAccessKey@us-east-1",
 };
 
 function sslFromDb2Uri(value: string): boolean | undefined {
@@ -626,6 +629,27 @@ function DataSourcesPage() {
                             password: form.password || undefined,
                             ssl: form.ssl,
                           }
+                    : form.kind === "dynamodb"
+                      ? form.useConnectionString
+                        ? {
+                            kind: "dynamodb" as const,
+                            connectionString: form.connectionString.trim(),
+                            ...(form.sessionToken.trim()
+                              ? { sessionToken: form.sessionToken.trim() }
+                              : {}),
+                          }
+                        : {
+                            kind: "dynamodb" as const,
+                            region: form.region.trim(),
+                            accessKeyId: form.accessKeyId.trim(),
+                            secretAccessKey: form.secretAccessKey,
+                            ...(form.sessionToken.trim()
+                              ? { sessionToken: form.sessionToken.trim() }
+                              : {}),
+                            ...(form.apiEndpoint.trim()
+                              ? { endpoint: form.apiEndpoint.trim() }
+                              : {}),
+                          }
                 : form.useConnectionString
                   ? {
                       kind: "postgres" as const,
@@ -702,7 +726,7 @@ function DataSourcesPage() {
       <p className="max-w-3xl text-muted-foreground">
         Paste a connection URI, or enter the fields. Dash tests Postgres, MySQL, MariaDB, CockroachDB, IBM Db2,
         SAP HANA, Oracle, Snowflake, MongoDB, Amazon DocumentDB, BigQuery, Databricks SQL, Redshift, Stripe,
-        OpenSearch, Couchbase, Neo4j, and Cassandra on save.
+        OpenSearch, Couchbase, Neo4j, Cassandra, ClickHouse, and DynamoDB on save.
         {isAdmin ? null : " Only administrators can add or remove sources."}
       </p>
 
@@ -859,7 +883,7 @@ function DataSourcesPage() {
                     apiEndpoint: kind === form.kind ? form.apiEndpoint : "",
                     apiKey: kind === form.kind ? form.apiKey : "",
                     node: "",
-                    region: "",
+                    region: kind === "dynamodb" ? form.region || "us-east-1" : "",
                     osService: "es",
                     accessKeyId: "",
                     secretAccessKey: "",
@@ -1934,6 +1958,74 @@ function DataSourcesPage() {
                 <p className="text-[13px] text-muted-foreground">
                   The local cluster uses port 39042, keyspace dash, and data center datacenter1.
                 </p>
+              </>
+            ) : form.kind === "dynamodb" ? (
+              <>
+                {form.useConnectionString ? (
+                  <ConnectionUriField
+                    kind="dynamodb"
+                    value={form.connectionString}
+                    onChange={(connectionString) => setForm({ ...form, connectionString })}
+                  />
+                ) : (
+                  <>
+                    <Field label="Region">
+                      <TextInput
+                        value={form.region}
+                        onChange={(event) => setForm({ ...form, region: event.target.value })}
+                        placeholder="us-east-1"
+                        autoComplete="off"
+                        required
+                      />
+                    </Field>
+                    <Field label="Access key ID">
+                      <TextInput
+                        value={form.accessKeyId}
+                        onChange={(event) => setForm({ ...form, accessKeyId: event.target.value })}
+                        autoComplete="off"
+                        required
+                      />
+                    </Field>
+                    <Field label="Secret access key">
+                      <TextInput
+                        type="password"
+                        value={form.secretAccessKey}
+                        onChange={(event) =>
+                          setForm({ ...form, secretAccessKey: event.target.value })
+                        }
+                        autoComplete="off"
+                        required
+                      />
+                    </Field>
+                    <Field label="Endpoint">
+                      <TextInput
+                        value={form.apiEndpoint}
+                        onChange={(event) => setForm({ ...form, apiEndpoint: event.target.value })}
+                        placeholder="http://127.0.0.1:8009"
+                        autoComplete="off"
+                      />
+                      <p className="text-[13px] text-muted-foreground">
+                        Leave this empty to use the regional HTTPS host. http is only allowed for a
+                        loopback address.
+                      </p>
+                    </Field>
+                  </>
+                )}
+                <Field label="Session token">
+                  <TextInput
+                    type="password"
+                    value={form.sessionToken}
+                    onChange={(event) => setForm({ ...form, sessionToken: event.target.value })}
+                    autoComplete="off"
+                  />
+                  <p className="text-[13px] text-muted-foreground">
+                    Optional. Temporary credentials only. Never put this in the connection URI.
+                  </p>
+                </Field>
+                <ConnectionModeToggle
+                  usingUri={form.useConnectionString}
+                  onChange={(useConnectionString) => setForm({ ...form, useConnectionString })}
+                />
               </>
             ) : null}
             {error ? <p className="text-negative">{error}</p> : null}

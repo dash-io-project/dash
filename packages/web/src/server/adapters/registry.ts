@@ -7,6 +7,7 @@ import { CouchbaseAdapter } from "@dash/adapter-couchbase";
 import { DatabricksAdapter } from "@dash/adapter-databricks";
 import { Db2Adapter } from "@dash/adapter-db2";
 import { DocumentDbAdapter } from "@dash/adapter-documentdb";
+import { DynamoDbAdapter } from "@dash/adapter-dynamodb";
 import { HanaAdapter } from "@dash/adapter-hana";
 import { MariadbAdapter } from "@dash/adapter-mariadb";
 import { MongoAdapter } from "@dash/adapter-mongodb";
@@ -69,6 +70,8 @@ function createAdapter(config: ConnectionConfig): DataAdapter {
       return Neo4jAdapter.fromConfig(config);
     case "clickhouse":
       return ClickHouseAdapter.fromConfig(config);
+    case "dynamodb":
+      return DynamoDbAdapter.fromConfig(config);
   }
 }
 

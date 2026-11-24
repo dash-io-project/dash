@@ -959,4 +959,43 @@ describe("data source records", () => {
     });
     expect(JSON.stringify(rejected.summary)).not.toContain("super-secret");
   });
+
+  it("summarizes a DynamoDB source without the secret key", async () => {
+    const admin = await createUser({
+      email: "dynamodb-admin@example.com",
+      name: "Admin",
+      password: "password123",
+      role: "admin",
+    });
+    const created = await createDataSource({
+      name: "Orders",
+      description: "DynamoDB",
+      config: {
+        kind: "dynamodb",
+        region: "us-east-1",
+        accessKeyId: "dash",
+        secretAccessKey: "dashsecret",
+        endpoint: "http://127.0.0.1:8009",
+      },
+      createdBy: admin.id,
+    });
+    expect(created.kind).toBe("dynamodb");
+    expect(created.summary).toEqual({
+      region: "us-east-1",
+      endpoint: "127.0.0.1:8009",
+      accessKeyId: "dash",
+    });
+    expect(JSON.stringify(created.summary)).not.toContain("dashsecret");
+
+    const malformed = await createDataSource({
+      name: "Broken orders",
+      description: "Bad URI",
+      config: {
+        kind: "dynamodb",
+        connectionString: "dynamodb://not a uri",
+      },
+      createdBy: admin.id,
+    });
+    expect(malformed.summary).toEqual({ region: "", endpoint: "", accessKeyId: "" });
+  });
 });

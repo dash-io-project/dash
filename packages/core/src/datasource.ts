@@ -321,6 +321,22 @@ export interface BigQueryConnectionConfig {
   apiEndpoint?: string;
 }
 
+export interface DynamoDbConnectionConfig {
+  kind: "dynamodb";
+  /** `dynamodb://accessKeyId:secretAccessKey@region` with an optional `endpoint` query. */
+  connectionString?: string;
+  region?: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
+  /** Temporary credentials only. Never accepted in the connection URI. */
+  sessionToken?: string;
+  /**
+   * API origin. Empty means `https://dynamodb.{region}.amazonaws.com`.
+   * `http` is allowed only for a loopback host, such as DynamoDB Local.
+   */
+  endpoint?: string;
+}
+
 export interface ClickHouseConnectionConfig {
   kind: "clickhouse";
   connectionString?: string;
@@ -352,4 +368,5 @@ export type ConnectionConfig =
   | Neo4jConnectionConfig
   | CassandraConnectionConfig
   | OracleConnectionConfig
-  | ClickHouseConnectionConfig;
+  | ClickHouseConnectionConfig
+  | DynamoDbConnectionConfig;

@@ -490,6 +490,23 @@ services:
       retries: 30
       start_period: 180s
 
+  dynamodb:
+    image: amazon/dynamodb-local:3.3.2
+    container_name: dash-test-dynamodb
+    # In-memory shared database. The seed script creates the fixture tables
+    # after Compose reports the port healthy.
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
+    ports:
+      - "127.0.0.1:${DASH_TEST_DYNAMODB_PORT:-8009}:8000"
+    mem_limit: 1g
+    cpus: 0.5
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/8000'"]
+      interval: 2s
+      timeout: 5s
+      retries: 40
+      start_period: 10s
+
 volumes:
   dash-test-postgres:
   dash-test-mysql:

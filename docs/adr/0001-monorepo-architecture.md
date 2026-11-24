@@ -21,6 +21,7 @@ Dash needs a single TypeScript codebase for the product UI, REST API, and MCP se
 - `packages/cassandra-adapter` (`@dash/adapter-cassandra`) is the Apache Cassandra adapter.
 - `packages/oracle-adapter` (`@dash/adapter-oracle`) is the Oracle Database adapter.
 - `packages/clickhouse-adapter` (`@dash/adapter-clickhouse`) is the ClickHouse adapter.
+- `packages/dynamodb-adapter` (`@dash/adapter-dynamodb`) is the DynamoDB adapter.
 
 ## Consequences
 

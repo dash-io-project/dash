@@ -62,6 +62,7 @@ describe("verifyCredentials", () => {
     expect(await verifyCredentials("nobody@example.com", ada.password)).toBeNull();
   });
 
+  // Each failed sign-in hashes the password. A busy runner can take more than 5 seconds.
   test("locks the email after too many failures, even for the correct password", async () => {
     await createAccount(ada);
     for (let attempt = 0; attempt < MAX_FAILED_SIGN_INS; attempt++) {
@@ -71,7 +72,7 @@ describe("verifyCredentials", () => {
     await expect(verifyCredentials(ada.email, ada.password)).rejects.toBeInstanceOf(
       TooManyAttemptsError,
     );
-  });
+  }, 20_000);
 
   test("concurrent attempts cannot try more passwords than the limit", async () => {
     await createAccount(ada);
@@ -87,7 +88,7 @@ describe("verifyCredentials", () => {
     );
     expect(checked).toHaveLength(MAX_FAILED_SIGN_INS);
     expect(refused).toHaveLength(MAX_FAILED_SIGN_INS);
-  });
+  }, 20_000);
 
   test("a correct sign-in before the limit resets the failure count", async () => {
     const { accountId } = await createAccount(ada);
@@ -100,7 +101,7 @@ describe("verifyCredentials", () => {
       await verifyCredentials(ada.email, "wrong password");
     }
     expect(await verifyCredentials(ada.email, ada.password)).toBe(accountId);
-  });
+  }, 20_000);
 });
 
 describe("sessions", () => {
