@@ -40,6 +40,7 @@ export const Route = createFileRoute("/_authed/data-sources")({
 type SourceKind =
   | "postgres"
   | "mysql"
+  | "db2"
   | "snowflake"
   | "mongodb"
   | "bigquery"
@@ -50,6 +51,7 @@ type SourceKind =
 const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "postgres", label: "PostgreSQL" },
   { value: "mysql", label: "MySQL" },
+  { value: "db2", label: "IBM Db2" },
   { value: "redshift", label: "Amazon Redshift" },
   { value: "snowflake", label: "Snowflake" },
   { value: "mongodb", label: "MongoDB" },
@@ -61,6 +63,7 @@ const KIND_OPTIONS: SelectOption<SourceKind>[] = [
 const URI_PLACEHOLDER: Record<SourceKind, string> = {
   postgres: "postgres://user:password@localhost:5432/analytics",
   mysql: "mysql://user:password@localhost:3306/analytics",
+  db2: "db2://db2inst1:password@localhost:50000/DASH?schema=DASH",
   redshift: "redshift://user:password@cluster.redshift.amazonaws.com:5439/analytics?sslmode=require",
   snowflake: "snowflake://user:password@account/database/schema?warehouse=COMPUTE_WH",
   mongodb: "mongodb://user:password@host:27017/analytics?authSource=admin",
@@ -69,6 +72,29 @@ const URI_PLACEHOLDER: Record<SourceKind, string> = {
     "databricks://token:dapi000@adb-000.0.azuredatabricks.net/sql/1.0/warehouses/abc?catalog=main&schema=default",
   stripe: "stripe://sk_test_000@api.stripe.com",
 };
+
+function sslFromDb2Uri(value: string): boolean | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "db2:") {
+      return undefined;
+    }
+    const ssl = url.searchParams.get("ssl")?.toLowerCase();
+    if (ssl === "true" || ssl === "1") {
+      return true;
+    }
+    if (ssl === "false" || ssl === "0") {
+      return false;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 function sslFromRedshiftUri(value: string): boolean | undefined {
   const trimmed = value.trim();
@@ -277,6 +303,23 @@ function DataSourcesPage() {
                         password: form.password,
                         ssl: form.ssl,
                       }
+                  : form.kind === "db2"
+                    ? form.useConnectionString
+                      ? {
+                          kind: "db2" as const,
+                          connectionString: form.connectionString.trim(),
+                          ssl: form.ssl,
+                        }
+                      : {
+                          kind: "db2" as const,
+                          host: form.host,
+                          port: Number(form.port),
+                          database: form.database,
+                          user: form.user,
+                          password: form.password,
+                          schema: form.schema.trim() || undefined,
+                          ssl: form.ssl,
+                        }
                   : form.kind === "databricks"
                     ? form.useConnectionString
                       ? {
@@ -377,8 +420,8 @@ function DataSourcesPage() {
       />
       <PageBody className="space-y-6">
       <p className="max-w-3xl text-muted-foreground">
-        Paste a connection URI, or enter the fields. Postgres, MySQL, Snowflake, MongoDB, BigQuery, Databricks SQL,
-        Redshift, and Stripe are tested on save.
+        Paste a connection URI, or enter the fields. Dash tests Postgres, MySQL, IBM Db2, Snowflake, MongoDB,
+        BigQuery, Databricks SQL, Redshift, and Stripe on save.
         {isAdmin ? null : " Only administrators can add or remove sources."}
       </p>
 
@@ -395,7 +438,7 @@ function DataSourcesPage() {
             ) : null
           }
         >
-          Add a PostgreSQL, MySQL, Snowflake, MongoDB, BigQuery, Databricks SQL, or Redshift connection to start querying.
+          Add a PostgreSQL, MySQL, IBM Db2, Snowflake, MongoDB, BigQuery, Databricks SQL, or Redshift connection to start querying.
         </EmptyState>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -485,7 +528,9 @@ function DataSourcesPage() {
                             ? "3306"
                             : kind === "redshift"
                               ? "5439"
-                              : form.port,
+                              : kind === "db2"
+                                ? "50000"
+                                : form.port,
                     user: kind === "postgres" ? "postgres" : form.user === "postgres" ? "" : form.user,
                     schema:
                       kind === "snowflake"
@@ -504,18 +549,23 @@ function DataSourcesPage() {
                 }}
               />
             </Field>
-            {form.kind === "postgres" || form.kind === "mysql" || form.kind === "redshift" ? (
+            {form.kind === "postgres" || form.kind === "mysql" || form.kind === "redshift" || form.kind === "db2" ? (
               <>
                 {form.useConnectionString ? (
                   <ConnectionUriField
                     kind={form.kind}
                     value={form.connectionString}
                     onChange={(connectionString) => {
-                      if (form.kind !== "redshift") {
+                      const ssl =
+                        form.kind === "redshift"
+                          ? sslFromRedshiftUri(connectionString)
+                          : form.kind === "db2"
+                            ? sslFromDb2Uri(connectionString)
+                            : undefined;
+                      if (form.kind !== "redshift" && form.kind !== "db2") {
                         setForm({ ...form, connectionString });
                         return;
                       }
-                      const ssl = sslFromRedshiftUri(connectionString);
                       setForm({
                         ...form,
                         connectionString,
@@ -571,6 +621,15 @@ function DataSourcesPage() {
                         }
                       />
                     </Field>
+                    {form.kind === "db2" ? (
+                      <Field label="Schema">
+                        <TextInput
+                          value={form.schema}
+                          onChange={(event) => setForm({ ...form, schema: event.target.value })}
+                          placeholder="Optional. Use the catalog name."
+                        />
+                      </Field>
+                    ) : null}
                   </>
                 )}
                 <label className="check-row flex items-center gap-2">

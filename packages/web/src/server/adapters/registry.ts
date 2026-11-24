@@ -1,6 +1,7 @@
 import { type ConnectionConfig, type DataAdapter } from "@dash/core";
 import { BigQueryAdapter } from "@dash/adapter-bigquery";
 import { DatabricksAdapter } from "@dash/adapter-databricks";
+import { Db2Adapter } from "@dash/adapter-db2";
 import { MongoAdapter } from "@dash/adapter-mongodb";
 import { MysqlAdapter } from "@dash/adapter-mysql";
 import { PostgresAdapter } from "@dash/adapter-postgres";
@@ -26,6 +27,8 @@ function createAdapter(config: ConnectionConfig): DataAdapter {
       return PostgresAdapter.fromConfig(config);
     case "mysql":
       return MysqlAdapter.fromConfig(config);
+    case "db2":
+      return Db2Adapter.fromConfig(config);
     case "redshift":
       return RedshiftAdapter.fromConfig(config);
     case "stripe":

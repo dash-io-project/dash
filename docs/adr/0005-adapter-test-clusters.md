@@ -19,3 +19,5 @@ Warehouse adapters compile structured queries into engine-specific calls. Mock c
 ## Consequences
 
 `pnpm test` needs Docker running and the clusters started. A down cluster fails the adapter suite with a message that points at `pnpm test:services:start`. The next adapter adds a service to the same Compose file instead of a new harness. MySQL uses `127.0.0.1:33029` (`dash` / `dash`, database `dash`). MongoDB uses `127.0.0.1:27029` (`dash` / `dash`, auth database `admin`). Databricks SQL uses `http://127.0.0.1:14439` (token `dash`, warehouse `dash`, catalog `dash`, schema `analytics`). The Redshift stand-in uses `127.0.0.1:54399` (`dash` / `dash`, database `dash`). Stripe uses `http://127.0.0.1:12119`.
+
+IBM Db2 tests run in process. The community image `icr.io/db2_community/db2` needs about 7 GB of disk, about 4 GB of memory, privileged mode, and several minutes to start. That image does not fit the CI job.

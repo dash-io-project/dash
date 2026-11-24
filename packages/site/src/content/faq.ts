@@ -54,7 +54,7 @@ export const pricingFaq: readonly FaqItem[] = [
     id: "sources",
     question: "Which data sources does Dash support?",
     answer:
-      "Postgres, MySQL, Snowflake, MongoDB, Google BigQuery, Databricks SQL, Amazon Redshift, and Stripe. More adapters are on the way.",
+      "Postgres, MySQL, IBM Db2, Snowflake, MongoDB, Google BigQuery, Databricks SQL, Amazon Redshift, and Stripe. More adapters are on the way.",
   },
   {
     id: "enterprise",

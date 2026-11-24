@@ -9,7 +9,8 @@ Each warehouse adapter is its own package under `packages/` and implements
 (`@dash/adapter-bigquery`). Databricks SQL ships as `packages/databricks-adapter`
 (`@dash/adapter-databricks`). Amazon Redshift ships as `packages/redshift-adapter`
 (`@dash/adapter-redshift`). Stripe ships as `packages/stripe-adapter`
-(`@dash/adapter-stripe`).
+(`@dash/adapter-stripe`). IBM Db2 ships as `packages/db2-adapter`
+(`@dash/adapter-db2`).
 
 ## Shipping
 
@@ -23,6 +24,7 @@ Each warehouse adapter is its own package under `packages/` and implements
 | `@dash/adapter-databricks` | `packages/databricks-adapter` | `databricks` | MVP |
 | `@dash/adapter-redshift` | `packages/redshift-adapter` | `redshift` | MVP |
 | `@dash/adapter-stripe` | `packages/stripe-adapter` | `stripe` | MVP |
+| `@dash/adapter-db2` | `packages/db2-adapter` | `db2` | MVP |
 | — | — | `clickhouse` | Planned |
 
 The web app does not ship a built-in sample adapter. To get realistic data in
@@ -33,6 +35,8 @@ new writer in `packages/seed/src/writers` and add its kind to `SEEDABLE_KINDS`.
 ## Testing
 
 Postgres, MySQL, MongoDB, BigQuery, Databricks SQL, Redshift, and Stripe adapter tests run against the local clusters in `docker-compose.test.yml`.
+
+IBM Db2 adapter tests run in process. The community image `icr.io/db2_community/db2` does not fit this CI job. The image needs about 7 GB of disk and about 4 GB of memory. The container needs privileged mode. The first start takes several minutes.
 
 ```bash
 pnpm test:services:start

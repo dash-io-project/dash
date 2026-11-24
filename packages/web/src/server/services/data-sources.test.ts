@@ -130,6 +130,58 @@ describe("data source records", () => {
     expect(JSON.stringify(malformed.summary)).not.toContain("secret");
   });
 
+  it("summarizes a Db2 source without the password", async () => {
+    const admin = await createUser({
+      email: "db2-admin@example.com",
+      name: "Admin",
+      password: "password123",
+      role: "admin",
+    });
+    const created = await createDataSource({
+      name: "Db2 warehouse",
+      description: "Orders",
+      config: {
+        kind: "db2",
+        host: "db2.internal",
+        database: "dash",
+        user: "db2inst1",
+        password: "super-secret",
+        schema: "ANALYTICS",
+        ssl: true,
+      },
+      createdBy: admin.id,
+    });
+    expect(created.kind).toBe("db2");
+    expect(created.summary).toEqual({
+      host: "db2.internal",
+      port: 50000,
+      database: "DASH",
+      user: "db2inst1",
+      schema: "ANALYTICS",
+      ssl: true,
+    });
+    expect(JSON.stringify(created.summary)).not.toContain("super-secret");
+
+    const malformed = await createDataSource({
+      name: "Db2 malformed",
+      description: "Bad URI",
+      config: {
+        kind: "db2",
+        connectionString: "db2://db2inst1:super-secret@db2.internal/DASH?debug=1",
+      },
+      createdBy: admin.id,
+    });
+    expect(malformed.summary).toEqual({
+      host: "",
+      port: "",
+      database: "",
+      user: "",
+      schema: "",
+      ssl: false,
+    });
+    expect(JSON.stringify(malformed.summary)).not.toContain("super-secret");
+  });
+
   it("summarizes a MongoDB source without the password", async () => {
     const admin = await createUser({
       email: "mongo-admin@example.com",

@@ -12,6 +12,7 @@ export type Adapter = {
 export const adapters: readonly Adapter[] = [
   { id: "postgres", name: "Postgres", kind: "sql", note: "Relational database" },
   { id: "mysql", name: "MySQL", kind: "sql", note: "Relational database" },
+  { id: "db2", name: "IBM Db2", kind: "sql", note: "Relational database" },
   {
     id: "snowflake",
     name: "Snowflake",
