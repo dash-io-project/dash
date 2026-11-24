@@ -485,6 +485,51 @@ describe("data source records", () => {
     expect(rejected.summary.password).toBeUndefined();
   });
 
+  it("summarizes a CockroachDB source without the password or the CA", async () => {
+    const admin = await createUser({
+      email: "cockroach-admin@example.com",
+      name: "Admin",
+      password: "password123",
+      role: "admin",
+    });
+    const created = await createDataSource({
+      name: "Ledger",
+      description: "CockroachDB",
+      config: {
+        kind: "cockroachdb",
+        connectionString:
+          "cockroachdb://reader:super-secret@db.example.com:26257/analytics?sslmode=verify-full&options=--cluster%3Dapp-cluster",
+        sslCa: "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----",
+      },
+      createdBy: admin.id,
+    });
+    expect(created.kind).toBe("cockroachdb");
+    expect(created.summary).toEqual({
+      host: "db.example.com",
+      port: 26257,
+      database: "analytics",
+      user: "reader",
+      ssl: true,
+      cluster: "app-cluster",
+      customCa: true,
+    });
+    expect(JSON.stringify(created.summary)).not.toContain("super-secret");
+    expect(JSON.stringify(created.summary)).not.toContain("BEGIN CERTIFICATE");
+
+    const rejected = await createDataSource({
+      name: "Broken ledger",
+      description: "CockroachDB",
+      config: {
+        kind: "cockroachdb",
+        connectionString: "cockroachdb://reader:super-secret@db.example.com/analytics?options=-c",
+      },
+      createdBy: admin.id,
+    });
+    expect(JSON.stringify(rejected.summary)).not.toContain("super-secret");
+    expect(rejected.summary.password).toBeUndefined();
+    expect(rejected.summary.sslCa).toBeUndefined();
+  });
+
   it("summarizes a Databricks SQL source without the token", async () => {
     const admin = await createUser({
       email: "databricks-admin@example.com",

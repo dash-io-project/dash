@@ -50,7 +50,8 @@ type SourceKind =
   | "databricks"
   | "redshift"
   | "stripe"
-  | "opensearch";
+  | "opensearch"
+  | "cockroachdb";
 
 type ReadPreference =
   | "primary"
@@ -61,6 +62,7 @@ type ReadPreference =
 
 const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "postgres", label: "PostgreSQL" },
+  { value: "cockroachdb", label: "CockroachDB" },
   { value: "mysql", label: "MySQL" },
   { value: "mariadb", label: "MariaDB" },
   { value: "db2", label: "IBM Db2" },
@@ -85,6 +87,7 @@ const READ_PREFERENCE_OPTIONS: SelectOption<ReadPreference>[] = [
 
 const URI_PLACEHOLDER: Record<SourceKind, string> = {
   postgres: "postgres://user:password@localhost:5432/analytics",
+  cockroachdb: "cockroachdb://user:password@host:26257/defaultdb?sslmode=verify-full",
   mysql: "mysql://user:password@localhost:3306/analytics",
   mariadb: "mariadb://user:password@localhost:3306/analytics",
   db2: "db2://db2inst1:password@localhost:50000/DASH?schema=DASH",
@@ -232,6 +235,8 @@ const emptyForm = {
   caBundle: "",
   encrypt: true,
   validateCertificate: true,
+  cluster: "",
+  sslCa: "",
 };
 
 function DataSourcesPage() {
@@ -379,6 +384,25 @@ function DataSourcesPage() {
                           schema: form.schema.trim() || undefined,
                           ssl: form.ssl,
                         }
+                  : form.kind === "cockroachdb"
+                    ? form.useConnectionString
+                      ? {
+                          kind: "cockroachdb" as const,
+                          connectionString: form.connectionString.trim(),
+                          ssl: form.ssl,
+                          sslCa: form.sslCa.trim() || undefined,
+                        }
+                      : {
+                          kind: "cockroachdb" as const,
+                          host: form.host,
+                          port: Number(form.port),
+                          database: form.database,
+                          user: form.user,
+                          password: form.password,
+                          ssl: form.ssl,
+                          cluster: form.cluster.trim() || undefined,
+                          sslCa: form.sslCa.trim() || undefined,
+                        }
                   : form.kind === "databricks"
                     ? form.useConnectionString
                       ? {
@@ -513,7 +537,7 @@ function DataSourcesPage() {
       />
       <PageBody className="space-y-6">
       <p className="max-w-3xl text-muted-foreground">
-        Paste a connection URI, or enter the fields. Dash tests Postgres, MySQL, MariaDB, IBM Db2,
+        Paste a connection URI, or enter the fields. Dash tests Postgres, MySQL, MariaDB, CockroachDB, IBM Db2,
         SAP HANA, Snowflake, MongoDB, Amazon DocumentDB, BigQuery, Databricks SQL, Redshift, Stripe,
         and OpenSearch on save.
         {isAdmin ? null : " Only administrators can add or remove sources."}
@@ -532,7 +556,7 @@ function DataSourcesPage() {
             ) : null
           }
         >
-          Add a connection for PostgreSQL, MySQL, MariaDB, IBM Db2, SAP HANA, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, or OpenSearch.
+          Add a connection for PostgreSQL, MySQL, MariaDB, CockroachDB, IBM Db2, SAP HANA, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, or OpenSearch.
         </EmptyState>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -612,7 +636,7 @@ function DataSourcesPage() {
                     ...form,
                     kind,
                     connectionString: "",
-                    ssl: kind === "redshift",
+                    ssl: kind === "redshift" || kind === "cockroachdb",
                     encrypt: kind === "hana" ? true : form.encrypt,
                     validateCertificate: kind === "hana" ? true : form.validateCertificate,
                     port:
@@ -622,14 +646,23 @@ function DataSourcesPage() {
                           ? "5432"
                           : kind === "mysql" || kind === "mariadb"
                             ? "3306"
-                              : kind === "redshift"
-                                ? "5439"
-                                : kind === "db2"
-                                  ? "50000"
-                                  : kind === "hana"
-                                    ? "30015"
+                            : kind === "redshift"
+                              ? "5439"
+                              : kind === "db2"
+                                ? "50000"
+                                : kind === "hana"
+                                  ? "30015"
+                                  : kind === "cockroachdb"
+                                    ? "26257"
                                     : form.port,
-                    user: kind === "postgres" ? "postgres" : form.user === "postgres" ? "" : form.user,
+                    user:
+                      kind === "postgres"
+                        ? "postgres"
+                        : kind === "cockroachdb"
+                          ? "root"
+                          : form.user === "postgres" || form.user === "root"
+                            ? ""
+                            : form.user,
                     schema:
                       kind === "hana"
                         ? ""
@@ -664,7 +697,8 @@ function DataSourcesPage() {
             form.kind === "mysql" ||
             form.kind === "mariadb" ||
             form.kind === "redshift" ||
-            form.kind === "db2" ? (
+            form.kind === "db2" ||
+            form.kind === "cockroachdb" ? (
               <>
                 {form.useConnectionString ? (
                   <ConnectionUriField
@@ -672,12 +706,12 @@ function DataSourcesPage() {
                     value={form.connectionString}
                     onChange={(connectionString) => {
                       const ssl =
-                        form.kind === "redshift"
+                        form.kind === "redshift" || form.kind === "cockroachdb"
                           ? sslFromRedshiftUri(connectionString)
                           : form.kind === "db2"
                             ? sslFromDb2Uri(connectionString)
                             : undefined;
-                      if (form.kind !== "redshift" && form.kind !== "db2") {
+                      if (form.kind !== "redshift" && form.kind !== "db2" && form.kind !== "cockroachdb") {
                         setForm({ ...form, connectionString });
                         return;
                       }
@@ -745,6 +779,15 @@ function DataSourcesPage() {
                         />
                       </Field>
                     ) : null}
+                    {form.kind === "cockroachdb" ? (
+                      <Field label="Cluster">
+                        <TextInput
+                          value={form.cluster}
+                          onChange={(event) => setForm({ ...form, cluster: event.target.value })}
+                          placeholder="Optional serverless cluster"
+                        />
+                      </Field>
+                    ) : null}
                   </>
                 )}
                 <label className="check-row flex items-center gap-2">
@@ -753,10 +796,24 @@ function DataSourcesPage() {
                     checked={form.ssl}
                     onChange={(event) => setForm({ ...form, ssl: event.target.checked })}
                   />
-                  {form.kind === "redshift"
-                    ? "Require SSL and verify the server certificate"
-                    : "Use SSL"}
+                  {form.kind === "cockroachdb"
+                    ? "Require TLS and verify the server certificate"
+                    : form.kind === "redshift"
+                      ? "Require SSL and verify the server certificate"
+                      : "Use SSL"}
                 </label>
+                {form.kind === "cockroachdb" ? (
+                  <Field label="CA certificate">
+                    <TextArea
+                      value={form.sslCa}
+                      onChange={(event) => setForm({ ...form, sslCa: event.target.value })}
+                      placeholder="Optional PEM for a private CA"
+                      rows={3}
+                      spellCheck={false}
+                      className="min-h-16 font-mono text-[13px]"
+                    />
+                  </Field>
+                ) : null}
               </>
             ) : form.kind === "snowflake" ? (
               <>

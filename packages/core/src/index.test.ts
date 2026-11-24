@@ -45,6 +45,7 @@ describe("data source kinds", () => {
     expect(DATA_SOURCE_KINDS).toContain("stripe");
     expect(DATA_SOURCE_KINDS).toContain("opensearch");
     expect(DATA_SOURCE_KINDS).toContain("documentdb");
+    expect(DATA_SOURCE_KINDS).toContain("cockroachdb");
     expect(isDataSourceKind("db2")).toBe(true);
     expect(isDataSourceKind("hana")).toBe(true);
     expect(isDataSourceKind("postgres")).toBe(true);

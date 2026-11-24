@@ -162,6 +162,31 @@ export interface RedshiftConnectionConfig {
   ssl?: boolean;
 }
 
+export interface CockroachConnectionConfig {
+  kind: "cockroachdb";
+  connectionString?: string;
+  host?: string;
+  port?: number;
+  database?: string;
+  user?: string;
+  password?: string;
+  /**
+   * Encrypt the session and verify the server certificate.
+   * CockroachDB Cloud requires TLS. Set this to false for a node without TLS.
+   */
+  ssl?: boolean;
+  /**
+   * PEM certificate for a private CA.
+   * Omit this for a public CA.
+   */
+  sslCa?: string;
+  /**
+   * Serverless cluster name.
+   * Dash sends this name only as the `--cluster` startup option.
+   */
+  cluster?: string;
+}
+
 export interface StripeConnectionConfig {
   kind: "stripe";
   connectionString?: string;
@@ -237,4 +262,5 @@ export type ConnectionConfig =
   | DatabricksConnectionConfig
   | RedshiftConnectionConfig
   | StripeConnectionConfig
-  | OpenSearchConnectionConfig;
+  | OpenSearchConnectionConfig
+  | CockroachConnectionConfig;
