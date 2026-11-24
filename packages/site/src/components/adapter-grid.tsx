@@ -19,6 +19,7 @@ const icons: Record<string, IconComponent> = {
   mysql: Database,
   mariadb: Database,
   db2: Database,
+  hana: Database,
   snowflake: Snowflake,
   mongodb: Leaf,
   documentdb: Database,

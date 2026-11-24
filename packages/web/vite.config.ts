@@ -17,9 +17,9 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  // Keep native drivers out of the bundle so each one finds its own files.
   ssr: {
-    // The Db2 driver loads a native addon from its own directory.
-    external: ["ibm_db"],
+    external: ["@sap/hana-client", "ibm_db"],
   },
   plugins: [
     tailwindcss(),
@@ -34,6 +34,8 @@ export default defineConfig({
       rollupConfig: {
         external: ["ibm_db"],
       },
+      // Copy the SAP HANA driver and its native binary into the server output.
+      traceDeps: ["@sap/hana-client"],
     }),
   ],
 });

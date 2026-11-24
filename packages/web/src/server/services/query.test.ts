@@ -41,6 +41,20 @@ describe("testConnectionConfig", () => {
     expect(result.message).not.toContain("super-secret");
   });
 
+  it("reports an invalid SAP HANA host without echoing the password", async () => {
+    const result = await testConnectionConfig({
+      kind: "hana",
+      host: "not a host",
+      user: "dash",
+      password: "super-secret",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.latencyMs).toBe(0);
+    expect(result.message).toMatch(/host/i);
+    expect(result.message).not.toContain("not a host");
+    expect(result.message).not.toContain("super-secret");
+  });
+
   it("reports an invalid MariaDB connection URI as a failed connection test", async () => {
     const result = await testConnectionConfig({
       kind: "mariadb",
@@ -49,6 +63,18 @@ describe("testConnectionConfig", () => {
     expect(result.ok).toBe(false);
     expect(result.latencyMs).toBe(0);
     expect(result.message).toMatch(/mariadb:\/\//);
+  });
+
+  it("rejects a SAP HANA URI that tries to set a driver option", async () => {
+    const result = await testConnectionConfig({
+      kind: "hana",
+      connectionString: "hana://dash:super-secret@hana.internal/HXE?traceFile=/tmp/hana.log",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.latencyMs).toBe(0);
+    expect(result.message).toMatch(/unsupported sap hana connection parameter/i);
+    expect(result.message).not.toContain("super-secret");
+    expect(result.message).not.toContain("traceFile");
   });
 
   it("reports an invalid MySQL connection URI as a failed connection test", async () => {

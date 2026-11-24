@@ -1,6 +1,7 @@
 import { bigQueryEndpoint, isGoogleApiHost } from "@dash/adapter-bigquery";
 import { db2PublicSummary } from "@dash/adapter-db2";
 import { databricksPublicSummary } from "@dash/adapter-databricks";
+import { hanaPublicSummary } from "@dash/adapter-hana";
 import { redshiftPublicSummary } from "@dash/adapter-redshift";
 import { openSearchPublicSummary } from "@dash/adapter-opensearch";
 import { stripePublicSummary } from "@dash/adapter-stripe";
@@ -121,6 +122,9 @@ function summarize(config: ConnectionConfig): DataSourceRecord["summary"] {
   }
   if (config.kind === "mariadb") {
     return relationalSummary(config, parseMariadbConnectionString, 3306);
+  }
+  if (config.kind === "hana") {
+    return hanaPublicSummary(config);
   }
   if (config.kind === "redshift") {
     return redshiftPublicSummary(config);

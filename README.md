@@ -84,6 +84,7 @@ packages/seed/               @dash/seed             Development seed: Fernway sa
 packages/postgres-adapter/   @dash/adapter-postgres
 packages/mysql-adapter/      @dash/adapter-mysql
 packages/mariadb-adapter/    @dash/adapter-mariadb
+packages/hana-adapter/       @dash/adapter-hana
 packages/snowflake-adapter/  @dash/adapter-snowflake
 packages/mongodb-adapter/    @dash/adapter-mongodb
 packages/bigquery-adapter/   @dash/adapter-bigquery
@@ -212,6 +213,7 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] Website deploy to `dev.dash.io` (Cloudflare Worker + container, GitHub Actions)
 - [x] MySQL adapter (`@dash/adapter-mysql`)
 - [x] MariaDB adapter (`@dash/adapter-mariadb`)
+- [x] SAP HANA adapter (`@dash/adapter-hana`)
 - [x] MongoDB adapter (`@dash/adapter-mongodb`)
 - [x] Google BigQuery adapter (`@dash/adapter-bigquery`)
 - [x] Snowflake adapter (`@dash/adapter-snowflake`)
@@ -442,6 +444,8 @@ A widget link opens a view of the dashboard that shows only that widget. The wid
 Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch, and DocumentDB adapter tests run against the Compose cluster. The Redshift service is a PostgreSQL wire-protocol stand-in. The Stripe service is a list-API fixture. The OpenSearch service is the official OpenSearch image with the security plugin off. The DocumentDB service is a MongoDB wire-protocol stand-in with TLS. Amazon DocumentDB has no local image. Add the next local engine beside them in `docker-compose.test.yml` when that adapter can run here.
 
 IBM Db2 tests run in process. The community image `icr.io/db2_community/db2` does not fit this CI job. The image needs about 7 GB of disk and about 4 GB of memory. The container needs privileged mode. The first start takes several minutes.
+
+SAP HANA has no cluster. SAP HANA Express is too large for CI. The SAP HANA tests use a fake driver.
 
 ```bash
 pnpm test:services:start

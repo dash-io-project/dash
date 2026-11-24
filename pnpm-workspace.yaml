@@ -5,6 +5,8 @@ allowBuilds:
   esbuild: true
   # ibm_db downloads the Db2 CLI driver and builds the native binding.
   ibm_db: true
+  # The install script loads the prebuilt binary to confirm it. It does not download code.
+  "@sap/hana-client": true
   # workerd's postinstall copies the platform binary and executes it. Wrangler
   # resolves the binary from @cloudflare/workerd-linux-64 directly, so the
   # script stays off. The key has to be present: omitting it fails

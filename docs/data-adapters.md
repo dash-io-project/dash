@@ -13,7 +13,8 @@ Each warehouse adapter is its own package under `packages/` and implements
 (`@dash/adapter-stripe`). IBM Db2 ships as `packages/db2-adapter`
 (`@dash/adapter-db2`). Amazon OpenSearch ships as `packages/opensearch-adapter`
 (`@dash/adapter-opensearch`). Amazon DocumentDB ships as `packages/documentdb-adapter`
-(`@dash/adapter-documentdb`).
+(`@dash/adapter-documentdb`). SAP HANA ships as `packages/hana-adapter`
+(`@dash/adapter-hana`).
 
 ## Shipping
 
@@ -22,6 +23,7 @@ Each warehouse adapter is its own package under `packages/` and implements
 | `@dash/adapter-postgres` | `packages/postgres-adapter` | `postgres` | MVP |
 | `@dash/adapter-mysql` | `packages/mysql-adapter` | `mysql` | MVP |
 | `@dash/adapter-mariadb` | `packages/mariadb-adapter` | `mariadb` | MVP |
+| `@dash/adapter-hana` | `packages/hana-adapter` | `hana` | MVP |
 | `@dash/adapter-snowflake` | `packages/snowflake-adapter` | `snowflake` | MVP |
 | `@dash/adapter-mongodb` | `packages/mongodb-adapter` | `mongodb` | MVP |
 | `@dash/adapter-bigquery` | `packages/bigquery-adapter` | `bigquery` | MVP |
@@ -43,6 +45,8 @@ new writer in `packages/seed/src/writers` and add its kind to `SEEDABLE_KINDS`.
 Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch, and DocumentDB adapter tests run against the local clusters in `docker-compose.test.yml`.
 
 IBM Db2 adapter tests run in process. The community image `icr.io/db2_community/db2` does not fit this CI job. The image needs about 7 GB of disk and about 4 GB of memory. The container needs privileged mode. The first start takes several minutes.
+
+SAP HANA has no service in that file. SAP HANA Express is too large for CI. `@dash/adapter-hana` tests use a fake driver.
 
 ```bash
 pnpm test:services:start

@@ -57,6 +57,18 @@ const patchSchema = z.object({
         ssl: z.boolean().optional(),
       }),
       z.object({
+        kind: z.literal("hana"),
+        connectionString: z.string().optional(),
+        host: z.string().optional(),
+        port: z.number().int().optional(),
+        database: z.string().optional(),
+        user: z.string().optional(),
+        password: z.string().optional(),
+        schema: z.string().optional(),
+        encrypt: z.boolean().optional(),
+        sslValidateCertificate: z.boolean().optional(),
+      }),
+      z.object({
         kind: z.literal("redshift"),
         connectionString: z.string().optional(),
         host: z.string().optional(),

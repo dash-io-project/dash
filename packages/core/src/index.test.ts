@@ -37,6 +37,7 @@ describe("data source kinds", () => {
     expect(DATA_SOURCE_KINDS).toContain("mysql");
     expect(DATA_SOURCE_KINDS).toContain("db2");
     expect(DATA_SOURCE_KINDS).toContain("mariadb");
+    expect(DATA_SOURCE_KINDS).toContain("hana");
     expect(DATA_SOURCE_KINDS).toContain("mongodb");
     expect(DATA_SOURCE_KINDS).toContain("bigquery");
     expect(DATA_SOURCE_KINDS).toContain("databricks");
@@ -45,6 +46,7 @@ describe("data source kinds", () => {
     expect(DATA_SOURCE_KINDS).toContain("opensearch");
     expect(DATA_SOURCE_KINDS).toContain("documentdb");
     expect(isDataSourceKind("db2")).toBe(true);
+    expect(isDataSourceKind("hana")).toBe(true);
     expect(isDataSourceKind("postgres")).toBe(true);
     expect(isDataSourceKind("oracle")).toBe(false);
   });
