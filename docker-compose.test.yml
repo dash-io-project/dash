@@ -65,6 +65,44 @@ services:
       retries: 40
       start_period: 40s
 
+  mariadb:
+    image: mariadb:11.8.9@sha256:6e562000e74ce36a9c7cc1302e462c271e3e3a5e0e7ae0ec2ab5f71f0f586f02
+    container_name: dash-test-mariadb
+    # The wrapper creates a self-signed certificate, then runs the image entrypoint.
+    entrypoint: ["bash", "/opt/dash/tls-entrypoint.sh"]
+    command:
+      [
+        "--character-set-server=utf8mb4",
+        "--collation-server=utf8mb4_general_ci",
+        "--innodb-buffer-pool-size=64M",
+        "--performance-schema=OFF",
+        "--ssl-cert=/etc/mysql/ssl/server.crt",
+        "--ssl-key=/etc/mysql/ssl/server.key",
+      ]
+    environment:
+      MARIADB_ROOT_PASSWORD: dash
+      MARIADB_USER: dash
+      MARIADB_PASSWORD: dash
+      MARIADB_DATABASE: dash
+    ports:
+      - "127.0.0.1:${DASH_TEST_MARIADB_PORT:-33039}:3306"
+    volumes:
+      - dash-test-mariadb:/var/lib/mysql
+      - ./docker/mariadb/init:/docker-entrypoint-initdb.d:ro
+      - ./docker/mariadb/tls-entrypoint.sh:/opt/dash/tls-entrypoint.sh:ro
+    # A ping can succeed before the fixture SQL runs.
+    # Require the fixture view so --wait means the server can answer a query.
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mariadb --protocol=TCP --host=127.0.0.1 --user=$$MARIADB_USER --password=$$MARIADB_PASSWORD --database=$$MARIADB_DATABASE --batch --execute='SELECT 1 FROM paid_orders LIMIT 1'",
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 40s
+
   mongodb:
     image: mongo:8.2.12@sha256:e0ce8c35124d4a9f9785532d1f268f39e9728ffa1cb38f46fa482436424c4bd3
     container_name: dash-test-mongodb
@@ -245,5 +283,6 @@ services:
 volumes:
   dash-test-postgres:
   dash-test-mysql:
+  dash-test-mariadb:
   dash-test-mongodb:
   dash-test-redshift:

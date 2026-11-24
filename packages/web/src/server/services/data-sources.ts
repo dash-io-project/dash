@@ -5,6 +5,7 @@ import { redshiftPublicSummary } from "@dash/adapter-redshift";
 import { openSearchPublicSummary } from "@dash/adapter-opensearch";
 import { stripePublicSummary } from "@dash/adapter-stripe";
 import { mongoUsesTls, parseMongoConnectionString } from "@dash/adapter-mongodb";
+import { parseMariadbConnectionString } from "@dash/adapter-mariadb";
 import { parseMysqlConnectionString } from "@dash/adapter-mysql";
 import {
   type ConnectionConfig,
@@ -21,6 +22,56 @@ function databaseFromMongoUri(uri: string): string {
   } catch {
     return "";
   }
+}
+
+function relationalSummary(
+  config: {
+    connectionString?: string;
+    host?: string;
+    port?: number;
+    database?: string;
+    user?: string;
+    ssl?: boolean;
+  },
+  parse: (value: string) => {
+    host?: string;
+    port?: number;
+    database?: string;
+    user?: string;
+    ssl?: boolean;
+  },
+  defaultPort: number,
+): DataSourceRecord["summary"] {
+  const usingUri = Boolean(config.connectionString) && !config.host;
+  if (usingUri && config.connectionString) {
+    try {
+      const parsed = parse(config.connectionString);
+      const summary: DataSourceRecord["summary"] = {
+        host: parsed.host ?? "(connection string)",
+        database: parsed.database ?? "",
+        user: parsed.user ?? "",
+        ssl: Boolean(config.ssl || parsed.ssl),
+      };
+      if (parsed.port != null) {
+        summary.port = parsed.port;
+      }
+      return summary;
+    } catch {
+      return {
+        host: "(connection string)",
+        database: "",
+        user: "",
+        ssl: Boolean(config.ssl),
+      };
+    }
+  }
+  return {
+    host: config.host ?? "",
+    port: config.port ?? defaultPort,
+    database: config.database ?? "",
+    user: config.user ?? "",
+    ssl: Boolean(config.ssl),
+  };
 }
 
 function summarize(config: ConnectionConfig): DataSourceRecord["summary"] {
@@ -65,36 +116,10 @@ function summarize(config: ConnectionConfig): DataSourceRecord["summary"] {
     return db2PublicSummary(config);
   }
   if (config.kind === "mysql") {
-    const usingUri = Boolean(config.connectionString) && !config.host;
-    if (usingUri && config.connectionString) {
-      try {
-        const parsed = parseMysqlConnectionString(config.connectionString);
-        const summary: DataSourceRecord["summary"] = {
-          host: parsed.host ?? "(connection string)",
-          database: parsed.database ?? "",
-          user: parsed.user ?? "",
-          ssl: Boolean(config.ssl || parsed.ssl),
-        };
-        if (parsed.port != null) {
-          summary.port = parsed.port;
-        }
-        return summary;
-      } catch {
-        return {
-          host: "(connection string)",
-          database: "",
-          user: "",
-          ssl: Boolean(config.ssl),
-        };
-      }
-    }
-    return {
-      host: config.host ?? "",
-      port: config.port ?? 3306,
-      database: config.database ?? "",
-      user: config.user ?? "",
-      ssl: Boolean(config.ssl),
-    };
+    return relationalSummary(config, parseMysqlConnectionString, 3306);
+  }
+  if (config.kind === "mariadb") {
+    return relationalSummary(config, parseMariadbConnectionString, 3306);
   }
   if (config.kind === "redshift") {
     return redshiftPublicSummary(config);

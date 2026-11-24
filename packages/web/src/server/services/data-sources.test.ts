@@ -182,6 +182,73 @@ describe("data source records", () => {
     expect(JSON.stringify(malformed.summary)).not.toContain("super-secret");
   });
 
+  it("summarizes a MariaDB source without the password", async () => {
+    const admin = await createUser({
+      email: "mariadb-admin@example.com",
+      name: "Admin",
+      password: "password123",
+      role: "admin",
+    });
+    const created = await createDataSource({
+      name: "MariaDB analytics",
+      description: "Warehouse",
+      config: {
+        kind: "mariadb",
+        host: "db.internal",
+        port: 3306,
+        database: "analytics",
+        user: "reader",
+        password: "super-secret",
+        ssl: true,
+      },
+      createdBy: admin.id,
+    });
+    expect(created.kind).toBe("mariadb");
+    expect(created.summary).toEqual({
+      host: "db.internal",
+      port: 3306,
+      database: "analytics",
+      user: "reader",
+      ssl: true,
+    });
+    expect(JSON.stringify(created.summary)).not.toContain("super-secret");
+
+    const fromUri = await createDataSource({
+      name: "MariaDB URI",
+      description: "URI",
+      config: {
+        kind: "mariadb",
+        connectionString: "mariadb://reader:super-secret@db.internal:3306/analytics",
+      },
+      createdBy: admin.id,
+    });
+    expect(fromUri.summary).toEqual({
+      host: "db.internal",
+      port: 3306,
+      database: "analytics",
+      user: "reader",
+      ssl: false,
+    });
+    expect(JSON.stringify(fromUri.summary)).not.toContain("super-secret");
+
+    const malformed = await createDataSource({
+      name: "MariaDB malformed",
+      description: "Malformed URI",
+      config: {
+        kind: "mariadb",
+        connectionString: "mariadb://reader:super/secret@db.internal/analytics",
+      },
+      createdBy: admin.id,
+    });
+    expect(malformed.summary).toEqual({
+      host: "(connection string)",
+      database: "",
+      user: "",
+      ssl: false,
+    });
+    expect(JSON.stringify(malformed.summary)).not.toContain("secret");
+  });
+
   it("summarizes a MongoDB source without the password", async () => {
     const admin = await createUser({
       email: "mongo-admin@example.com",

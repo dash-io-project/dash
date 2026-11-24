@@ -83,6 +83,7 @@ packages/core/               @dash/core             Shared types and adapter int
 packages/seed/               @dash/seed             Development seed: Fernway sample company and writers
 packages/postgres-adapter/   @dash/adapter-postgres
 packages/mysql-adapter/      @dash/adapter-mysql
+packages/mariadb-adapter/    @dash/adapter-mariadb
 packages/snowflake-adapter/  @dash/adapter-snowflake
 packages/mongodb-adapter/    @dash/adapter-mongodb
 packages/bigquery-adapter/   @dash/adapter-bigquery
@@ -209,6 +210,7 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] App deploy to `demo.dash.io` (Cloudflare Worker + container, GitHub Actions)
 - [x] Website deploy to `dev.dash.io` (Cloudflare Worker + container, GitHub Actions)
 - [x] MySQL adapter (`@dash/adapter-mysql`)
+- [x] MariaDB adapter (`@dash/adapter-mariadb`)
 - [x] MongoDB adapter (`@dash/adapter-mongodb`)
 - [x] Google BigQuery adapter (`@dash/adapter-bigquery`)
 - [x] Snowflake adapter (`@dash/adapter-snowflake`)
@@ -235,7 +237,7 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] Dynamic dashboard pages
 - [x] Chart widgets (TanStack Charts)
 - [x] Sortable and filterable tables (TanStack Table)
-- [x] Data sources page (admin): add and remove sources (Postgres, MySQL, IBM Db2, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch)
+- [x] Data sources page (admin): add and remove sources (Postgres, MySQL, MariaDB, IBM Db2, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch)
 - [x] Demo seed: the Fernway sample company in Postgres, MongoDB, and BigQuery sources (`DEMO_ENVIRONMENT`)
 - [ ] Real-time multi-user dashboard collaboration
 - [x] Light, Dark, and System appearance, selected in the account panel
@@ -435,7 +437,7 @@ A widget link opens a view of the dashboard that shows only that widget. The wid
 
 ## Adapter test clusters
 
-Postgres, MySQL, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, and OpenSearch adapter tests run against the Compose cluster. The Redshift service is a PostgreSQL wire-protocol stand-in. The Stripe service is a list-API fixture. The OpenSearch service is the official OpenSearch image with the security plugin off. Add the next local engine beside them in `docker-compose.test.yml` when that adapter can run here.
+Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, and OpenSearch adapter tests run against the Compose cluster. The Redshift service is a PostgreSQL wire-protocol stand-in. The Stripe service is a list-API fixture. The OpenSearch service is the official OpenSearch image with the security plugin off. Add the next local engine beside them in `docker-compose.test.yml` when that adapter can run here.
 
 IBM Db2 tests run in process. The community image `icr.io/db2_community/db2` does not fit this CI job. The image needs about 7 GB of disk and about 4 GB of memory. The container needs privileged mode. The first start takes several minutes.
 
@@ -447,18 +449,18 @@ pnpm test:services:stop
 
 `test:services:start` waits until each cluster is healthy. `test:services:stop` removes containers and volumes, so the next start reloads fixture SQL.
 
-| | Postgres | MySQL | MongoDB | Redshift |
-| --- | --- | --- | --- | --- |
-| URL | `postgres://dash:dash@127.0.0.1:54329/dash` | `mysql://dash:dash@127.0.0.1:33029/dash` | `mongodb://dash:dash@127.0.0.1:27029/dash?authSource=admin` | `redshift://dash:dash@127.0.0.1:54399/dash` |
-| Host | `127.0.0.1` | `127.0.0.1` | `127.0.0.1` | `127.0.0.1` |
-| Port | `54329` | `33029` | `27029` | `54399` |
-| Database | `dash` | `dash` | `dash` | `dash` |
-| User | `dash` | `dash` | `dash` | `dash` |
-| Password | `dash` | `dash` | `dash` | `dash` |
+| | Postgres | MySQL | MariaDB | MongoDB | Redshift |
+| --- | --- | --- | --- | --- | --- |
+| URL | `postgres://dash:dash@127.0.0.1:54329/dash` | `mysql://dash:dash@127.0.0.1:33029/dash` | `mariadb://dash:dash@127.0.0.1:33039/dash` | `mongodb://dash:dash@127.0.0.1:27029/dash?authSource=admin` | `redshift://dash:dash@127.0.0.1:54399/dash` |
+| Host | `127.0.0.1` | `127.0.0.1` | `127.0.0.1` | `127.0.0.1` | `127.0.0.1` |
+| Port | `54329` | `33029` | `33039` | `27029` | `54399` |
+| Database | `dash` | `dash` | `dash` | `dash` | `dash` |
+| User | `dash` | `dash` | `dash` | `dash` | `dash` |
+| Password | `dash` | `dash` | `dash` | `dash` | `dash` |
 
 Databricks SQL listens at `http://127.0.0.1:14439` with token `dash`, warehouse `dash`, catalog `dash`, and schema `analytics`. Stripe listens at `http://127.0.0.1:12119`. OpenSearch listens at `http://127.0.0.1:9209`. The security plugin is off, so the cluster does not check a password.
 
-Override the Postgres endpoint with `DASH_TEST_POSTGRES_HOST`, `DASH_TEST_POSTGRES_PORT`, `DASH_TEST_POSTGRES_DATABASE`, `DASH_TEST_POSTGRES_USER`, and `DASH_TEST_POSTGRES_PASSWORD`. Override MySQL with `DASH_TEST_MYSQL_HOST`, `DASH_TEST_MYSQL_PORT`, `DASH_TEST_MYSQL_DATABASE`, `DASH_TEST_MYSQL_USER`, and `DASH_TEST_MYSQL_PASSWORD`. Override MongoDB with `DASH_TEST_MONGODB_HOST`, `DASH_TEST_MONGODB_PORT`, `DASH_TEST_MONGODB_DATABASE`, `DASH_TEST_MONGODB_USER`, `DASH_TEST_MONGODB_PASSWORD`, and `DASH_TEST_MONGODB_AUTH_SOURCE`. Override Databricks SQL with `DASH_TEST_DATABRICKS_HOST`, `DASH_TEST_DATABRICKS_PORT`, `DASH_TEST_DATABRICKS_HTTP_PATH`, `DASH_TEST_DATABRICKS_TOKEN`, `DASH_TEST_DATABRICKS_WAREHOUSE`, `DASH_TEST_DATABRICKS_CATALOG`, and `DASH_TEST_DATABRICKS_SCHEMA`. Override Redshift with `DASH_TEST_REDSHIFT_HOST`, `DASH_TEST_REDSHIFT_PORT`, `DASH_TEST_REDSHIFT_DATABASE`, `DASH_TEST_REDSHIFT_USER`, and `DASH_TEST_REDSHIFT_PASSWORD`. Override Stripe with `DASH_TEST_STRIPE_HOST`, `DASH_TEST_STRIPE_PORT`, and `DASH_TEST_STRIPE_KEY`. Override OpenSearch with `DASH_TEST_OPENSEARCH_NODE`, or with `DASH_TEST_OPENSEARCH_HOST` and `DASH_TEST_OPENSEARCH_PORT`. The port values are the host ports Compose publishes. Databricks token, warehouse, catalog, and schema are passed into the container; the HTTP path has to use that warehouse id. The Stripe key is passed into the fixture as `DASH_STRIPE_KEY`. These credentials are for the local test clusters only.
+Override the Postgres endpoint with `DASH_TEST_POSTGRES_HOST`, `DASH_TEST_POSTGRES_PORT`, `DASH_TEST_POSTGRES_DATABASE`, `DASH_TEST_POSTGRES_USER`, and `DASH_TEST_POSTGRES_PASSWORD`. Override MySQL with `DASH_TEST_MYSQL_HOST`, `DASH_TEST_MYSQL_PORT`, `DASH_TEST_MYSQL_DATABASE`, `DASH_TEST_MYSQL_USER`, and `DASH_TEST_MYSQL_PASSWORD`. Override MariaDB with `DASH_TEST_MARIADB_HOST`, `DASH_TEST_MARIADB_PORT`, `DASH_TEST_MARIADB_DATABASE`, `DASH_TEST_MARIADB_USER`, and `DASH_TEST_MARIADB_PASSWORD`. Override MongoDB with `DASH_TEST_MONGODB_HOST`, `DASH_TEST_MONGODB_PORT`, `DASH_TEST_MONGODB_DATABASE`, `DASH_TEST_MONGODB_USER`, `DASH_TEST_MONGODB_PASSWORD`, and `DASH_TEST_MONGODB_AUTH_SOURCE`. Override Databricks SQL with `DASH_TEST_DATABRICKS_HOST`, `DASH_TEST_DATABRICKS_PORT`, `DASH_TEST_DATABRICKS_HTTP_PATH`, `DASH_TEST_DATABRICKS_TOKEN`, `DASH_TEST_DATABRICKS_WAREHOUSE`, `DASH_TEST_DATABRICKS_CATALOG`, and `DASH_TEST_DATABRICKS_SCHEMA`. Override Redshift with `DASH_TEST_REDSHIFT_HOST`, `DASH_TEST_REDSHIFT_PORT`, `DASH_TEST_REDSHIFT_DATABASE`, `DASH_TEST_REDSHIFT_USER`, and `DASH_TEST_REDSHIFT_PASSWORD`. Override Stripe with `DASH_TEST_STRIPE_HOST`, `DASH_TEST_STRIPE_PORT`, and `DASH_TEST_STRIPE_KEY`. Override OpenSearch with `DASH_TEST_OPENSEARCH_NODE`, or with `DASH_TEST_OPENSEARCH_HOST` and `DASH_TEST_OPENSEARCH_PORT`. The port values are the host ports Compose publishes. Databricks token, warehouse, catalog, and schema are passed into the container; the HTTP path has to use that warehouse id. The Stripe key is passed into the fixture as `DASH_STRIPE_KEY`. These credentials are for the local test clusters only.
 
 ## Architecture notes
 

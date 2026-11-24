@@ -48,6 +48,7 @@ export type {
   BigQueryConnectionConfig,
   DatabricksConnectionConfig,
   Db2ConnectionConfig,
+  MariadbConnectionConfig,
   MongoConnectionConfig,
   MysqlConnectionConfig,
   PostgresConnectionConfig,
