@@ -4,8 +4,9 @@ import { db2PublicSummary } from "@dash/adapter-db2";
 import { databricksPublicSummary } from "@dash/adapter-databricks";
 import { cockroachPublicSummary } from "@dash/adapter-cockroachdb";
 import { hanaPublicSummary } from "@dash/adapter-hana";
-import { redshiftPublicSummary } from "@dash/adapter-redshift";
+import { neo4jPublicSummary } from "@dash/adapter-neo4j";
 import { openSearchPublicSummary } from "@dash/adapter-opensearch";
+import { redshiftPublicSummary } from "@dash/adapter-redshift";
 import { stripePublicSummary } from "@dash/adapter-stripe";
 import { documentDbPublicSummary } from "@dash/adapter-documentdb";
 import { mongoUsesTls, parseMongoConnectionString } from "@dash/adapter-mongodb";
@@ -145,6 +146,9 @@ function summarize(config: ConnectionConfig): DataSourceRecord["summary"] {
   }
   if (config.kind === "couchbase") {
     return couchbasePublicSummary(config);
+  }
+  if (config.kind === "neo4j") {
+    return neo4jPublicSummary(config);
   }
   if (config.kind === "mongodb") {
     const usingUri = Boolean(config.connectionString) && !config.host;

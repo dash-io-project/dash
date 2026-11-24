@@ -17,6 +17,7 @@ Dash needs a single TypeScript codebase for the product UI, REST API, and MCP se
 - `packages/hana-adapter` (`@dash/adapter-hana`) is the SAP HANA adapter.
 - `packages/cockroachdb-adapter` (`@dash/adapter-cockroachdb`) is the CockroachDB adapter.
 - `packages/couchbase-adapter` (`@dash/adapter-couchbase`) is the Couchbase adapter.
+- `packages/neo4j-adapter` (`@dash/adapter-neo4j`) is the Neo4j adapter.
 
 ## Consequences
 

@@ -52,7 +52,8 @@ type SourceKind =
   | "stripe"
   | "opensearch"
   | "cockroachdb"
-  | "couchbase";
+  | "couchbase"
+  | "neo4j";
 
 type ReadPreference =
   | "primary"
@@ -77,6 +78,7 @@ const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "stripe", label: "Stripe" },
   { value: "opensearch", label: "Amazon OpenSearch" },
   { value: "couchbase", label: "Couchbase" },
+  { value: "neo4j", label: "Neo4j" },
 ];
 
 const READ_PREFERENCE_OPTIONS: SelectOption<ReadPreference>[] = [
@@ -105,6 +107,7 @@ const URI_PLACEHOLDER: Record<SourceKind, string> = {
   stripe: "stripe://sk_test_000@api.stripe.com",
   opensearch: "https://user:password@search-domain.us-east-1.es.amazonaws.com?region=us-east-1",
   couchbase: "couchbase://user:password@127.0.0.1:11210/bucket?scope=_default",
+  neo4j: "bolt://user:password@localhost:7687",
 };
 
 function sslFromDb2Uri(value: string): boolean | undefined {
@@ -210,6 +213,7 @@ const emptyForm = {
   user: "postgres",
   password: "",
   ssl: false,
+  encryption: false,
   tls: false,
   authSource: "admin",
   connectionString: "",
@@ -485,6 +489,21 @@ function DataSourcesPage() {
                             password: form.password,
                             ...(form.tls ? { tls: true } : {}),
                           }
+                    : form.kind === "neo4j"
+                      ? form.useConnectionString
+                        ? {
+                            kind: "neo4j" as const,
+                            connectionString: form.connectionString.trim(),
+                          }
+                        : {
+                            kind: "neo4j" as const,
+                            host: form.host,
+                            port: Number(form.port),
+                            database: form.database,
+                            user: form.user,
+                            password: form.password,
+                            encryption: form.encryption,
+                          }
                 : form.useConnectionString
                   ? {
                       kind: "postgres" as const,
@@ -561,7 +580,7 @@ function DataSourcesPage() {
       <p className="max-w-3xl text-muted-foreground">
         Paste a connection URI, or enter the fields. Dash tests Postgres, MySQL, MariaDB, CockroachDB, IBM Db2,
         SAP HANA, Snowflake, MongoDB, Amazon DocumentDB, BigQuery, Databricks SQL, Redshift, Stripe,
-        OpenSearch, and Couchbase on save.
+        OpenSearch, Couchbase, and Neo4j on save.
         {isAdmin ? null : " Only administrators can add or remove sources."}
       </p>
 
@@ -578,7 +597,7 @@ function DataSourcesPage() {
             ) : null
           }
         >
-          Add a connection for PostgreSQL, MySQL, MariaDB, CockroachDB, IBM Db2, SAP HANA, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, OpenSearch, or Couchbase.
+          Add a connection for PostgreSQL, MySQL, MariaDB, CockroachDB, IBM Db2, SAP HANA, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, OpenSearch, Couchbase, or Neo4j.
         </EmptyState>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -659,6 +678,7 @@ function DataSourcesPage() {
                     kind,
                     connectionString: "",
                     ssl: kind === "redshift" || kind === "cockroachdb",
+                    encryption: kind === "neo4j" ? form.encryption : false,
                     encrypt: kind === "hana" ? true : form.encrypt,
                     validateCertificate: kind === "hana" ? true : form.validateCertificate,
                     port:
@@ -678,15 +698,20 @@ function DataSourcesPage() {
                                     ? "26257"
                                     : kind === "couchbase"
                                       ? "11210"
-                                      : form.port,
+                                      : kind === "neo4j"
+                                        ? "7687"
+                                        : form.port,
                     user:
                       kind === "postgres"
                         ? "postgres"
                         : kind === "cockroachdb"
                           ? "root"
-                          : form.user === "postgres" || form.user === "root"
-                            ? ""
-                            : form.user,
+                          : kind === "neo4j" && (form.user === "postgres" || form.user === "root" || form.user === "")
+                            ? "neo4j"
+                            : form.user === "postgres" || form.user === "root"
+                              ? ""
+                              : form.user,
+                    database: kind === "neo4j" && form.database.trim() === "" ? "neo4j" : form.database,
                     schema:
                       kind === "hana"
                         ? ""
@@ -1532,6 +1557,74 @@ function DataSourcesPage() {
                   />
                   Use TLS
                 </label>
+              </>
+            ) : form.kind === "neo4j" ? (
+              <>
+                {form.useConnectionString ? (
+                  <ConnectionUriField
+                    kind="neo4j"
+                    value={form.connectionString}
+                    onChange={(connectionString) => setForm({ ...form, connectionString })}
+                  />
+                ) : (
+                  <>
+                    <div className="grid grid-cols-3 gap-3">
+                      <Field label="Host">
+                        <TextInput
+                          value={form.host}
+                          onChange={(event) => setForm({ ...form, host: event.target.value })}
+                          required
+                        />
+                      </Field>
+                      <Field label="Port">
+                        <TextInput
+                          value={form.port}
+                          onChange={(event) => setForm({ ...form, port: event.target.value })}
+                          required
+                        />
+                      </Field>
+                      <Field label="Database">
+                        <TextInput
+                          value={form.database}
+                          onChange={(event) => setForm({ ...form, database: event.target.value })}
+                          placeholder="neo4j"
+                          required
+                        />
+                      </Field>
+                    </div>
+                    <Field label="User">
+                      <TextInput
+                        value={form.user}
+                        onChange={(event) => setForm({ ...form, user: event.target.value })}
+                        required
+                      />
+                    </Field>
+                    <Field label="Password">
+                      <TextInput
+                        type="password"
+                        value={form.password}
+                        onChange={(event) => setForm({ ...form, password: event.target.value })}
+                        required
+                        autoComplete="off"
+                      />
+                    </Field>
+                    <label className="check-row flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={form.encryption}
+                        onChange={(event) => setForm({ ...form, encryption: event.target.checked })}
+                      />
+                      Encrypt the connection and check the server certificate
+                    </label>
+                    <p className="text-[13px] text-muted-foreground">
+                      Turn this on for bolt+s. Leave it off for the local fixture.
+                    </p>
+                  </>
+                )}
+                <ConnectionModeToggle
+                  usingUri={form.useConnectionString}
+                  onChange={(useConnectionString) => setForm({ ...form, useConnectionString })}
+                />
               </>
             ) : null}
             {error ? <p className="text-negative">{error}</p> : null}

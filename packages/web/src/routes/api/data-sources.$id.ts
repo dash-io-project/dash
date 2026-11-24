@@ -169,6 +169,16 @@ const patchSchema = z.object({
         network: z.enum(["default", "external"]).optional(),
       }),
       z.object({
+        kind: z.literal("neo4j"),
+        connectionString: z.string().optional(),
+        host: z.string().optional(),
+        port: z.number().int().optional(),
+        database: z.string().optional(),
+        user: z.string().optional(),
+        password: z.string().optional(),
+        encryption: z.boolean().optional(),
+      }),
+      z.object({
         kind: z.literal("bigquery"),
         projectId: z.string().min(1),
         dataset: z.string().optional(),

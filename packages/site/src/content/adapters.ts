@@ -1,4 +1,4 @@
-export type AdapterKind = "sql" | "warehouse" | "document" | "saas";
+export type AdapterKind = "sql" | "warehouse" | "document" | "saas" | "graph";
 
 export type Adapter = {
   id: string;
@@ -50,6 +50,7 @@ export const adapters: readonly Adapter[] = [
   { id: "stripe", name: "Stripe", kind: "saas", note: "Payments and billing" },
   { id: "opensearch", name: "Amazon OpenSearch", kind: "document", note: "Search and analytics" },
   { id: "couchbase", name: "Couchbase", kind: "document", note: "Document database" },
+  { id: "neo4j", name: "Neo4j", kind: "graph", note: "Graph database" },
 ];
 
 export const adapterCount = adapters.length;

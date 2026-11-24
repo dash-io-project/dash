@@ -219,4 +219,16 @@ describe("testConnectionConfig", () => {
     expect(result.message).not.toMatch(/debug/i);
     expect(result.message).not.toContain("evil.example");
   });
+
+  it("rejects a Neo4j URI that sets a driver option without echoing the password", async () => {
+    const result = await testConnectionConfig({
+      kind: "neo4j",
+      connectionString: "bolt://dash:super-secret@127.0.0.1:7687?trust=all",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.latencyMs).toBe(0);
+    expect(result.message).toMatch(/unsupported neo4j connection parameter/i);
+    expect(result.message).not.toContain("super-secret");
+    expect(result.message).not.toMatch(/trust/i);
+  });
 });

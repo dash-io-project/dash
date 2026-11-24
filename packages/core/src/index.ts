@@ -56,6 +56,7 @@ export type {
   MariadbConnectionConfig,
   MongoConnectionConfig,
   MysqlConnectionConfig,
+  Neo4jConnectionConfig,
   PostgresConnectionConfig,
   RedshiftConnectionConfig,
   OpenSearchConnectionConfig,

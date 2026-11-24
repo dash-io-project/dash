@@ -762,4 +762,54 @@ describe("data source records", () => {
     });
     expect(JSON.stringify(malformed.summary)).not.toContain("super-secret");
   });
+
+  it("summarizes a Neo4j source without the password", async () => {
+    const admin = await createUser({
+      email: "neo4j-admin@example.com",
+      name: "Admin",
+      password: "password123",
+      role: "admin",
+    });
+    const created = await createDataSource({
+      name: "Graph",
+      description: "Neo4j",
+      config: {
+        kind: "neo4j",
+        host: "db.example",
+        port: 7687,
+        database: "analytics",
+        user: "reader",
+        password: "super-secret",
+        encryption: true,
+      },
+      createdBy: admin.id,
+    });
+    expect(created.kind).toBe("neo4j");
+    expect(created.summary).toEqual({
+      host: "db.example",
+      port: 7687,
+      database: "analytics",
+      user: "reader",
+      encryption: true,
+    });
+    expect(JSON.stringify(created.summary)).not.toContain("super-secret");
+
+    const malformed = await createDataSource({
+      name: "Broken graph",
+      description: "Bad URI",
+      config: {
+        kind: "neo4j",
+        connectionString: "bolt://dash:super-secret@db.example?trust=all",
+      },
+      createdBy: admin.id,
+    });
+    expect(malformed.summary).toEqual({
+      host: "",
+      port: "",
+      database: "",
+      user: "",
+      encryption: false,
+    });
+    expect(JSON.stringify(malformed.summary)).not.toContain("super-secret");
+  });
 });
