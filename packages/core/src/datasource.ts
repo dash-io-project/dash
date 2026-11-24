@@ -321,6 +321,18 @@ export interface BigQueryConnectionConfig {
   apiEndpoint?: string;
 }
 
+export interface ClickHouseConnectionConfig {
+  kind: "clickhouse";
+  connectionString?: string;
+  host?: string;
+  port?: number;
+  database?: string;
+  user?: string;
+  password?: string;
+  /** Encrypt the HTTP interface. ClickHouse Cloud requires HTTPS. */
+  ssl?: boolean;
+}
+
 export type ConnectionConfig =
   | PostgresConnectionConfig
   | MysqlConnectionConfig
@@ -339,4 +351,5 @@ export type ConnectionConfig =
   | CouchbaseConnectionConfig
   | Neo4jConnectionConfig
   | CassandraConnectionConfig
-  | OracleConnectionConfig;
+  | OracleConnectionConfig
+  | ClickHouseConnectionConfig;

@@ -30,6 +30,7 @@ case "$action" in
     echo "MongoDB test cluster is ready at mongodb://dash:dash@127.0.0.1:${DASH_TEST_MONGODB_PORT:-27029}/dash?authSource=admin"
     echo "BigQuery test cluster is ready at http://127.0.0.1:${DASH_TEST_BIGQUERY_PORT:-9059} (project dash, dataset analytics)"
     echo "Databricks SQL test cluster is ready at http://127.0.0.1:${DASH_TEST_DATABRICKS_PORT:-14439} (warehouse ${DASH_TEST_DATABRICKS_WAREHOUSE:-dash}, catalog ${DASH_TEST_DATABRICKS_CATALOG:-dash}, schema ${DASH_TEST_DATABRICKS_SCHEMA:-analytics})"
+    echo "ClickHouse test cluster is ready at clickhouse://dash:dash@127.0.0.1:${DASH_TEST_CLICKHOUSE_PORT:-18123}/dash?ssl=false"
     echo "Stripe test cluster is ready at http://127.0.0.1:${DASH_TEST_STRIPE_PORT:-12119}"
     echo "OpenSearch test cluster is ready at http://127.0.0.1:${DASH_TEST_OPENSEARCH_PORT:-9209}"
     echo "DocumentDB test cluster is ready at mongodb://dash:dash@127.0.0.1:${DASH_TEST_DOCUMENTDB_PORT:-27099}/dash?authSource=admin (TLS, CA at docker/documentdb/runtime/ca.pem)"

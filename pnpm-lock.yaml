@@ -211,6 +211,25 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@24.19.2)(vite@8.3.7(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0))
 
+  packages/clickhouse-adapter:
+    dependencies:
+      '@clickhouse/client':
+        specifier: 1.25.0
+        version: 1.25.0
+      '@dash/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^24.13.6
+        version: 24.19.2
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^5.0.1
+        version: 5.0.5(@types/node@24.19.2)(vite@8.3.7(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0))
+
   packages/cockroachdb-adapter:
     dependencies:
       '@dash/core':
@@ -645,6 +664,9 @@ importers:
       '@dash/adapter-cassandra':
         specifier: workspace:*
         version: link:../cassandra-adapter
+      '@dash/adapter-clickhouse':
+        specifier: workspace:*
+        version: link:../clickhouse-adapter
       '@dash/adapter-cockroachdb':
         specifier: workspace:*
         version: link:../cockroachdb-adapter
@@ -1016,6 +1038,10 @@ packages:
     engines: {node: '>=14.21.3'}
     cpu: [x64]
     os: [win32]
+
+  '@clickhouse/client@1.25.0':
+    resolution: {integrity: sha512-sxoCDlA8iOEGpGrJzl9SeNvG7II6e5kSeo0JI4Mru2QhwhjydWuDEE55ryZg3vIJ0CSJ1bhn9+Xtnuvf1BZT/w==}
+    engines: {node: '>=20'}
 
   '@cloudflare/containers@0.3.7':
     resolution: {integrity: sha512-DM9dm3FnIBSyiSJ1FLavKwl/lk3oAmTaynCzZQ9pZR0ncRPquSxkxd8Nu2MFILxmDDsPkxKsSNEh9mHHMty4Fw==}
@@ -4320,6 +4346,8 @@ snapshots:
 
   '@biomejs/cli-win32-x64@2.6.4':
     optional: true
+
+  '@clickhouse/client@1.25.0': {}
 
   '@cloudflare/containers@0.3.7': {}
 

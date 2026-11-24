@@ -335,6 +335,47 @@ services:
       retries: 36
       start_period: 120s
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.8
+    container_name: dash-test-clickhouse
+    # HTTP interface on 8123. The adapter does not use the native protocol.
+    # Init SQL in docker-entrypoint-initdb.d runs once, before the server
+    # listens on the published port.
+    environment:
+      CLICKHOUSE_DB: dash
+      CLICKHOUSE_USER: dash
+      CLICKHOUSE_PASSWORD: dash
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ports:
+      - "127.0.0.1:${DASH_TEST_CLICKHOUSE_PORT:-18123}:8123"
+    volumes:
+      - dash-test-clickhouse:/var/lib/clickhouse
+      - ./docker/clickhouse/init:/docker-entrypoint-initdb.d:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    mem_limit: 1536m
+    cpus: 1
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "clickhouse-client",
+          "--user",
+          "dash",
+          "--password",
+          "dash",
+          "--database",
+          "dash",
+          "--query",
+          "SELECT 1 FROM paid_orders LIMIT 1",
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 30s
+
   stripe:
     build:
       context: ./docker/stripe
@@ -459,3 +500,4 @@ volumes:
   dash-test-couchbase:
   dash-test-neo4j:
   dash-test-cassandra:
+  dash-test-clickhouse:
