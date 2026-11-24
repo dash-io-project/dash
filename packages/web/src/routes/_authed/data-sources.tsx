@@ -57,7 +57,8 @@ type SourceKind =
   | "cassandra"
   | "oracle"
   | "clickhouse"
-  | "dynamodb";
+  | "dynamodb"
+  | "elasticsearch";
 
 type ReadPreference =
   | "primary"
@@ -87,6 +88,7 @@ const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "neo4j", label: "Neo4j" },
   { value: "cassandra", label: "Apache Cassandra" },
   { value: "dynamodb", label: "Amazon DynamoDB" },
+  { value: "elasticsearch", label: "Elasticsearch" },
 ];
 
 const READ_PREFERENCE_OPTIONS: SelectOption<ReadPreference>[] = [
@@ -120,7 +122,27 @@ const URI_PLACEHOLDER: Record<SourceKind, string> = {
   neo4j: "bolt://user:password@localhost:7687",
   cassandra: "cassandra://user:password@127.0.0.1:9042/analytics?dc=datacenter1",
   dynamodb: "dynamodb://accessKeyId:secretAccessKey@us-east-1",
+  elasticsearch: "https://user:password@host:9200",
 };
+
+function tlsFromElasticsearchUri(value: string): boolean | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol === "https:" || url.protocol === "elasticsearch:") {
+      return true;
+    }
+    if (url.protocol === "http:") {
+      return false;
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
 
 function sslFromDb2Uri(value: string): boolean | undefined {
   const trimmed = value.trim();
@@ -305,6 +327,7 @@ const emptyForm = {
   token: "",
   catalog: "",
   apiKey: "",
+  cloudId: "",
   node: "",
   region: "",
   osService: "es" as "es" | "aoss",
@@ -629,6 +652,27 @@ function DataSourcesPage() {
                             password: form.password || undefined,
                             ssl: form.ssl,
                           }
+                    : form.kind === "elasticsearch"
+                      ? form.useConnectionString
+                        ? {
+                            kind: "elasticsearch" as const,
+                            connectionString: form.connectionString.trim(),
+                            ...(form.apiKey.trim() ? { apiKey: form.apiKey.trim() } : {}),
+                            tls: form.tls,
+                          }
+                        : {
+                            kind: "elasticsearch" as const,
+                            ...(form.cloudId.trim()
+                              ? { cloudId: form.cloudId.trim() }
+                              : { host: form.host, port: Number(form.port) }),
+                            ...(form.apiKey.trim()
+                              ? { apiKey: form.apiKey.trim() }
+                              : {
+                                  user: form.user || undefined,
+                                  password: form.password || undefined,
+                                }),
+                            tls: form.tls,
+                          }
                     : form.kind === "dynamodb"
                       ? form.useConnectionString
                         ? {
@@ -852,7 +896,11 @@ function DataSourcesPage() {
                                             ? "1521"
                                             : kind === "clickhouse"
                                               ? "8443"
-                                              : form.port,
+                                              : kind === "elasticsearch"
+                                                ? "9200"
+                                                : form.port,
+                    tls: kind === "elasticsearch" ? true : form.tls,
+                    cloudId: kind === "elasticsearch" ? form.cloudId : "",
                     user:
                       kind === "postgres"
                         ? "postgres"
@@ -2022,6 +2070,99 @@ function DataSourcesPage() {
                     Optional. Temporary credentials only. Never put this in the connection URI.
                   </p>
                 </Field>
+                <ConnectionModeToggle
+                  usingUri={form.useConnectionString}
+                  onChange={(useConnectionString) => setForm({ ...form, useConnectionString })}
+                />
+              </>
+            ) : form.kind === "elasticsearch" ? (
+              <>
+                {form.useConnectionString ? (
+                  <ConnectionUriField
+                    kind="elasticsearch"
+                    value={form.connectionString}
+                    onChange={(connectionString) => {
+                      const tls = tlsFromElasticsearchUri(connectionString);
+                      setForm({
+                        ...form,
+                        connectionString,
+                        ...(tls === undefined ? {} : { tls }),
+                      });
+                    }}
+                  />
+                ) : (
+                  <>
+                    <Field label="Cloud ID">
+                      <TextInput
+                        value={form.cloudId}
+                        onChange={(event) => setForm({ ...form, cloudId: event.target.value })}
+                        placeholder="name:base64 from Elastic Cloud"
+                        spellCheck={false}
+                        autoComplete="off"
+                      />
+                    </Field>
+                    {form.cloudId.trim() ? null : (
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="col-span-2">
+                          <Field label="Host">
+                            <TextInput
+                              value={form.host}
+                              onChange={(event) => setForm({ ...form, host: event.target.value })}
+                              required
+                            />
+                          </Field>
+                        </div>
+                        <Field label="Port">
+                          <TextInput
+                            value={form.port}
+                            onChange={(event) => setForm({ ...form, port: event.target.value })}
+                            required
+                          />
+                        </Field>
+                      </div>
+                    )}
+                    {form.apiKey.trim() ? null : (
+                      <>
+                        <Field label="User">
+                          <TextInput
+                            value={form.user}
+                            onChange={(event) => setForm({ ...form, user: event.target.value })}
+                            placeholder="elastic"
+                          />
+                        </Field>
+                        <Field label="Password">
+                          <TextInput
+                            type="password"
+                            value={form.password}
+                            onChange={(event) => setForm({ ...form, password: event.target.value })}
+                            autoComplete="off"
+                          />
+                        </Field>
+                      </>
+                    )}
+                  </>
+                )}
+                <Field label="API key">
+                  <TextInput
+                    type="password"
+                    value={form.apiKey}
+                    onChange={(event) => setForm({ ...form, apiKey: event.target.value })}
+                    placeholder="Encoded token, or id:api_key"
+                    autoComplete="off"
+                  />
+                  <p className="text-[13px] text-muted-foreground">
+                    Leave this empty when the URI or the user and password already authenticate.
+                    Turn TLS off for an http:// loopback URL such as the local cluster.
+                  </p>
+                </Field>
+                <label className="check-row flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={form.tls}
+                    onChange={(event) => setForm({ ...form, tls: event.target.checked })}
+                  />
+                  Use TLS
+                </label>
                 <ConnectionModeToggle
                   usingUri={form.useConnectionString}
                   onChange={(useConnectionString) => setForm({ ...form, useConnectionString })}

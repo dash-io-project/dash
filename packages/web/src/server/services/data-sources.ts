@@ -6,6 +6,7 @@ import { db2PublicSummary } from "@dash/adapter-db2";
 import { databricksPublicSummary } from "@dash/adapter-databricks";
 import { cockroachPublicSummary } from "@dash/adapter-cockroachdb";
 import { dynamoPublicSummary } from "@dash/adapter-dynamodb";
+import { elasticsearchPublicSummary } from "@dash/adapter-elasticsearch";
 import { hanaPublicSummary } from "@dash/adapter-hana";
 import { neo4jPublicSummary } from "@dash/adapter-neo4j";
 import { openSearchPublicSummary } from "@dash/adapter-opensearch";
@@ -165,6 +166,9 @@ function summarize(config: ConnectionConfig): DataSourceRecord["summary"] {
   }
   if (config.kind === "dynamodb") {
     return dynamoPublicSummary(config);
+  if (config.kind === "elasticsearch") {
+    return elasticsearchPublicSummary(config);
+  }
   }
   if (config.kind === "mongodb") {
     const usingUri = Boolean(config.connectionString) && !config.host;

@@ -369,4 +369,20 @@ export type ConnectionConfig =
   | CassandraConnectionConfig
   | OracleConnectionConfig
   | ClickHouseConnectionConfig
-  | DynamoDbConnectionConfig;
+  | DynamoDbConnectionConfig
+  | ElasticsearchConnectionConfig;
+
+export interface ElasticsearchConnectionConfig {
+  kind: "elasticsearch";
+  connectionString?: string;
+  host?: string;
+  port?: number;
+  user?: string;
+  password?: string;
+  /** Encoded API key, or `id:secret`. Sent only to the Elasticsearch origin. */
+  apiKey?: string;
+  /** Elastic Cloud id, `name:base64`. It selects the HTTPS node. */
+  cloudId?: string;
+  /** Use TLS. `false` is accepted only for a loopback host. */
+  tls?: boolean;
+}

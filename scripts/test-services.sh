@@ -22,6 +22,12 @@ compose=(docker compose -p dash-test -f docker-compose.test.yml)
 action=${1:-}
 case "$action" in
   start)
+    if [[ "$(uname -s)" == "Linux" ]]; then
+      map_count=$(cat /proc/sys/vm/max_map_count 2>/dev/null || echo 0)
+      if [[ "${map_count}" -lt 262144 ]]; then
+        echo "warning: vm.max_map_count is ${map_count}. Elasticsearch needs 262144 or more." >&2
+      fi
+    fi
     "${compose[@]}" up -d --wait --remove-orphans
     pnpm --filter @dash/adapter-dynamodb exec node --experimental-strip-types src/seed-cluster.ts
     echo "PostgreSQL test cluster is ready at postgres://dash:dash@127.0.0.1:${DASH_TEST_POSTGRES_PORT:-54329}/dash"
@@ -41,6 +47,7 @@ case "$action" in
     echo "Cassandra test cluster is ready at cassandra://dash:dash@127.0.0.1:${DASH_TEST_CASSANDRA_PORT:-39042}/dash?dc=datacenter1"
     echo "Oracle test cluster is ready at oracle://dash:Dash_test1@127.0.0.1:${DASH_TEST_ORACLE_PORT:-15219}/FREEPDB1"
     echo "DynamoDB test cluster is ready at http://127.0.0.1:${DASH_TEST_DYNAMODB_PORT:-8009}"
+    echo "Elasticsearch test cluster is ready at http://dash:dash_test@127.0.0.1:${DASH_TEST_ELASTICSEARCH_PORT:-9219}"
     ;;
   stop)
     "${compose[@]}" down --volumes --remove-orphans

@@ -32,6 +32,8 @@ jobs:
       - run: sfw pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm lint
+      - name: Allow Elasticsearch to map memory
+        run: sudo sysctl -w vm.max_map_count=262144
       - run: pnpm test:services:start
       - run: pnpm test
       - run: pnpm --filter @dash/web exec playwright install --with-deps chromium

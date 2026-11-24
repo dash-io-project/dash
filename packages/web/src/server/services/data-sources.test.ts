@@ -998,4 +998,48 @@ describe("data source records", () => {
     });
     expect(malformed.summary).toEqual({ region: "", endpoint: "", accessKeyId: "" });
   });
+
+  it("summarizes an Elasticsearch source without the password", async () => {
+    const admin = await createUser({
+      email: "elasticsearch-admin@example.com",
+      name: "Admin",
+      password: "password123",
+      role: "admin",
+    });
+    const created = await createDataSource({
+      name: "Search",
+      description: "Elasticsearch",
+      config: {
+        kind: "elasticsearch",
+        host: "search.example",
+        port: 9200,
+        user: "reader",
+        password: "super-secret",
+        tls: true,
+      },
+      createdBy: admin.id,
+    });
+    expect(created.kind).toBe("elasticsearch");
+    expect(created.summary).toEqual({
+      host: "search.example",
+      port: 9200,
+      user: "reader",
+      tls: true,
+      auth: "basic",
+    });
+    expect(JSON.stringify(created.summary)).not.toContain("super-secret");
+
+    const malformed = await createDataSource({
+      name: "Broken search",
+      description: "Bad URI",
+      config: {
+        kind: "elasticsearch",
+        connectionString: "http://reader:super-secret@search.example:9200",
+      },
+      createdBy: admin.id,
+    });
+    expect(malformed.summary).toEqual({ host: "", port: 0, user: "", tls: false, auth: "" });
+    expect(JSON.stringify(malformed.summary)).not.toContain("super-secret");
+  });
+
 });

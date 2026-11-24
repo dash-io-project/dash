@@ -56,6 +56,8 @@ describe("data source kinds", () => {
     expect(isDataSourceKind("hana")).toBe(true);
     expect(isDataSourceKind("clickhouse")).toBe(true);
     expect(isDataSourceKind("dynamodb")).toBe(true);
+    expect(DATA_SOURCE_KINDS).toContain("elasticsearch");
+    expect(isDataSourceKind("elasticsearch")).toBe(true);
     expect(isDataSourceKind("postgres")).toBe(true);
     expect(isDataSourceKind("cassandra")).toBe(true);
     expect(isDataSourceKind("oracle")).toBe(true);
