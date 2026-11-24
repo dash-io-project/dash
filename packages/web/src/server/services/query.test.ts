@@ -26,6 +26,17 @@ describe("testConnectionConfig", () => {
     expect(result.message).not.toContain("not a host");
   });
 
+  it("reports an invalid Oracle connection string without the password", async () => {
+    const result = await testConnectionConfig({
+      kind: "oracle",
+      connectionString: "postgres://reader:super-secret@localhost/dash",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.latencyMs).toBe(0);
+    expect(result.message).toMatch(/oracle:\/\//);
+    expect(result.message).not.toContain("super-secret");
+  });
+
   it("reports an invalid Db2 host without echoing the password", async () => {
     const result = await testConnectionConfig({
       kind: "db2",

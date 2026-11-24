@@ -54,7 +54,8 @@ type SourceKind =
   | "cockroachdb"
   | "couchbase"
   | "neo4j"
-  | "cassandra";
+  | "cassandra"
+  | "oracle";
 
 type ReadPreference =
   | "primary"
@@ -70,6 +71,7 @@ const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "mariadb", label: "MariaDB" },
   { value: "db2", label: "IBM Db2" },
   { value: "hana", label: "SAP HANA" },
+  { value: "oracle", label: "Oracle Database" },
   { value: "redshift", label: "Amazon Redshift" },
   { value: "snowflake", label: "Snowflake" },
   { value: "mongodb", label: "MongoDB" },
@@ -98,6 +100,7 @@ const URI_PLACEHOLDER: Record<SourceKind, string> = {
   mariadb: "mariadb://user:password@localhost:3306/analytics",
   db2: "db2://db2inst1:password@localhost:50000/DASH?schema=DASH",
   hana: "hana://user:password@host:30015/DB?schema=ANALYTICS&encrypt=true&sslValidateCertificate=true",
+  oracle: "oracle://user:password@db.adb.region.oraclecloud.com:1522/service_high.adb.oraclecloud.com",
   redshift: "redshift://user:password@cluster.redshift.amazonaws.com:5439/analytics?sslmode=require",
   snowflake: "snowflake://user:password@account/database/schema?warehouse=COMPUTE_WH",
   mongodb: "mongodb://user:password@host:27017/analytics?authSource=admin",
@@ -161,6 +164,42 @@ function sslFromRedshiftUri(value: string): boolean | undefined {
   } catch {
     return undefined;
   }
+}
+
+function oracleCloudHost(host: string): boolean {
+  const normalized = host.trim().toLowerCase().replace(/\.$/, "");
+  return [".oraclecloud.com", ".oraclegovcloud.com", ".oraclegovcloud.uk"].some((suffix) =>
+    normalized.endsWith(suffix),
+  );
+}
+
+function sslFromOracleUri(value: string): boolean | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  if (/oraclecloud\.com|oraclegovcloud\.(?:com|uk)/i.test(trimmed)) {
+    return true;
+  }
+  if (/(?:^|@)tcps:\/\//i.test(trimmed) || /protocol\s*=\s*tcps/i.test(trimmed)) {
+    return true;
+  }
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "oracle:") {
+      return undefined;
+    }
+    const ssl = url.searchParams.get("ssl")?.toLowerCase();
+    if (ssl === "false" || ssl === "0" || ssl === "no") {
+      return false;
+    }
+    if (ssl === "true" || ssl === "1" || ssl === "yes") {
+      return true;
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
 }
 
 function ConnectionUriField({
@@ -398,6 +437,22 @@ function DataSourcesPage() {
                           schema: form.schema.trim() || undefined,
                           ssl: form.ssl,
                         }
+                  : form.kind === "oracle"
+                    ? form.useConnectionString
+                      ? {
+                          kind: "oracle" as const,
+                          connectionString: form.connectionString.trim(),
+                          ssl: form.ssl,
+                        }
+                      : {
+                          kind: "oracle" as const,
+                          host: form.host,
+                          port: Number(form.port),
+                          database: form.database,
+                          user: form.user,
+                          password: form.password,
+                          ssl: form.ssl,
+                        }
                   : form.kind === "cockroachdb"
                     ? form.useConnectionString
                       ? {
@@ -601,7 +656,7 @@ function DataSourcesPage() {
       <PageBody className="space-y-6">
       <p className="max-w-3xl text-muted-foreground">
         Paste a connection URI, or enter the fields. Dash tests Postgres, MySQL, MariaDB, CockroachDB, IBM Db2,
-        SAP HANA, Snowflake, MongoDB, Amazon DocumentDB, BigQuery, Databricks SQL, Redshift, Stripe,
+        SAP HANA, Oracle, Snowflake, MongoDB, Amazon DocumentDB, BigQuery, Databricks SQL, Redshift, Stripe,
         OpenSearch, Couchbase, Neo4j, and Cassandra on save.
         {isAdmin ? null : " Only administrators can add or remove sources."}
       </p>
@@ -619,7 +674,7 @@ function DataSourcesPage() {
             ) : null
           }
         >
-          Add a connection for PostgreSQL, MySQL, MariaDB, CockroachDB, IBM Db2, SAP HANA, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, OpenSearch, Couchbase, Neo4j, or Cassandra.
+          Add a connection for PostgreSQL, MySQL, MariaDB, CockroachDB, IBM Db2, SAP HANA, Oracle, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, OpenSearch, Couchbase, Neo4j, or Cassandra.
         </EmptyState>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -724,7 +779,9 @@ function DataSourcesPage() {
                                         ? "7687"
                                         : kind === "cassandra"
                                           ? "9042"
-                                          : form.port,
+                                          : kind === "oracle"
+                                            ? "1521"
+                                            : form.port,
                     user:
                       kind === "postgres"
                         ? "postgres"
@@ -889,6 +946,96 @@ function DataSourcesPage() {
                     />
                   </Field>
                 ) : null}
+              </>
+            ) : form.kind === "oracle" ? (
+              <>
+                {form.useConnectionString ? (
+                  <ConnectionUriField
+                    kind="oracle"
+                    value={form.connectionString}
+                    onChange={(connectionString) => {
+                      const ssl = sslFromOracleUri(connectionString);
+                      setForm({
+                        ...form,
+                        connectionString,
+                        ...(ssl === undefined ? {} : { ssl }),
+                      });
+                    }}
+                  />
+                ) : null}
+                <ConnectionModeToggle
+                  usingUri={form.useConnectionString}
+                  onChange={(useConnectionString) => setForm({ ...form, useConnectionString })}
+                />
+                {form.useConnectionString ? null : (
+                  <>
+                    <div className="grid grid-cols-3 gap-3">
+                      <Field label="Host">
+                        <TextInput
+                          value={form.host}
+                          onChange={(event) => {
+                            const host = event.target.value;
+                            const cloud = oracleCloudHost(host);
+                            setForm({
+                              ...form,
+                              host,
+                              port: cloud
+                                ? form.port === "1521" || form.port === ""
+                                  ? "1522"
+                                  : form.port
+                                : form.port === "1522"
+                                  ? "1521"
+                                  : form.port,
+                              ssl: cloud ? true : form.ssl,
+                            });
+                          }}
+                          required
+                        />
+                      </Field>
+                      <Field label="Port">
+                        <TextInput
+                          value={form.port}
+                          onChange={(event) => setForm({ ...form, port: event.target.value })}
+                          required
+                        />
+                      </Field>
+                      <Field label="Service name">
+                        <TextInput
+                          value={form.database}
+                          onChange={(event) => setForm({ ...form, database: event.target.value })}
+                          placeholder="FREEPDB1"
+                          required
+                        />
+                      </Field>
+                    </div>
+                    <Field label="User">
+                      <TextInput
+                        value={form.user}
+                        onChange={(event) => setForm({ ...form, user: event.target.value })}
+                        required
+                      />
+                    </Field>
+                    <Field label="Password">
+                      <TextInput
+                        type="password"
+                        value={form.password}
+                        onChange={(event) => setForm({ ...form, password: event.target.value })}
+                      />
+                    </Field>
+                  </>
+                )}
+                <label className="check-row flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={form.ssl}
+                    onChange={(event) => setForm({ ...form, ssl: event.target.checked })}
+                  />
+                  Use TLS
+                </label>
+                <p className="text-muted-foreground">
+                  Oracle Cloud requires TLS and uses port 1522 when the port is omitted. The service
+                  name is the Easy Connect service, such as FREEPDB1.
+                </p>
               </>
             ) : form.kind === "snowflake" ? (
               <>

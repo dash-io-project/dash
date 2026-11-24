@@ -49,11 +49,13 @@ describe("data source kinds", () => {
     expect(DATA_SOURCE_KINDS).toContain("couchbase");
     expect(DATA_SOURCE_KINDS).toContain("neo4j");
     expect(DATA_SOURCE_KINDS).toContain("cassandra");
+    expect(DATA_SOURCE_KINDS).toContain("oracle");
     expect(isDataSourceKind("db2")).toBe(true);
     expect(isDataSourceKind("hana")).toBe(true);
     expect(isDataSourceKind("postgres")).toBe(true);
     expect(isDataSourceKind("cassandra")).toBe(true);
-    expect(isDataSourceKind("oracle")).toBe(false);
+    expect(isDataSourceKind("oracle")).toBe(true);
+    expect(isDataSourceKind("sqlite")).toBe(false);
   });
 });
 

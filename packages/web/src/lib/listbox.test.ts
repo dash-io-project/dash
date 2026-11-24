@@ -64,7 +64,7 @@ describe("typeaheadIndex", () => {
   });
 
   it("returns -1 when no option matches", () => {
-    expect(typeaheadIndex(kinds, "oracle", 0)).toBe(-1);
+    expect(typeaheadIndex(kinds, "cassandra", 0)).toBe(-1);
     expect(typeaheadIndex(kinds, "", 0)).toBe(-1);
     expect(typeaheadIndex([], "a", -1)).toBe(-1);
   });

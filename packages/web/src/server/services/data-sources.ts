@@ -7,6 +7,7 @@ import { cockroachPublicSummary } from "@dash/adapter-cockroachdb";
 import { hanaPublicSummary } from "@dash/adapter-hana";
 import { neo4jPublicSummary } from "@dash/adapter-neo4j";
 import { openSearchPublicSummary } from "@dash/adapter-opensearch";
+import { oraclePublicSummary } from "@dash/adapter-oracle";
 import { redshiftPublicSummary } from "@dash/adapter-redshift";
 import { stripePublicSummary } from "@dash/adapter-stripe";
 import { documentDbPublicSummary } from "@dash/adapter-documentdb";
@@ -135,6 +136,9 @@ function summarize(config: ConnectionConfig): DataSourceRecord["summary"] {
   }
   if (config.kind === "cockroachdb") {
     return cockroachPublicSummary(config);
+  }
+  if (config.kind === "oracle") {
+    return oraclePublicSummary(config);
   }
   if (config.kind === "stripe") {
     return stripePublicSummary(config);

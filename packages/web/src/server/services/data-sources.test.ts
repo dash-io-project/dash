@@ -530,6 +530,55 @@ describe("data source records", () => {
     expect(rejected.summary.sslCa).toBeUndefined();
   });
 
+  it("summarizes an Oracle source without the password", async () => {
+    const admin = await createUser({
+      email: "oracle-admin@example.com",
+      name: "Admin",
+      password: "password123",
+      role: "admin",
+    });
+    const created = await createDataSource({
+      name: "Autonomous DB",
+      description: "Warehouse",
+      config: {
+        kind: "oracle",
+        host: "db.adb.us-ashburn-1.oraclecloud.com",
+        database: "db_high.adb.oraclecloud.com",
+        user: "reader",
+        password: "super-secret",
+      },
+      createdBy: admin.id,
+    });
+    expect(created.kind).toBe("oracle");
+    expect(created.summary).toEqual({
+      host: "db.adb.us-ashburn-1.oraclecloud.com",
+      port: 1522,
+      database: "db_high.adb.oraclecloud.com",
+      user: "reader",
+      ssl: true,
+      cloud: true,
+    });
+    expect(JSON.stringify(created.summary)).not.toContain("super-secret");
+
+    const malformed = await createDataSource({
+      name: "Broken Oracle",
+      description: "Bad URI",
+      config: {
+        kind: "oracle",
+        connectionString: "postgres://reader:super-secret@localhost/dash",
+      },
+      createdBy: admin.id,
+    });
+    expect(malformed.summary).toEqual({
+      host: "(connection string)",
+      database: "",
+      user: "",
+      ssl: false,
+      cloud: false,
+    });
+    expect(JSON.stringify(malformed.summary)).not.toContain("super-secret");
+  });
+
   it("summarizes a Databricks SQL source without the token", async () => {
     const admin = await createUser({
       email: "databricks-admin@example.com",

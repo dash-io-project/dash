@@ -286,6 +286,19 @@ export interface CassandraConnectionConfig {
   ssl?: boolean;
 }
 
+export interface OracleConnectionConfig {
+  kind: "oracle";
+  connectionString?: string;
+  host?: string;
+  port?: number;
+  /** Easy Connect service name. A SID is accepted only inside a connection string. */
+  database?: string;
+  user?: string;
+  password?: string;
+  /** Use TLS. Oracle Cloud hosts require it. */
+  ssl?: boolean;
+}
+
 export interface BigQueryConnectionConfig {
   kind: "bigquery";
   projectId: string;
@@ -325,4 +338,5 @@ export type ConnectionConfig =
   | CockroachConnectionConfig
   | CouchbaseConnectionConfig
   | Neo4jConnectionConfig
-  | CassandraConnectionConfig;
+  | CassandraConnectionConfig
+  | OracleConnectionConfig;

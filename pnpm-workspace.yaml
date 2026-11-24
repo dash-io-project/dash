@@ -9,6 +9,7 @@ allowBuilds:
   "@sap/hana-client": true
   # The couchbase install script copies the native addon for this platform.
   couchbase: true
+  oracledb: true
   # workerd's postinstall copies the platform binary and executes it. Wrangler
   # resolves the binary from @cloudflare/workerd-linux-64 directly, so the
   # script stays off. The key has to be present: omitting it fails

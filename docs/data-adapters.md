@@ -18,7 +18,8 @@ Each warehouse adapter is its own package under `packages/` and implements
 (`@dash/adapter-cockroachdb`). Couchbase ships as `packages/couchbase-adapter`
 (`@dash/adapter-couchbase`). Neo4j ships as `packages/neo4j-adapter`
 (`@dash/adapter-neo4j`). Apache Cassandra ships as `packages/cassandra-adapter`
-(`@dash/adapter-cassandra`).
+(`@dash/adapter-cassandra`). Oracle Database ships as `packages/oracle-adapter`
+(`@dash/adapter-oracle`).
 
 ## Shipping
 
@@ -41,6 +42,7 @@ Each warehouse adapter is its own package under `packages/` and implements
 | `@dash/adapter-couchbase` | `packages/couchbase-adapter` | `couchbase` | MVP |
 | `@dash/adapter-neo4j` | `packages/neo4j-adapter` | `neo4j` | MVP |
 | `@dash/adapter-cassandra` | `packages/cassandra-adapter` | `cassandra` | MVP |
+| `@dash/adapter-oracle` | `packages/oracle-adapter` | `oracle` | MVP |
 | — | — | `clickhouse` | Planned |
 
 The web app does not ship a built-in sample adapter. To get realistic data in
@@ -50,7 +52,7 @@ new writer in `packages/seed/src/writers` and add its kind to `SEEDABLE_KINDS`.
 
 ## Testing
 
-Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch, DocumentDB, CockroachDB, Couchbase, Neo4j, and Cassandra adapter tests run against the local clusters in `docker-compose.test.yml`.
+Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch, DocumentDB, CockroachDB, Couchbase, Neo4j, Cassandra, and Oracle adapter tests run against the local clusters in `docker-compose.test.yml`.
 
 IBM Db2 adapter tests run in process. The community image `icr.io/db2_community/db2` does not fit this CI job. The image needs about 7 GB of disk and about 4 GB of memory. The container needs privileged mode. The first start takes several minutes.
 
@@ -80,7 +82,9 @@ CockroachDB listens on `127.0.0.1:26229`
 `couchbase://dash:dashdash@127.0.0.1:11299/dash?scope=analytics&network=external`.
 Neo4j listens at `bolt://neo4j:dash@127.0.0.1:17687` (database `neo4j`).
 Cassandra listens on `127.0.0.1:39042`
-(`dash` / `dash`, keyspace `dash`, local data center `datacenter1`). The root README lists the
+(`dash` / `dash`, keyspace `dash`, local data center `datacenter1`).
+Oracle listens on `127.0.0.1:15219`
+(`oracle://dash:Dash_test1@127.0.0.1:15219/FREEPDB1`). The root README lists the
 environment overrides. When an
 engine can run locally, add it to that Compose file and point the package
 tests at it.

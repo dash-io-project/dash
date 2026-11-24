@@ -63,6 +63,7 @@ export type {
   OpenSearchConnectionConfig,
   SnowflakeConnectionConfig,
   StripeConnectionConfig,
+  OracleConnectionConfig,
 } from "./datasource.ts";
 
 export type {
