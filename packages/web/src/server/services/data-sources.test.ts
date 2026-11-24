@@ -812,4 +812,57 @@ describe("data source records", () => {
     });
     expect(JSON.stringify(malformed.summary)).not.toContain("super-secret");
   });
+
+  it("summarizes a Cassandra source without the password", async () => {
+    const admin = await createUser({
+      email: "cassandra-admin@example.com",
+      name: "Admin",
+      password: "password123",
+      role: "admin",
+    });
+    const created = await createDataSource({
+      name: "Cassandra analytics",
+      description: "Events",
+      config: {
+        kind: "cassandra",
+        host: "db.example",
+        port: 9042,
+        keyspace: "analytics",
+        localDataCenter: "dc1",
+        user: "reader",
+        password: "super-secret",
+        ssl: true,
+      },
+      createdBy: admin.id,
+    });
+    expect(created.kind).toBe("cassandra");
+    expect(created.summary).toEqual({
+      host: "db.example",
+      port: 9042,
+      keyspace: "analytics",
+      localDataCenter: "dc1",
+      user: "reader",
+      ssl: true,
+    });
+    expect(JSON.stringify(created.summary)).not.toContain("super-secret");
+
+    const malformed = await createDataSource({
+      name: "Broken Cassandra",
+      description: "Bad URI",
+      config: {
+        kind: "cassandra",
+        connectionString: "cassandra://reader:super-secret@db.example/analytics?options=1",
+      },
+      createdBy: admin.id,
+    });
+    expect(malformed.summary).toEqual({
+      host: "(connection string)",
+      port: "",
+      keyspace: "",
+      localDataCenter: "",
+      user: "",
+      ssl: false,
+    });
+    expect(JSON.stringify(malformed.summary)).not.toContain("super-secret");
+  });
 });

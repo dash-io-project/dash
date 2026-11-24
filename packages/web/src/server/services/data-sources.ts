@@ -1,4 +1,5 @@
 import { bigQueryEndpoint, isGoogleApiHost } from "@dash/adapter-bigquery";
+import { cassandraPublicSummary } from "@dash/adapter-cassandra";
 import { couchbasePublicSummary } from "@dash/adapter-couchbase";
 import { db2PublicSummary } from "@dash/adapter-db2";
 import { databricksPublicSummary } from "@dash/adapter-databricks";
@@ -149,6 +150,9 @@ function summarize(config: ConnectionConfig): DataSourceRecord["summary"] {
   }
   if (config.kind === "neo4j") {
     return neo4jPublicSummary(config);
+  }
+  if (config.kind === "cassandra") {
+    return cassandraPublicSummary(config);
   }
   if (config.kind === "mongodb") {
     const usingUri = Boolean(config.connectionString) && !config.host;

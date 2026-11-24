@@ -267,6 +267,25 @@ export interface Neo4jConnectionConfig {
   encryption?: boolean;
 }
 
+export interface CassandraConnectionConfig {
+  kind: "cassandra";
+  connectionString?: string;
+  /** Contact point. The driver discovers the other nodes from this host. */
+  host?: string;
+  port?: number;
+  /** Default keyspace. An unqualified table uses this keyspace. */
+  keyspace?: string;
+  /**
+   * Local data center. The driver requires one.
+   * The local cluster uses `datacenter1`.
+   */
+  localDataCenter?: string;
+  user?: string;
+  password?: string;
+  /** Encrypt the session and verify the server certificate. */
+  ssl?: boolean;
+}
+
 export interface BigQueryConnectionConfig {
   kind: "bigquery";
   projectId: string;
@@ -305,4 +324,5 @@ export type ConnectionConfig =
   | OpenSearchConnectionConfig
   | CockroachConnectionConfig
   | CouchbaseConnectionConfig
-  | Neo4jConnectionConfig;
+  | Neo4jConnectionConfig
+  | CassandraConnectionConfig;

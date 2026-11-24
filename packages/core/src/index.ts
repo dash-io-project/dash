@@ -46,6 +46,7 @@ export type {
   ConnectionConfig,
   DataSourceRecord,
   BigQueryConnectionConfig,
+  CassandraConnectionConfig,
   CockroachConnectionConfig,
   CouchbaseConnectionConfig,
   DatabricksConnectionConfig,

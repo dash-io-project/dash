@@ -231,4 +231,16 @@ describe("testConnectionConfig", () => {
     expect(result.message).not.toContain("super-secret");
     expect(result.message).not.toMatch(/trust/i);
   });
+
+  it("rejects a Cassandra URI that tries to set driver options", async () => {
+    const result = await testConnectionConfig({
+      kind: "cassandra",
+      connectionString: "cassandra://dash:super-secret@db.example/analytics?options=1",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.latencyMs).toBe(0);
+    expect(result.message).toMatch(/unsupported cassandra connection parameter/i);
+    expect(result.message).not.toContain("super-secret");
+    expect(result.message).not.toMatch(/options/i);
+  });
 });

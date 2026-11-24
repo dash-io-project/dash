@@ -33,6 +33,7 @@ const icons: Record<string, IconComponent> = {
   opensearch: Search,
   couchbase: Server,
   neo4j: Share2,
+  cassandra: Database,
 };
 
 const tileClasses = "flex items-center gap-4 bg-card p-5";
