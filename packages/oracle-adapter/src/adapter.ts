@@ -78,7 +78,19 @@ function normalizeNumber(value: string): number | string {
   return value;
 }
 
+function calendarDate(value: Date): string {
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${String(value.getFullYear()).padStart(4, "0")}-${month}-${day}`;
+}
+
 function normalizeDate(value: unknown): unknown {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : calendarDate(value);
+  }
   if (typeof value !== "string") {
     return value;
   }
@@ -149,7 +161,9 @@ function wrapPool(attributes: oracledb.PoolAttributes): SqlClient {
           fetchTypeHandler(metaData) {
             if (metaData.dbType === oracledb.DB_TYPE_DATE) {
               kinds.set(metaData.name, "date");
-              return { type: oracledb.DB_TYPE_VARCHAR };
+              // Thin mode ignores NLS_DATE_FORMAT. A VARCHAR fetch uses Date.toString().
+              // The converter keeps the calendar date in the application time zone.
+              return { converter: normalizeDate };
             }
             if (metaData.dbType === oracledb.DB_TYPE_NUMBER) {
               kinds.set(metaData.name, "number");
