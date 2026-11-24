@@ -17,6 +17,10 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  ssr: {
+    // The Db2 driver loads a native addon from its own directory.
+    external: ["ibm_db"],
+  },
   plugins: [
     tailwindcss(),
     tanstackStart({
@@ -26,6 +30,10 @@ export default defineConfig({
     nitro({
       // Close database clients on SIGTERM so the process exits after the listener stops.
       plugins: ["./src/server/plugins/shutdown.ts"],
+      // Leave ibm_db external. A bundle cannot find odbc_bindings.node.
+      rollupConfig: {
+        external: ["ibm_db"],
+      },
     }),
   ],
 });

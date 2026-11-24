@@ -10,6 +10,7 @@ All notable changes to Dash are documented here.
 
 ### Added
 
+- IBM Db2 data source adapter (`@dash/adapter-db2`). Queries use prepared statements and bound parameters. Tests run in process because the community image does not fit CI.
 - `show_dashboard` and `show_widget` display read-only MCP Apps with one shared renderer. Both tools support refresh and direct Dash links. See [MCP Apps](docs/mcp-apps.md).
 
 - API users on the **API tokens** page. An API user is an identity for a script or a service. It can have more than one token, so a service can rotate its token without downtime. To rotate a token, create a new token first. Update the app with the new token. Then revoke the old token. Delete an API user to revoke all of its tokens. See [ADR 0016](docs/adr/0016-api-users-and-token-rotation.md).

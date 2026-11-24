@@ -89,6 +89,7 @@ packages/bigquery-adapter/   @dash/adapter-bigquery
 packages/databricks-adapter/ @dash/adapter-databricks
 packages/redshift-adapter/   @dash/adapter-redshift
 packages/stripe-adapter/     @dash/adapter-stripe
+packages/db2-adapter/        @dash/adapter-db2
 ```
 
 Workspaces are declared in the root `pnpm-workspace.yaml`.
@@ -213,6 +214,7 @@ Keep this list in sync as PRs land. Checked items are in the tree today.
 - [x] Databricks SQL adapter (`@dash/adapter-databricks`)
 - [x] Redshift adapter (`@dash/adapter-redshift`)
 - [x] Stripe adapter (`@dash/adapter-stripe`)
+- [x] IBM Db2 adapter (`@dash/adapter-db2`)
 - [ ] ClickHouse adapter
 - [x] Public website (`@dash/site`): open source and Dash Cloud pages, pricing
 - [x] Dash Cloud accounts in `@dash/site`: sign-up, sign-in, sessions, account page
@@ -432,6 +434,8 @@ A widget link opens a view of the dashboard that shows only that widget. The wid
 ## Adapter test clusters
 
 Postgres, MySQL, MongoDB, BigQuery, Databricks SQL, Redshift, and Stripe adapter tests run against the Compose cluster. The Redshift service is a PostgreSQL wire-protocol stand-in. The Stripe service is a list-API fixture. Add the next local engine beside them in `docker-compose.test.yml` when that adapter can run here.
+
+IBM Db2 tests run in process. The community image `icr.io/db2_community/db2` does not fit this CI job. The image needs about 7 GB of disk and about 4 GB of memory. The container needs privileged mode. The first start takes several minutes.
 
 ```bash
 pnpm test:services:start

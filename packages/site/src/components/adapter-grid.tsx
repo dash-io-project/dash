@@ -7,6 +7,7 @@ type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 const icons: Record<string, IconComponent> = {
   postgres: Database,
   mysql: Database,
+  db2: Database,
   snowflake: Snowflake,
   mongodb: Leaf,
   bigquery: Cloud,
@@ -16,6 +17,14 @@ const icons: Record<string, IconComponent> = {
 };
 
 const tileClasses = "flex items-center gap-4 bg-card p-5";
+
+function moreTileClass(count: number): string {
+  const smSpan = count % 2 === 0 ? "sm:col-span-2" : "sm:col-span-1";
+  const remainder = count % 3;
+  const lgSpan =
+    remainder === 0 ? "lg:col-span-3" : remainder === 1 ? "lg:col-span-2" : "lg:col-span-1";
+  return `flex items-center gap-4 bg-surface p-5 ${smSpan} ${lgSpan}`;
+}
 
 function AdapterTile({ adapter }: { adapter: Adapter }) {
   const Icon = icons[adapter.id] ?? Database;
@@ -42,7 +51,7 @@ export function AdapterGrid() {
       {adapters.map((adapter) => (
         <AdapterTile key={adapter.id} adapter={adapter} />
       ))}
-      <li className="flex items-center gap-4 bg-surface p-5 sm:col-span-2 lg:col-span-1">
+      <li className={moreTileClass(adapters.length)}>
         <span className="icon-tile border-dashed text-muted-foreground">
           <Plus className="size-[18px]" aria-hidden="true" />
         </span>

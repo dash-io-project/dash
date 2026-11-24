@@ -26,6 +26,21 @@ describe("testConnectionConfig", () => {
     expect(result.message).not.toContain("not a host");
   });
 
+  it("reports an invalid Db2 host without echoing the password", async () => {
+    const result = await testConnectionConfig({
+      kind: "db2",
+      host: "not a host",
+      database: "DASH",
+      user: "db2inst1",
+      password: "super-secret",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.latencyMs).toBe(0);
+    expect(result.message).toMatch(/host/i);
+    expect(result.message).not.toContain("not a host");
+    expect(result.message).not.toContain("super-secret");
+  });
+
   it("reports an invalid MySQL connection URI as a failed connection test", async () => {
     const result = await testConnectionConfig({
       kind: "mysql",

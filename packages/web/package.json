@@ -16,6 +16,7 @@
   "dependencies": {
     "@dash/adapter-bigquery": "workspace:*",
     "@dash/adapter-databricks": "workspace:*",
+    "@dash/adapter-db2": "workspace:*",
     "@dash/adapter-mongodb": "workspace:*",
     "@dash/adapter-mysql": "workspace:*",
     "@dash/adapter-postgres": "workspace:*",
@@ -35,6 +36,7 @@
     "@tanstack/react-table": "9.3.1",
     "clsx": "^2.1.1",
     "d3-shape": "3.2.0",
+    "ibm_db": "4.1.1",
     "lucide-react": "1.64.0",
     "mongodb": "7.8.0",
     "mongodb-connection-string-url": "7.0.2",

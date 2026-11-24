@@ -34,6 +34,20 @@ export interface MysqlConnectionConfig {
   ssl?: boolean;
 }
 
+export interface Db2ConnectionConfig {
+  kind: "db2";
+  connectionString?: string;
+  host?: string;
+  port?: number;
+  /** Database name. Db2 stores at most 8 characters. */
+  database?: string;
+  user?: string;
+  password?: string;
+  /** Default schema for an unqualified table or view. */
+  schema?: string;
+  ssl?: boolean;
+}
+
 export interface SnowflakeConnectionConfig {
   kind: "snowflake";
   connectionString?: string;
@@ -130,6 +144,7 @@ export interface BigQueryConnectionConfig {
 export type ConnectionConfig =
   | PostgresConnectionConfig
   | MysqlConnectionConfig
+  | Db2ConnectionConfig
   | SnowflakeConnectionConfig
   | MongoConnectionConfig
   | BigQueryConnectionConfig

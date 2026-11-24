@@ -35,11 +35,13 @@ describe("data source kinds", () => {
     expect(DATA_SOURCE_KINDS).toContain("postgres");
     expect(DATA_SOURCE_KINDS).toContain("snowflake");
     expect(DATA_SOURCE_KINDS).toContain("mysql");
+    expect(DATA_SOURCE_KINDS).toContain("db2");
     expect(DATA_SOURCE_KINDS).toContain("mongodb");
     expect(DATA_SOURCE_KINDS).toContain("bigquery");
     expect(DATA_SOURCE_KINDS).toContain("databricks");
     expect(DATA_SOURCE_KINDS).toContain("redshift");
     expect(DATA_SOURCE_KINDS).toContain("stripe");
+    expect(isDataSourceKind("db2")).toBe(true);
     expect(isDataSourceKind("postgres")).toBe(true);
     expect(isDataSourceKind("oracle")).toBe(false);
   });

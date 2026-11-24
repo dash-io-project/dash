@@ -1,4 +1,5 @@
 import { bigQueryEndpoint, isGoogleApiHost } from "@dash/adapter-bigquery";
+import { db2PublicSummary } from "@dash/adapter-db2";
 import { databricksPublicSummary } from "@dash/adapter-databricks";
 import { redshiftPublicSummary } from "@dash/adapter-redshift";
 import { stripePublicSummary } from "@dash/adapter-stripe";
@@ -58,6 +59,9 @@ function summarize(config: ConnectionConfig): DataSourceRecord["summary"] {
       endpoint,
       auth,
     };
+  }
+  if (config.kind === "db2") {
+    return db2PublicSummary(config);
   }
   if (config.kind === "mysql") {
     const usingUri = Boolean(config.connectionString) && !config.host;
