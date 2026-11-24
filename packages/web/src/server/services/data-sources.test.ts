@@ -534,6 +534,59 @@ describe("data source records", () => {
     expect(JSON.stringify(malformed.summary)).not.toContain("super-secret");
   });
 
+  it("summarizes a SAP HANA source without the password", async () => {
+    const admin = await createUser({
+      email: "hana-admin@example.com",
+      name: "Admin",
+      password: "password123",
+      role: "admin",
+    });
+    const created = await createDataSource({
+      name: "HANA analytics",
+      description: "Warehouse",
+      config: {
+        kind: "hana",
+        host: "hana.internal",
+        port: 30015,
+        database: "HXE",
+        schema: "ANALYTICS",
+        user: "reader",
+        password: "super-secret",
+        encrypt: true,
+      },
+      createdBy: admin.id,
+    });
+    expect(created.kind).toBe("hana");
+    expect(created.summary).toEqual({
+      host: "hana.internal",
+      port: 30015,
+      database: "HXE",
+      schema: "ANALYTICS",
+      user: "reader",
+      encrypt: true,
+    });
+    expect(JSON.stringify(created.summary)).not.toContain("super-secret");
+
+    const malformed = await createDataSource({
+      name: "Broken HANA",
+      description: "Bad URI",
+      config: {
+        kind: "hana",
+        connectionString: "hana://reader:super-secret@hana.internal/HXE?traceFile=/tmp/x",
+      },
+      createdBy: admin.id,
+    });
+    expect(malformed.summary).toEqual({
+      host: "",
+      port: "",
+      database: "",
+      schema: "",
+      user: "",
+      encrypt: true,
+    });
+    expect(JSON.stringify(malformed.summary)).not.toContain("super-secret");
+  });
+
   it("summarizes a Stripe source without the secret key", async () => {
     const admin = await createUser({
       email: "stripe-admin@example.com",

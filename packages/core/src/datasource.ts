@@ -59,6 +59,23 @@ export interface Db2ConnectionConfig {
   ssl?: boolean;
 }
 
+export interface HanaConnectionConfig {
+  kind: "hana";
+  connectionString?: string;
+  host?: string;
+  port?: number;
+  /** Tenant database. Omit this on a single-database system. */
+  database?: string;
+  user?: string;
+  password?: string;
+  /** Session schema. Unqualified names use this schema. */
+  schema?: string;
+  /** Encrypt the session. Defaults to true. */
+  encrypt?: boolean;
+  /** Check the server certificate when the session is encrypted. */
+  sslValidateCertificate?: boolean;
+}
+
 export interface SnowflakeConnectionConfig {
   kind: "snowflake";
   connectionString?: string;
@@ -212,6 +229,7 @@ export type ConnectionConfig =
   | MysqlConnectionConfig
   | MariadbConnectionConfig
   | Db2ConnectionConfig
+  | HanaConnectionConfig
   | SnowflakeConnectionConfig
   | MongoConnectionConfig
   | DocumentDbConnectionConfig

@@ -42,6 +42,7 @@ type SourceKind =
   | "mysql"
   | "mariadb"
   | "db2"
+  | "hana"
   | "snowflake"
   | "mongodb"
   | "documentdb"
@@ -63,6 +64,7 @@ const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "mysql", label: "MySQL" },
   { value: "mariadb", label: "MariaDB" },
   { value: "db2", label: "IBM Db2" },
+  { value: "hana", label: "SAP HANA" },
   { value: "redshift", label: "Amazon Redshift" },
   { value: "snowflake", label: "Snowflake" },
   { value: "mongodb", label: "MongoDB" },
@@ -86,6 +88,7 @@ const URI_PLACEHOLDER: Record<SourceKind, string> = {
   mysql: "mysql://user:password@localhost:3306/analytics",
   mariadb: "mariadb://user:password@localhost:3306/analytics",
   db2: "db2://db2inst1:password@localhost:50000/DASH?schema=DASH",
+  hana: "hana://user:password@host:30015/DB?schema=ANALYTICS&encrypt=true&sslValidateCertificate=true",
   redshift: "redshift://user:password@cluster.redshift.amazonaws.com:5439/analytics?sslmode=require",
   snowflake: "snowflake://user:password@account/database/schema?warehouse=COMPUTE_WH",
   mongodb: "mongodb://user:password@host:27017/analytics?authSource=admin",
@@ -227,6 +230,8 @@ const emptyForm = {
   replicaSet: "",
   readPreference: "secondaryPreferred" as ReadPreference,
   caBundle: "",
+  encrypt: true,
+  validateCertificate: true,
 };
 
 function DataSourcesPage() {
@@ -417,6 +422,23 @@ function DataSourcesPage() {
                             secretAccessKey: form.secretAccessKey || undefined,
                             sessionToken: form.sessionToken || undefined,
                           }
+                    : form.kind === "hana"
+                      ? form.useConnectionString
+                        ? {
+                            kind: "hana" as const,
+                            connectionString: form.connectionString.trim(),
+                          }
+                        : {
+                            kind: "hana" as const,
+                            host: form.host.trim(),
+                            port: Number(form.port),
+                            database: form.database.trim() || undefined,
+                            schema: form.schema.trim() || undefined,
+                            user: form.user.trim(),
+                            password: form.password || undefined,
+                            encrypt: form.encrypt,
+                            sslValidateCertificate: form.validateCertificate,
+                          }
                 : form.useConnectionString
                   ? {
                       kind: "postgres" as const,
@@ -491,8 +513,9 @@ function DataSourcesPage() {
       />
       <PageBody className="space-y-6">
       <p className="max-w-3xl text-muted-foreground">
-        Paste a connection URI, or enter the fields. Dash tests Postgres, MySQL, MariaDB, IBM Db2, Snowflake,
-        MongoDB, Amazon DocumentDB, BigQuery, Databricks SQL, Redshift, Stripe, and OpenSearch on save.
+        Paste a connection URI, or enter the fields. Dash tests Postgres, MySQL, MariaDB, IBM Db2,
+        SAP HANA, Snowflake, MongoDB, Amazon DocumentDB, BigQuery, Databricks SQL, Redshift, Stripe,
+        and OpenSearch on save.
         {isAdmin ? null : " Only administrators can add or remove sources."}
       </p>
 
@@ -509,7 +532,7 @@ function DataSourcesPage() {
             ) : null
           }
         >
-          Add a PostgreSQL, MySQL, MariaDB, IBM Db2, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, or OpenSearch connection to start querying.
+          Add a connection for PostgreSQL, MySQL, MariaDB, IBM Db2, SAP HANA, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, or OpenSearch.
         </EmptyState>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -590,6 +613,8 @@ function DataSourcesPage() {
                     kind,
                     connectionString: "",
                     ssl: kind === "redshift",
+                    encrypt: kind === "hana" ? true : form.encrypt,
+                    validateCertificate: kind === "hana" ? true : form.validateCertificate,
                     port:
                       kind === "mongodb" || kind === "documentdb"
                         ? "27017"
@@ -597,21 +622,30 @@ function DataSourcesPage() {
                           ? "5432"
                           : kind === "mysql" || kind === "mariadb"
                             ? "3306"
-                            : kind === "redshift"
-                              ? "5439"
-                              : kind === "db2"
-                                ? "50000"
-                                : form.port,
+                              : kind === "redshift"
+                                ? "5439"
+                                : kind === "db2"
+                                  ? "50000"
+                                  : kind === "hana"
+                                    ? "30015"
+                                    : form.port,
                     user: kind === "postgres" ? "postgres" : form.user === "postgres" ? "" : form.user,
                     schema:
-                      kind === "snowflake"
-                        ? form.schema || "PUBLIC"
-                        : enteringDatabricks
-                          ? form.schema === "public" || form.schema === "PUBLIC" || !form.schema
-                            ? "default"
-                            : form.schema
-                          : form.schema,
-                    host: enteringDatabricks && form.host.trim() === "localhost" ? "" : form.host,
+                      kind === "hana"
+                        ? ""
+                        : kind === "snowflake"
+                          ? form.schema || "PUBLIC"
+                          : enteringDatabricks
+                            ? form.schema === "public" || form.schema === "PUBLIC" || !form.schema
+                              ? "default"
+                              : form.schema
+                            : form.schema,
+                    host:
+                      kind === "hana" && form.host.trim() === ""
+                        ? "localhost"
+                        : enteringDatabricks && form.host.trim() === "localhost"
+                          ? ""
+                          : form.host,
                     apiEndpoint: kind === form.kind ? form.apiEndpoint : "",
                     apiKey: kind === form.kind ? form.apiKey : "",
                     node: "",
@@ -1259,6 +1293,93 @@ function DataSourcesPage() {
                   usingUri={form.useConnectionString}
                   onChange={(useConnectionString) => setForm({ ...form, useConnectionString })}
                 />
+              </>
+            ) : form.kind === "hana" ? (
+              <>
+                {form.useConnectionString ? (
+                  <ConnectionUriField
+                    kind="hana"
+                    value={form.connectionString}
+                    onChange={(connectionString) => setForm({ ...form, connectionString })}
+                  />
+                ) : null}
+                <ConnectionModeToggle
+                  usingUri={form.useConnectionString}
+                  onChange={(useConnectionString) => setForm({ ...form, useConnectionString })}
+                />
+                {form.useConnectionString ? null : (
+                  <>
+                    <div className="grid grid-cols-3 gap-3">
+                      <Field label="Host">
+                        <TextInput
+                          value={form.host}
+                          onChange={(event) => setForm({ ...form, host: event.target.value })}
+                          required
+                        />
+                      </Field>
+                      <Field label="Port">
+                        <TextInput
+                          value={form.port}
+                          onChange={(event) => setForm({ ...form, port: event.target.value })}
+                          required
+                        />
+                      </Field>
+                      <Field label="Database">
+                        <TextInput
+                          value={form.database}
+                          onChange={(event) => setForm({ ...form, database: event.target.value })}
+                          placeholder="Tenant"
+                        />
+                      </Field>
+                    </div>
+                    <p className="text-[13px] text-muted-foreground">
+                      The tenant database is optional on a single-database system.
+                    </p>
+                    <Field label="Schema">
+                      <TextInput
+                        value={form.schema}
+                        onChange={(event) => setForm({ ...form, schema: event.target.value })}
+                        placeholder="Session schema"
+                      />
+                    </Field>
+                    <Field label="User">
+                      <TextInput
+                        value={form.user}
+                        onChange={(event) => setForm({ ...form, user: event.target.value })}
+                        required
+                      />
+                    </Field>
+                    <Field label="Password">
+                      <TextInput
+                        type="password"
+                        value={form.password}
+                        onChange={(event) => setForm({ ...form, password: event.target.value })}
+                        autoComplete="off"
+                      />
+                    </Field>
+                    <label className="check-row flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={form.encrypt}
+                        onChange={(event) => setForm({ ...form, encrypt: event.target.checked })}
+                      />
+                      Encrypt the session
+                    </label>
+                    <label className="check-row flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={form.validateCertificate}
+                        onChange={(event) =>
+                          setForm({ ...form, validateCertificate: event.target.checked })
+                        }
+                      />
+                      Validate the server certificate
+                    </label>
+                    <p className="text-[13px] text-muted-foreground">
+                      Encrypt is the default. Clear it only for a local server.
+                    </p>
+                  </>
+                )}
               </>
             ) : null}
             {error ? <p className="text-negative">{error}</p> : null}

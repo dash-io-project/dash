@@ -50,6 +50,7 @@ export type {
   Db2ConnectionConfig,
   DocumentDbConnectionConfig,
   DocumentDbReadPreference,
+  HanaConnectionConfig,
   MariadbConnectionConfig,
   MongoConnectionConfig,
   MysqlConnectionConfig,

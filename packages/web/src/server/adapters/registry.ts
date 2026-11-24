@@ -3,6 +3,7 @@ import { BigQueryAdapter } from "@dash/adapter-bigquery";
 import { DatabricksAdapter } from "@dash/adapter-databricks";
 import { Db2Adapter } from "@dash/adapter-db2";
 import { DocumentDbAdapter } from "@dash/adapter-documentdb";
+import { HanaAdapter } from "@dash/adapter-hana";
 import { MongoAdapter } from "@dash/adapter-mongodb";
 import { MariadbAdapter } from "@dash/adapter-mariadb";
 import { MysqlAdapter } from "@dash/adapter-mysql";
@@ -34,6 +35,8 @@ function createAdapter(config: ConnectionConfig): DataAdapter {
       return Db2Adapter.fromConfig(config);
     case "mariadb":
       return MariadbAdapter.fromConfig(config);
+    case "hana":
+      return HanaAdapter.fromConfig(config);
     case "redshift":
       return RedshiftAdapter.fromConfig(config);
     case "stripe":
