@@ -6,6 +6,7 @@ All notable changes to Dash are documented here.
 
 ### Fixed
 
+- The website lists DynamoDB with the shipped adapters.
 - MCP App resources include CSS after Vite emits it. Charts have a fixed content height, and single-widget views show one title.
 
 ### Added

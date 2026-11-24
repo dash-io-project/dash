@@ -34,6 +34,7 @@ const icons: Record<string, IconComponent> = {
   couchbase: Server,
   neo4j: Share2,
   cassandra: Database,
+  dynamodb: Database,
 };
 
 const tileClasses = "flex items-center gap-4 bg-card p-5";
