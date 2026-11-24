@@ -44,7 +44,10 @@ describe("ElasticsearchAdapter query", () => {
 
   it("does not mark an exact page truncated", async () => {
     let size = 0;
-    const { adapter } = adapterFor((_url, init) => {
+    const { adapter } = adapterFor((url, init) => {
+      if (url.includes("/_mapping")) {
+        return new Response("{}", { status: 200 });
+      }
       const request = JSON.parse(String(init?.body)) as { size: number };
       size = request.size;
       return search(String(init?.body));
@@ -58,13 +61,15 @@ describe("ElasticsearchAdapter query", () => {
   });
 
   it("keeps an integer past 2^53 and reports its type", async () => {
-    const { adapter } = adapterFor(
-      async () =>
-        new Response(
-          '{"hits":{"hits":[{"_id":"1","_source":{"total":9007199254740993,"flag":true}}]}}',
-          { status: 200, headers: { "content-type": "application/json" } },
-        ),
-    );
+    const { adapter } = adapterFor(async (url) => {
+      if (url.includes("/_mapping")) {
+        return new Response("{}", { status: 200 });
+      }
+      return new Response(
+        '{"hits":{"hits":[{"_id":"1","_source":{"total":9007199254740993,"flag":true}}]}}',
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    });
     const result = await adapter.query({ resource: "orders", columns: ["total", "flag"], limit: 5 });
     expect(result.rows).toEqual([{ total: "9007199254740993", flag: true }]);
     expect(result.columns).toEqual([
@@ -74,7 +79,12 @@ describe("ElasticsearchAdapter query", () => {
   });
 
   it("drops the extra hit when another row exists", async () => {
-    const { adapter } = adapterFor((_url, init) => search(String(init?.body)));
+    const { adapter } = adapterFor((url, init) => {
+      if (url.includes("/_mapping")) {
+        return new Response("{}", { status: 200 });
+      }
+      return search(String(init?.body));
+    });
     const page = await adapter.query({
       resource: "revenue",
       columns: ["month"],
@@ -86,23 +96,51 @@ describe("ElasticsearchAdapter query", () => {
   });
 
   it("keeps an untrusted source key off the object prototype", async () => {
-    const { adapter } = adapterFor(
-      async () =>
-        new Response(
-          '{"hits":{"hits":[{"_id":"1","_source":{"__proto__":{"polluted":true},"id":1}}]}}',
-          { status: 200, headers: { "content-type": "application/json" } },
-        ),
-    );
+    const { adapter } = adapterFor(async (url) => {
+      if (url.includes("/_mapping")) {
+        return new Response("{}", { status: 200 });
+      }
+      return new Response(
+        '{"hits":{"hits":[{"_id":"1","_source":{"__proto__":{"polluted":true},"id":1}}]}}',
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    });
     const result = await adapter.query({ resource: "orders", limit: 5 });
     expect(Object.hasOwn(result.rows[0] ?? {}, "__proto__")).toBe(true);
     expect(Object.prototype).not.toHaveProperty("polluted");
+  });
+
+  it("cancels an in-flight search when the client closes", async () => {
+    let markStarted: () => void = () => {};
+    const started = new Promise<void>((resolve) => {
+      markStarted = resolve;
+    });
+    const { adapter } = adapterFor((_url, init) => {
+      markStarted();
+      return new Promise((_resolve, reject) => {
+        const signal = init?.signal;
+        if (!signal) {
+          reject(new Error("missing abort signal"));
+          return;
+        }
+        if (signal.aborted) {
+          reject(new DOMException("The operation was aborted", "AbortError"));
+          return;
+        }
+        signal.addEventListener("abort", () => {
+          reject(new DOMException("The operation was aborted", "AbortError"));
+        });
+      });
+    });
+    const pending = adapter.query({ resource: "orders", limit: 1 });
+    await started;
+    await adapter.close();
+    await expect(pending).rejects.toThrow(/closed/);
   });
 });
 
 describe("ElasticsearchAdapter introspectSchema", () => {
   it("loads mappings for the listed names, including a hidden alias target", async () => {
-    const indices = ["orders", "revenue"].map((index) => ({ index }));
-    const aliases = [{ alias: "paid_orders", index: "paid_orders_data" }];
     const properties = {
       id: { type: "integer" },
       status: { type: "keyword" },
@@ -113,11 +151,18 @@ describe("ElasticsearchAdapter introspectSchema", () => {
       paid_orders_data: { mappings: { properties } },
     };
     const { adapter, urls } = adapterFor((url) => {
-      if (url.includes("/_cat/indices")) {
-        return new Response(JSON.stringify(indices), { status: 200 });
-      }
-      if (url.includes("/_cat/aliases")) {
-        return new Response(JSON.stringify(aliases), { status: 200 });
+      if (url.includes("/_resolve/index")) {
+        return new Response(
+          JSON.stringify({
+            indices: [
+              { name: "orders", attributes: ["open"] },
+              { name: "revenue", attributes: ["open"] },
+              { name: "paid_orders_data", attributes: ["open", "hidden"] },
+            ],
+            aliases: [{ name: "paid_orders", indices: ["paid_orders_data"] }],
+          }),
+          { status: 200 },
+        );
       }
       const names = new URL(url).pathname.replace(/^\/|\/_mapping$/g, "").split(",");
       const body: Record<string, unknown> = {};
@@ -149,11 +194,14 @@ describe("ElasticsearchAdapter introspectSchema", () => {
       index: `idx_${String(index).padStart(4, "0")}`,
     }));
     const { adapter, urls } = adapterFor((url) => {
-      if (url.includes("/_cat/indices")) {
-        return new Response(JSON.stringify(indices), { status: 200 });
-      }
-      if (url.includes("/_cat/aliases")) {
-        return new Response("[]", { status: 200 });
+      if (url.includes("/_resolve/index")) {
+        return new Response(
+          JSON.stringify({
+            indices: indices.map((entry) => ({ name: entry.index, attributes: ["open"] })),
+            aliases: [],
+          }),
+          { status: 200 },
+        );
       }
       const names = new URL(url).pathname.replace(/^\/|\/_mapping$/g, "").split(",");
       const body: Record<string, unknown> = {};

@@ -113,8 +113,8 @@ describe("ElasticsearchAdapter against the test cluster", () => {
       { month: "2026-03", amount: 15 },
     ]);
     expect(result.columns).toEqual([
-      { name: "month", type: "unknown", nullable: true },
-      { name: "amount", type: "unknown", nullable: true },
+      { name: "month", type: "string", nullable: true },
+      { name: "amount", type: "number", nullable: true },
     ]);
   });
 
@@ -177,7 +177,10 @@ describe("ElasticsearchAdapter against the test cluster", () => {
     expect(result.rowCount).toBe(0);
     expect(result.rows).toEqual([]);
     expect(result.truncated).toBe(false);
-    expect(result.columns.map((column) => column.name)).toEqual(["id", "status"]);
+    expect(result.columns).toEqual([
+      { name: "id", type: "number", nullable: true },
+      { name: "status", type: "string", nullable: true },
+    ]);
   });
 
   it("reads a paid_orders alias as a view", async () => {

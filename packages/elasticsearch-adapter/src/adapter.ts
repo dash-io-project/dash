@@ -1,4 +1,5 @@
 import {
+  type AdapterColumn,
   type AdapterQuery,
   type AdapterQueryResult,
   type AdapterSchema,
@@ -8,14 +9,12 @@ import {
   QueryValidationError,
 } from "@dash/core";
 import { elasticsearchSession, type ElasticsearchSession } from "./connection.ts";
-import { elasticsearchRequest, scrub } from "./http.ts";
+import { AUTHENTICATE, RESOLVE_INDEX, elasticsearchRequest, scrub } from "./http.ts";
 import { columnsFromProperties, compileSearch, isListedIndex } from "./query.ts";
 
 const MAX_RESOURCES = 200;
 const MAX_MAPPING_BATCH = 40;
 const MAX_MAPPING_PATH = 3_500;
-const CAT_INDICES = "/_cat/indices?format=json&h=index&expand_wildcards=open";
-const CAT_ALIASES = "/_cat/aliases?format=json&h=alias,index&expand_wildcards=open,hidden";
 
 function plainRecord(): Record<string, unknown> {
   return {};
@@ -60,6 +59,7 @@ export function toPlain(value: unknown): unknown {
 function columnsFor(
   rows: Record<string, unknown>[],
   requested: string[] | undefined,
+  mapped: AdapterColumn[] = [],
 ): AdapterQueryResult["columns"] {
   const names: string[] = [];
   if (requested && requested.length > 0) {
@@ -76,9 +76,22 @@ function columnsFor(
       }
     }
   }
+  const known = new Map(mapped.map((column) => [column.name, column]));
   const types = new Map<string, string>();
+  const nullable = new Map<string, boolean>();
+  for (const name of names) {
+    const column = known.get(name);
+    if (!column) {
+      continue;
+    }
+    types.set(name, column.type);
+    nullable.set(name, column.nullable);
+  }
   for (const row of rows) {
     for (const name of names) {
+      if (known.has(name)) {
+        continue;
+      }
       const kind = valueType(row[name]);
       if (!kind) {
         continue;
@@ -93,7 +106,11 @@ function columnsFor(
       }
     }
   }
-  return names.map((name) => ({ name, type: types.get(name) ?? "unknown", nullable: true }));
+  return names.map((name) => ({
+    name,
+    type: types.get(name) ?? "unknown",
+    nullable: nullable.get(name) ?? true,
+  }));
 }
 
 function valueType(value: unknown): string | undefined {
@@ -116,6 +133,20 @@ function valueType(value: unknown): string | undefined {
     return "object";
   }
   return "unknown";
+}
+
+function authenticatedUser(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return false;
+  }
+  const username = (payload as { username?: unknown }).username;
+  const kind = (payload as { authentication_type?: unknown }).authentication_type;
+  return (
+    typeof username === "string" &&
+    username.length > 0 &&
+    typeof kind === "string" &&
+    /^[a-z_]{1,40}$/.test(kind)
+  );
 }
 
 function stringField(record: Record<string, unknown>, key: string): string | undefined {
@@ -172,6 +203,7 @@ export class ElasticsearchAdapter implements DataAdapter {
   readonly kind = "elasticsearch" as const;
   #session: ElasticsearchSession;
   #fetch: typeof fetch;
+  #abort = new AbortController();
   #closed = false;
 
   constructor(session: ElasticsearchSession, fetchImpl: typeof fetch = fetch) {
@@ -189,15 +221,8 @@ export class ElasticsearchAdapter implements DataAdapter {
       return { ok: false, latencyMs: 0, message: "Elasticsearch client is closed" };
     }
     try {
-      const payload = await elasticsearchRequest(this.#session, "/", {
-        method: "GET",
-        fetchImpl: this.#fetch,
-      });
-      const tagline =
-        payload && typeof payload === "object" && !Array.isArray(payload)
-          ? (payload as { tagline?: unknown }).tagline
-          : undefined;
-      if (tagline !== "You Know, for Search") {
+      const payload = await this.#request(AUTHENTICATE, { method: "GET" });
+      if (!authenticatedUser(payload)) {
         return {
           ok: false,
           latencyMs: Date.now() - started,
@@ -221,31 +246,28 @@ export class ElasticsearchAdapter implements DataAdapter {
   async introspectSchema(): Promise<AdapterSchema> {
     this.#assertOpen();
     try {
-      const [indicesBody, aliasesBody] = await Promise.all([
-        elasticsearchRequest(this.#session, CAT_INDICES, { method: "GET", fetchImpl: this.#fetch }),
-        elasticsearchRequest(this.#session, CAT_ALIASES, { method: "GET", fetchImpl: this.#fetch }),
-      ]);
-      const indices = records(indicesBody, "index list");
-      const aliases = records(aliasesBody, "alias list");
+      const resolved = readResolve(await this.#request(RESOLVE_INDEX, { method: "GET" }));
       const indexNames = new Set<string>();
-      for (const entry of indices) {
-        const name = stringField(entry, "index");
-        if (name && isListedIndex(name)) {
-          indexNames.add(name);
+      for (const entry of resolved.indices) {
+        if (!entry.hidden && isListedIndex(entry.name)) {
+          indexNames.add(entry.name);
         }
       }
       const aliasTargets = new Map<string, string[]>();
-      for (const entry of aliases) {
-        const alias = stringField(entry, "alias");
-        const index = stringField(entry, "index");
-        if (!alias || !index || !isListedIndex(alias) || indexNames.has(alias) || !isListedIndex(index)) {
+      for (const entry of resolved.aliases) {
+        if (!isListedIndex(entry.name) || indexNames.has(entry.name)) {
           continue;
         }
-        const targets = aliasTargets.get(alias) ?? [];
-        if (!targets.includes(index)) {
-          targets.push(index);
+        for (const index of entry.indices) {
+          if (!isListedIndex(index)) {
+            continue;
+          }
+          const targets = aliasTargets.get(entry.name) ?? [];
+          if (!targets.includes(index)) {
+            targets.push(index);
+          }
+          aliasTargets.set(entry.name, targets);
         }
-        aliasTargets.set(alias, targets);
       }
       const selected = [...indexNames, ...aliasTargets.keys()]
         .sort((left, right) => left.localeCompare(right))
@@ -262,9 +284,7 @@ export class ElasticsearchAdapter implements DataAdapter {
       }
       const mapping = plainRecord();
       const bodies = await Promise.all(
-        mappingPaths([...needed].sort()).map((path) =>
-          elasticsearchRequest(this.#session, path, { method: "GET", fetchImpl: this.#fetch }),
-        ),
+        mappingPaths([...needed].sort()).map((path) => this.#request(path, { method: "GET" })),
       );
       for (const body of bodies) {
         readMapping(body, mapping);
@@ -299,11 +319,10 @@ export class ElasticsearchAdapter implements DataAdapter {
     this.#assertOpen();
     try {
       const compiled = compileSearch(input);
-      const payload = await elasticsearchRequest(this.#session, `/${compiled.index}/_search`, {
-        method: "POST",
-        body: compiled.body,
-        fetchImpl: this.#fetch,
-      });
+      const [payload, mappingBody] = await Promise.all([
+        this.#request(`/${compiled.index}/_search`, { method: "POST", body: compiled.body }),
+        this.#request(`/${compiled.index}/_mapping`, { method: "GET" }),
+      ]);
       const hits = readHits(payload);
       const page =
         compiled.lookAhead && hits.length > compiled.limit ? hits.slice(0, compiled.limit) : hits;
@@ -313,7 +332,7 @@ export class ElasticsearchAdapter implements DataAdapter {
       const includeId = !requested || requested.length === 0 || requested.includes("_id");
       const rows = page.map((hit) => this.#row(hit, includeId, projected));
       return {
-        columns: columnsFor(rows, requested),
+        columns: columnsFor(rows, requested, columnsFromMapping(mappingBody)),
         rows,
         rowCount: rows.length,
         truncated: compiled.lookAhead ? hits.length > compiled.limit : rows.length === compiled.limit,
@@ -325,6 +344,16 @@ export class ElasticsearchAdapter implements DataAdapter {
 
   async close(): Promise<void> {
     this.#closed = true;
+    this.#abort.abort();
+  }
+
+  #request(path: string, init: { method: "GET" | "POST"; body?: unknown }): Promise<unknown> {
+    return elasticsearchRequest(this.#session, path, {
+      method: init.method,
+      fetchImpl: this.#fetch,
+      signal: this.#abort.signal,
+      ...(init.body === undefined ? {} : { body: init.body }),
+    });
   }
 
   #row(
@@ -393,6 +422,20 @@ function mappingPaths(names: readonly string[]): string[] {
   return paths;
 }
 
+function columnsFromMapping(body: unknown): AdapterColumn[] {
+  const mapping = plainRecord();
+  readMapping(body, mapping);
+  const names = Object.keys(mapping);
+  if (names.length === 0) {
+    return [];
+  }
+  const groups = names.map((name) => columnsFromProperties(propertiesOf(mapping, name)));
+  if (groups.length === 1) {
+    return groups[0] ?? [];
+  }
+  return mergeColumns(groups);
+}
+
 function readMapping(body: unknown, into: Record<string, unknown>): void {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     throw new Error("Elasticsearch returned an unexpected mapping");
@@ -405,16 +448,45 @@ function readMapping(body: unknown, into: Record<string, unknown>): void {
   }
 }
 
-function records(value: unknown, label: string): Record<string, unknown>[] {
-  if (!Array.isArray(value)) {
-    throw new Error(`Elasticsearch returned an unexpected ${label}`);
+function readResolve(body: unknown): {
+  indices: { name: string; hidden: boolean }[];
+  aliases: { name: string; indices: string[] }[];
+} {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new Error("Elasticsearch returned an unexpected index list");
   }
-  return value.map((entry) => {
-    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-      throw new Error(`Elasticsearch returned an unexpected ${label}`);
-    }
-    return entry as Record<string, unknown>;
-  });
+  const indicesValue = (body as { indices?: unknown }).indices;
+  const aliasesValue = (body as { aliases?: unknown }).aliases;
+  if (!Array.isArray(indicesValue) || !Array.isArray(aliasesValue)) {
+    throw new Error("Elasticsearch returned an unexpected index list");
+  }
+  return {
+    indices: indicesValue.map((entry) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+        throw new Error("Elasticsearch returned an unexpected index list");
+      }
+      const name = stringField(entry as Record<string, unknown>, "name");
+      if (!name) {
+        throw new Error("Elasticsearch returned an unexpected index list");
+      }
+      const attributes = (entry as { attributes?: unknown }).attributes;
+      return {
+        name,
+        hidden: Array.isArray(attributes) && attributes.includes("hidden"),
+      };
+    }),
+    aliases: aliasesValue.map((entry) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+        throw new Error("Elasticsearch returned an unexpected index list");
+      }
+      const name = stringField(entry as Record<string, unknown>, "name");
+      const targets = (entry as { indices?: unknown }).indices;
+      if (!name || !Array.isArray(targets) || targets.some((target) => typeof target !== "string")) {
+        throw new Error("Elasticsearch returned an unexpected index list");
+      }
+      return { name, indices: targets as string[] };
+    }),
+  };
 }
 
 function readHits(payload: unknown): Record<string, unknown>[] {

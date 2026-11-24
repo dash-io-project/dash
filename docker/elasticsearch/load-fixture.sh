@@ -2,6 +2,8 @@
 # Idempotent fixture for @dash/adapter-elasticsearch.
 # Indices use keyword and integer mappings so term and range filters match
 # the values Dash sends. paid_orders is an alias over a hidden index.
+# The dash role has the index privileges read and view_index_metadata.
+# The role has no cluster privilege.
 
 set -euo pipefail
 
@@ -15,7 +17,6 @@ json_password="${json_password//\"/\\\"}"
 auth=(-u "elastic:${password}" -H "Content-Type: application/json")
 
 curl -sf "${auth[@]}" -X PUT "http://127.0.0.1:9200/_security/role/dash_read" -d '{
-  "cluster": ["monitor"],
   "indices": [
     {
       "names": ["orders", "revenue", "paid_orders"],

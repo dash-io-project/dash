@@ -4,8 +4,10 @@ const MAX_BODY = 8_000_000;
 const REQUEST_TIMEOUT_MS = 10_000;
 
 const MAX_PATH = 3_500;
-const CAT_INDICES = "/_cat/indices?format=json&h=index&expand_wildcards=open";
-const CAT_ALIASES = "/_cat/aliases?format=json&h=alias,index&expand_wildcards=open,hidden";
+/** Path for index and alias names. The caller needs `view_index_metadata`. */
+export const RESOLVE_INDEX = "/_resolve/index/*?expand_wildcards=open,hidden";
+/** Any authenticated user can call this path. It needs no cluster privilege. */
+export const AUTHENTICATE = "/_security/_authenticate";
 const MAPPING_BATCH =
   /^\/[a-z][a-z0-9_-]{0,254}(?:,[a-z][a-z0-9_-]{0,254}){0,199}\/_mapping$/;
 const SEARCH = /^\/[a-z][a-z0-9_-]{0,254}\/_search$/;
@@ -23,7 +25,7 @@ export class ElasticsearchHttpError extends Error {
 export async function elasticsearchRequest(
   session: ElasticsearchSession,
   path: string,
-  init: { method: "GET" | "POST"; body?: unknown; fetchImpl?: typeof fetch },
+  init: { method: "GET" | "POST"; body?: unknown; fetchImpl?: typeof fetch; signal?: AbortSignal },
 ): Promise<unknown> {
   assertPath(path, init.method);
   // Compare parsed origins. `https://host:443` and `https://host` are the same
@@ -33,12 +35,13 @@ export async function elasticsearchRequest(
     throw new Error("Elasticsearch request failed");
   }
   const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
   let response: Response;
   try {
     response = await (init.fetchImpl ?? fetch)(url, {
       method: init.method,
       redirect: "manual",
-      signal: timeout,
+      signal,
       headers: {
         Authorization: session.authorization,
         Accept: "application/json",
@@ -47,7 +50,7 @@ export async function elasticsearchRequest(
       ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
     });
   } catch (error) {
-    throw scrubbed(error, session, timeout);
+    throw scrubbed(error, session, timeout, init.signal);
   }
   if (response.status >= 300 && response.status < 400) {
     await response.body?.cancel();
@@ -66,7 +69,7 @@ export async function elasticsearchRequest(
   try {
     payload = await readJson(response);
   } catch (error) {
-    throw scrubbed(error, session, timeout);
+    throw scrubbed(error, session, timeout, init.signal);
   }
   if (response.status === 401) {
     throw new ElasticsearchHttpError(401, scrub("Elasticsearch rejected the credentials", session.secrets));
@@ -81,7 +84,7 @@ function assertPath(path: string, method: "GET" | "POST"): void {
   if (path.length > MAX_PATH || path.includes("//") || path.includes("\\") || path.includes("\0")) {
     throw new Error("Elasticsearch request failed");
   }
-  if (method === "GET" && (path === "/" || path === CAT_INDICES || path === CAT_ALIASES || MAPPING_BATCH.test(path))) {
+  if (method === "GET" && (path === "/" || path === AUTHENTICATE || path === RESOLVE_INDEX || MAPPING_BATCH.test(path))) {
     return;
   }
   if (method === "POST" && SEARCH.test(path)) {
@@ -106,12 +109,20 @@ function errorMessage(body: unknown): string {
   return "Elasticsearch request failed";
 }
 
-function scrubbed(error: unknown, session: ElasticsearchSession, timeout: AbortSignal): Error {
+function scrubbed(
+  error: unknown,
+  session: ElasticsearchSession,
+  timeout: AbortSignal,
+  client?: AbortSignal,
+): Error {
   if (error instanceof ElasticsearchHttpError) {
     return new ElasticsearchHttpError(error.status, scrub(error.message, session.secrets));
   }
   if (error instanceof Error && /Elasticsearch (response|request|returned)/.test(error.message)) {
     return new Error(scrub(error.message, session.secrets));
+  }
+  if (client?.aborted) {
+    return new Error("Elasticsearch client is closed");
   }
   if (timeout.aborted) {
     return new Error("Elasticsearch request timed out");
