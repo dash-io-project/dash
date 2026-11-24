@@ -14,6 +14,7 @@ import { MysqlAdapter } from "@dash/adapter-mysql";
 import { PostgresAdapter } from "@dash/adapter-postgres";
 import { RedshiftAdapter } from "@dash/adapter-redshift";
 import { OpenSearchAdapter } from "@dash/adapter-opensearch";
+import { OracleAdapter } from "@dash/adapter-oracle";
 import { StripeAdapter } from "@dash/adapter-stripe";
 import { SnowflakeAdapter } from "@dash/adapter-snowflake";
 import { ServerClosingError, isServerClosing, onServerClose } from "../shutdown.ts";
@@ -47,6 +48,8 @@ function createAdapter(config: ConnectionConfig): DataAdapter {
       return RedshiftAdapter.fromConfig(config);
     case "stripe":
       return StripeAdapter.fromConfig(config);
+    case "oracle":
+      return OracleAdapter.fromConfig(config);
     case "mongodb":
       return MongoAdapter.fromConfig(config);
     case "documentdb":

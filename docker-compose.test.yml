@@ -429,6 +429,26 @@ services:
       retries: 40
       start_period: 120s
 
+  oracle:
+    image: gvenzl/oracle-free:23.26.3-slim-faststart
+    container_name: dash-test-oracle
+    environment:
+      ORACLE_PASSWORD: Dash_test1
+      APP_USER: dash
+      APP_USER_PASSWORD: Dash_test1
+    ports:
+      - "127.0.0.1:${DASH_TEST_ORACLE_PORT:-15219}:1521"
+    shm_size: 1gb
+    volumes:
+      - ./docker/oracle/init:/container-entrypoint-startdb.d:ro
+      - ./docker/oracle/healthcheck.sh:/opt/dash/healthcheck.sh:ro
+    healthcheck:
+      test: ["CMD", "bash", "/opt/dash/healthcheck.sh"]
+      interval: 10s
+      timeout: 20s
+      retries: 30
+      start_period: 180s
+
 volumes:
   dash-test-postgres:
   dash-test-mysql:

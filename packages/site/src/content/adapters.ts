@@ -16,6 +16,7 @@ export const adapters: readonly Adapter[] = [
   { id: "mariadb", name: "MariaDB", kind: "sql", note: "Relational database" },
   { id: "db2", name: "IBM Db2", kind: "sql", note: "Relational database" },
   { id: "hana", name: "SAP HANA", kind: "sql", note: "Relational database" },
+  { id: "oracle", name: "Oracle Database", kind: "sql", note: "Relational database" },
   {
     id: "snowflake",
     name: "Snowflake",
