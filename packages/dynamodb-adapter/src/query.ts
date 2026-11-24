@@ -188,6 +188,32 @@ export function boundedPageLimit(compiled: CompiledRead, matched: number): numbe
   return remaining > 0 ? remaining : undefined;
 }
 
+/** Evaluated items this read may touch. A limited page may read one extra item. */
+export function evaluatedItemCeiling(compiled: CompiledRead, cap: number): number {
+  return boundedPageLimit(compiled, 0) === undefined ? cap : cap + 1;
+}
+
+/**
+ * The next page limit.
+ * Undefined means DynamoDB applies no Limit.
+ */
+export function requestLimit(
+  compiled: CompiledRead,
+  matched: number,
+  scanned: number,
+  cap: number,
+): number | undefined {
+  const wanted = boundedPageLimit(compiled, matched);
+  if (wanted === undefined) {
+    return undefined;
+  }
+  const room = evaluatedItemCeiling(compiled, cap) - scanned;
+  if (room <= 0) {
+    return undefined;
+  }
+  return Math.min(wanted, room);
+}
+
 export function exceedsUnfilteredWindow(compiled: CompiledRead, cap: number): boolean {
   const needsComplete =
     compiled.residual.length > 0 || (compiled.orderBy.length > 0 && !compiled.nativeOrder);

@@ -7,6 +7,7 @@ All notable changes to Dash are documented here.
 ### Fixed
 
 - The website lists DynamoDB with the shipped adapters.
+- Dash returns 10,000 DynamoDB rows when one more row exists. Dash marks that page truncated.
 - MCP App resources include CSS after Vite emits it. Charts have a fixed content height, and single-widget views show one title.
 
 ### Added

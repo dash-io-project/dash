@@ -13,9 +13,10 @@ import { scrubSecrets, dynamoSession, type DynamoDbSession } from "./connection.
 import { dynamoCall } from "./http.ts";
 import {
   compareRows,
-  boundedPageLimit,
   compileRead,
+  evaluatedItemCeiling,
   exceedsUnfilteredWindow,
+  requestLimit,
   dynamoTableName,
   matchesResidual,
   projectRow,
@@ -167,6 +168,7 @@ export class DynamoDbAdapter implements DataAdapter {
     const needsComplete =
       compiled.residual.length > 0 || (compiled.orderBy.length > 0 && !compiled.nativeOrder);
     const need = compiled.offset + compiled.limit + 1;
+    const ceiling = evaluatedItemCeiling(compiled, SCAN_CAP);
     const matches: Record<string, unknown>[] = [];
     const seen = new Set<string>();
     let startKey: Record<string, unknown> | undefined;
@@ -184,12 +186,9 @@ export class DynamoDbAdapter implements DataAdapter {
       if (startKey) {
         request.ExclusiveStartKey = startKey;
       }
-      const wanted = boundedPageLimit(compiled, matches.length);
-      if (wanted !== undefined) {
-        const room = SCAN_CAP - scanned;
-        if (room > 0) {
-          request.Limit = Math.min(wanted, room);
-        }
+      const pageLimit = requestLimit(compiled, matches.length, scanned, SCAN_CAP);
+      if (pageLimit !== undefined) {
+        request.Limit = pageLimit;
       }
       const page = readPage(await this.#call(compiled.operation, request, deadline));
       if (page.scannedCount === 0 && page.lastKey && page.items.length === 0) {
@@ -209,7 +208,7 @@ export class DynamoDbAdapter implements DataAdapter {
       if (!page.lastKey) {
         break;
       }
-      if (scanned >= SCAN_CAP) {
+      if (scanned >= ceiling) {
         throw new Error(`DynamoDB scan stopped after ${SCAN_CAP} items`);
       }
       startKey = page.lastKey;
