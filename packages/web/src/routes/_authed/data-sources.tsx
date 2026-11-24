@@ -51,7 +51,8 @@ type SourceKind =
   | "redshift"
   | "stripe"
   | "opensearch"
-  | "cockroachdb";
+  | "cockroachdb"
+  | "couchbase";
 
 type ReadPreference =
   | "primary"
@@ -75,6 +76,7 @@ const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "databricks", label: "Databricks SQL" },
   { value: "stripe", label: "Stripe" },
   { value: "opensearch", label: "Amazon OpenSearch" },
+  { value: "couchbase", label: "Couchbase" },
 ];
 
 const READ_PREFERENCE_OPTIONS: SelectOption<ReadPreference>[] = [
@@ -102,6 +104,7 @@ const URI_PLACEHOLDER: Record<SourceKind, string> = {
     "databricks://token:dapi000@adb-000.0.azuredatabricks.net/sql/1.0/warehouses/abc?catalog=main&schema=default",
   stripe: "stripe://sk_test_000@api.stripe.com",
   opensearch: "https://user:password@search-domain.us-east-1.es.amazonaws.com?region=us-east-1",
+  couchbase: "couchbase://user:password@127.0.0.1:11210/bucket?scope=_default",
 };
 
 function sslFromDb2Uri(value: string): boolean | undefined {
@@ -237,6 +240,8 @@ const emptyForm = {
   validateCertificate: true,
   cluster: "",
   sslCa: "",
+  bucket: "",
+  scope: "_default",
 };
 
 function DataSourcesPage() {
@@ -463,6 +468,23 @@ function DataSourcesPage() {
                             encrypt: form.encrypt,
                             sslValidateCertificate: form.validateCertificate,
                           }
+                    : form.kind === "couchbase"
+                      ? form.useConnectionString
+                        ? {
+                            kind: "couchbase" as const,
+                            connectionString: form.connectionString.trim(),
+                            ...(form.tls ? { tls: true } : {}),
+                          }
+                        : {
+                            kind: "couchbase" as const,
+                            host: form.host.trim(),
+                            port: Number(form.port),
+                            bucket: form.bucket.trim(),
+                            scope: form.scope.trim() || undefined,
+                            user: form.user,
+                            password: form.password,
+                            ...(form.tls ? { tls: true } : {}),
+                          }
                 : form.useConnectionString
                   ? {
                       kind: "postgres" as const,
@@ -539,7 +561,7 @@ function DataSourcesPage() {
       <p className="max-w-3xl text-muted-foreground">
         Paste a connection URI, or enter the fields. Dash tests Postgres, MySQL, MariaDB, CockroachDB, IBM Db2,
         SAP HANA, Snowflake, MongoDB, Amazon DocumentDB, BigQuery, Databricks SQL, Redshift, Stripe,
-        and OpenSearch on save.
+        OpenSearch, and Couchbase on save.
         {isAdmin ? null : " Only administrators can add or remove sources."}
       </p>
 
@@ -556,7 +578,7 @@ function DataSourcesPage() {
             ) : null
           }
         >
-          Add a connection for PostgreSQL, MySQL, MariaDB, CockroachDB, IBM Db2, SAP HANA, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, or OpenSearch.
+          Add a connection for PostgreSQL, MySQL, MariaDB, CockroachDB, IBM Db2, SAP HANA, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, OpenSearch, or Couchbase.
         </EmptyState>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -654,7 +676,9 @@ function DataSourcesPage() {
                                   ? "30015"
                                   : kind === "cockroachdb"
                                     ? "26257"
-                                    : form.port,
+                                    : kind === "couchbase"
+                                      ? "11210"
+                                      : form.port,
                     user:
                       kind === "postgres"
                         ? "postgres"
@@ -1437,6 +1461,77 @@ function DataSourcesPage() {
                     </p>
                   </>
                 )}
+              </>
+            ) : form.kind === "couchbase" ? (
+              <>
+                {form.useConnectionString ? (
+                  <ConnectionUriField
+                    kind="couchbase"
+                    value={form.connectionString}
+                    onChange={(connectionString) => setForm({ ...form, connectionString })}
+                  />
+                ) : (
+                  <>
+                    <div className="grid grid-cols-3 gap-3">
+                      <Field label="Host">
+                        <TextInput
+                          value={form.host}
+                          onChange={(event) => setForm({ ...form, host: event.target.value })}
+                          required
+                        />
+                      </Field>
+                      <Field label="Port">
+                        <TextInput
+                          value={form.port}
+                          onChange={(event) => setForm({ ...form, port: event.target.value })}
+                          required
+                        />
+                      </Field>
+                      <Field label="Bucket">
+                        <TextInput
+                          value={form.bucket}
+                          onChange={(event) => setForm({ ...form, bucket: event.target.value })}
+                          required
+                        />
+                      </Field>
+                    </div>
+                    <Field label="Scope">
+                      <TextInput
+                        value={form.scope}
+                        onChange={(event) => setForm({ ...form, scope: event.target.value })}
+                        placeholder="_default"
+                      />
+                    </Field>
+                    <Field label="User">
+                      <TextInput
+                        value={form.user}
+                        onChange={(event) => setForm({ ...form, user: event.target.value })}
+                        required
+                      />
+                    </Field>
+                    <Field label="Password">
+                      <TextInput
+                        type="password"
+                        value={form.password}
+                        onChange={(event) => setForm({ ...form, password: event.target.value })}
+                        required
+                        autoComplete="off"
+                      />
+                    </Field>
+                  </>
+                )}
+                <ConnectionModeToggle
+                  usingUri={form.useConnectionString}
+                  onChange={(useConnectionString) => setForm({ ...form, useConnectionString })}
+                />
+                <label className="check-row flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={form.tls}
+                    onChange={(event) => setForm({ ...form, tls: event.target.checked })}
+                  />
+                  Use TLS
+                </label>
               </>
             ) : null}
             {error ? <p className="text-negative">{error}</p> : null}

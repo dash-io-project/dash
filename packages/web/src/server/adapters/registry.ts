@@ -1,6 +1,7 @@
 import { type ConnectionConfig, type DataAdapter } from "@dash/core";
 import { BigQueryAdapter } from "@dash/adapter-bigquery";
 import { CockroachAdapter } from "@dash/adapter-cockroachdb";
+import { CouchbaseAdapter } from "@dash/adapter-couchbase";
 import { DatabricksAdapter } from "@dash/adapter-databricks";
 import { Db2Adapter } from "@dash/adapter-db2";
 import { DocumentDbAdapter } from "@dash/adapter-documentdb";
@@ -54,6 +55,8 @@ function createAdapter(config: ConnectionConfig): DataAdapter {
       return DatabricksAdapter.fromConfig(config);
     case "opensearch":
       return OpenSearchAdapter.fromConfig(config);
+    case "couchbase":
+      return CouchbaseAdapter.fromConfig(config);
   }
 }
 

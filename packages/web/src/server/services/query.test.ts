@@ -180,6 +180,33 @@ describe("testConnectionConfig", () => {
     expect(result.message).not.toContain("super-secret");
   });
 
+  it("reports an invalid Couchbase host without echoing the password", async () => {
+    const result = await testConnectionConfig({
+      kind: "couchbase",
+      host: "not a host",
+      bucket: "dash",
+      user: "dash",
+      password: "super-secret",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.latencyMs).toBe(0);
+    expect(result.message).toMatch(/host/i);
+    expect(result.message).not.toContain("not a host");
+    expect(result.message).not.toContain("super-secret");
+  });
+
+  it("rejects a Couchbase URI that sets a driver option", async () => {
+    const result = await testConnectionConfig({
+      kind: "couchbase",
+      connectionString: "couchbase://dash:super-secret@127.0.0.1:11210/dash?tls_verify=none",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.latencyMs).toBe(0);
+    expect(result.message).toMatch(/unsupported couchbase connection parameter/i);
+    expect(result.message).not.toContain("super-secret");
+    expect(result.message).not.toMatch(/tls_verify/i);
+  });
+
   it("rejects a Stripe URI that names another host without echoing the key", async () => {
     const result = await testConnectionConfig({
       kind: "stripe",

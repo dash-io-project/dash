@@ -34,6 +34,7 @@ case "$action" in
     echo "OpenSearch test cluster is ready at http://127.0.0.1:${DASH_TEST_OPENSEARCH_PORT:-9209}"
     echo "DocumentDB test cluster is ready at mongodb://dash:dash@127.0.0.1:${DASH_TEST_DOCUMENTDB_PORT:-27099}/dash?authSource=admin (TLS, CA at docker/documentdb/runtime/ca.pem)"
     echo "CockroachDB test cluster is ready at postgresql://dash:dash@127.0.0.1:${DASH_TEST_COCKROACHDB_PORT:-26229}/dash (CA /tmp/dash-test-cockroach-certs/ca.crt)"
+    echo "Couchbase test cluster is ready at couchbase://dash:dashdash@127.0.0.1:${DASH_TEST_COUCHBASE_PORT:-11299}/dash?scope=analytics&network=external"
     ;;
   stop)
     "${compose[@]}" down --volumes --remove-orphans
