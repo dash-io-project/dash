@@ -75,6 +75,7 @@ it("builds the client from parsed fields and keeps the password out of the URL",
       clickhouse_settings: {
         readonly: "1",
         max_execution_time: 60,
+        cancel_http_readonly_queries_on_client_close: 1,
       },
     });
     expect(options.url).not.toContain("super-secret");

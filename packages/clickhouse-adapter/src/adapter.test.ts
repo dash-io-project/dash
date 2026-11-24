@@ -140,6 +140,7 @@ describe("ClickHouseAdapter against the test cluster", () => {
       { filters: [{ column: "region", op: "ilike", value: "%EUROPE%" }], ids: [1, 2] },
       { filters: [{ column: "note", op: "eq", value: null }], ids: [2, 4] },
       { filters: [{ column: "note", op: "neq", value: null }], ids: [1, 3] },
+      { filters: [{ column: "status", op: "eq", value: "paid' OR '1'='1" }], ids: [] },
     ];
 
     for (const testCase of cases) {
@@ -254,9 +255,18 @@ describe("ClickHouseAdapter connection setup", () => {
 
   it("closes the client", async () => {
     const adapter = ClickHouseAdapter.fromConfig(clusterConfig());
-    await requireCluster(adapter);
-    await adapter.close();
-    const result = await adapter.testConnection();
-    expect(result.ok).toBe(false);
+    try {
+      await requireCluster(adapter);
+      await adapter.close();
+      const result = await adapter.testConnection();
+      expect(result.ok).toBe(false);
+      expect(result.message).toMatch(/closed/);
+      await expect(adapter.query({ resource: "orders", columns: ["id"], limit: 1 })).rejects.toThrow(
+        /closed/,
+      );
+      await adapter.close();
+    } finally {
+      await adapter.close();
+    }
   });
 });

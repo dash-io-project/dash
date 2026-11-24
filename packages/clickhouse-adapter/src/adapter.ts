@@ -47,8 +47,13 @@ function isView(engine: string): boolean {
 }
 
 function wrapClient(client: ClickHouseClient): SqlClient {
+  // The HTTP client opens a new socket after close. This flag blocks a later call.
+  let closed = false;
   return {
     async query(text, params) {
+      if (closed) {
+        throw new Error("ClickHouse connection is closed");
+      }
       const result = await client.query({
         query: text,
         ...(params && Object.keys(params).length > 0 ? { query_params: params } : {}),
@@ -63,6 +68,10 @@ function wrapClient(client: ClickHouseClient): SqlClient {
       return { rows, ...(columns ? { columns } : {}) };
     },
     async close() {
+      if (closed) {
+        return;
+      }
+      closed = true;
       await client.close();
     },
   };
@@ -79,6 +88,7 @@ function clientFromSession(session: ReturnType<typeof clickhouseSession>): Click
     clickhouse_settings: {
       readonly: "1",
       max_execution_time: 60,
+      cancel_http_readonly_queries_on_client_close: 1,
     },
   });
 }
