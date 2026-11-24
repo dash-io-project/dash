@@ -119,6 +119,33 @@ export interface StripeConnectionConfig {
   apiEndpoint?: string;
 }
 
+export interface OpenSearchConnectionConfig {
+  kind: "opensearch";
+  /**
+   * Node origin, such as `https://search-domain.us-east-1.es.amazonaws.com`
+   * or `http://127.0.0.1:9209`. `http` is accepted only for a loopback host.
+   * Put the user and password in `username` and `password`, not in this URL.
+   */
+  node?: string;
+  /**
+   * `https://[user[:password]@]host[:port][?region=&service=]`.
+   * `opensearch://` means `https://`. `http` is accepted only for a loopback host.
+   * The only query keys are `region` and `service` (`es` or `aoss`).
+   */
+  connectionString?: string;
+  /** Basic auth user. Do not set this when `region` is set. */
+  username?: string;
+  password?: string;
+  /** When set, each request is signed with AWS SigV4. Do not also set basic auth. */
+  region?: string;
+  /** `es` for Amazon OpenSearch Service. `aoss` for OpenSearch Serverless. Default `es`. */
+  service?: "es" | "aoss";
+  /** Static AWS credentials. Omit both keys to use the default credential chain. */
+  accessKeyId?: string;
+  secretAccessKey?: string;
+  sessionToken?: string;
+}
+
 export interface BigQueryConnectionConfig {
   kind: "bigquery";
   projectId: string;
@@ -150,4 +177,5 @@ export type ConnectionConfig =
   | BigQueryConnectionConfig
   | DatabricksConnectionConfig
   | RedshiftConnectionConfig
-  | StripeConnectionConfig;
+  | StripeConnectionConfig
+  | OpenSearchConnectionConfig;

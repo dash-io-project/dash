@@ -466,4 +466,45 @@ describe("data source records", () => {
     expect(malformed.summary).toEqual({ endpoint: "", mode: "", restricted: false });
     expect(JSON.stringify(malformed.summary)).not.toContain("sk_test_supersecret");
   });
+
+  it("summarizes an OpenSearch source without the password or the secret key", async () => {
+    const admin = await createUser({
+      email: "opensearch-admin@example.com",
+      name: "Admin",
+      password: "password123",
+      role: "admin",
+    });
+    const created = await createDataSource({
+      name: "Search",
+      description: "OpenSearch",
+      config: {
+        kind: "opensearch",
+        node: "https://search-domain.us-east-1.es.amazonaws.com",
+        region: "us-east-1",
+        accessKeyId: "AKIDEXAMPLE",
+        secretAccessKey: "super-secret",
+      },
+      createdBy: admin.id,
+    });
+    expect(created.kind).toBe("opensearch");
+    expect(created.summary).toEqual({
+      node: "search-domain.us-east-1.es.amazonaws.com",
+      auth: "sigv4",
+      region: "us-east-1",
+      service: "es",
+    });
+    expect(JSON.stringify(created.summary)).not.toContain("super-secret");
+
+    const malformed = await createDataSource({
+      name: "Broken search",
+      description: "Bad URI",
+      config: {
+        kind: "opensearch",
+        connectionString: "https://dash:super-secret@evil.example?debug=1",
+      },
+      createdBy: admin.id,
+    });
+    expect(malformed.summary).toEqual({ node: "", auth: "", region: "", service: "" });
+    expect(JSON.stringify(malformed.summary)).not.toContain("super-secret");
+  });
 });

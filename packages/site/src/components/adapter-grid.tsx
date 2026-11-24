@@ -1,4 +1,14 @@
-import { Boxes, Cloud, CreditCard, Database, Layers, Leaf, Plus, Snowflake } from "lucide-react";
+import {
+  Boxes,
+  Cloud,
+  CreditCard,
+  Database,
+  Layers,
+  Leaf,
+  Plus,
+  Search,
+  Snowflake,
+} from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { type Adapter, adapters } from "~/content/adapters";
 
@@ -14,6 +24,7 @@ const icons: Record<string, IconComponent> = {
   databricks: Layers,
   redshift: Boxes,
   stripe: CreditCard,
+  opensearch: Search,
 };
 
 const tileClasses = "flex items-center gap-4 bg-card p-5";

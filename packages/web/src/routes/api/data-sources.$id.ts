@@ -96,6 +96,18 @@ const patchSchema = z.object({
         apiEndpoint: z.string().optional(),
       }),
       z.object({
+        kind: z.literal("opensearch"),
+        node: z.string().optional(),
+        connectionString: z.string().optional(),
+        username: z.string().optional(),
+        password: z.string().optional(),
+        region: z.string().optional(),
+        service: z.enum(["es", "aoss"]).optional(),
+        accessKeyId: z.string().optional(),
+        secretAccessKey: z.string().optional(),
+        sessionToken: z.string().optional(),
+      }),
+      z.object({
         kind: z.literal("bigquery"),
         projectId: z.string().min(1),
         dataset: z.string().optional(),

@@ -2,6 +2,7 @@ import { bigQueryEndpoint, isGoogleApiHost } from "@dash/adapter-bigquery";
 import { db2PublicSummary } from "@dash/adapter-db2";
 import { databricksPublicSummary } from "@dash/adapter-databricks";
 import { redshiftPublicSummary } from "@dash/adapter-redshift";
+import { openSearchPublicSummary } from "@dash/adapter-opensearch";
 import { stripePublicSummary } from "@dash/adapter-stripe";
 import { mongoUsesTls, parseMongoConnectionString } from "@dash/adapter-mongodb";
 import { parseMysqlConnectionString } from "@dash/adapter-mysql";
@@ -100,6 +101,9 @@ function summarize(config: ConnectionConfig): DataSourceRecord["summary"] {
   }
   if (config.kind === "stripe") {
     return stripePublicSummary(config);
+  }
+  if (config.kind === "opensearch") {
+    return openSearchPublicSummary(config);
   }
   if (config.kind === "mongodb") {
     const usingUri = Boolean(config.connectionString) && !config.host;

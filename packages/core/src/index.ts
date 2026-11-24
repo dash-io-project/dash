@@ -52,6 +52,7 @@ export type {
   MysqlConnectionConfig,
   PostgresConnectionConfig,
   RedshiftConnectionConfig,
+  OpenSearchConnectionConfig,
   SnowflakeConnectionConfig,
   StripeConnectionConfig,
 } from "./datasource.ts";
