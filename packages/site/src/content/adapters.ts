@@ -39,6 +39,7 @@ export const adapters: readonly Adapter[] = [
     note: "Cloud warehouse",
   },
   { id: "stripe", name: "Stripe", kind: "saas", note: "Payments and billing" },
+  { id: "opensearch", name: "Amazon OpenSearch", kind: "document", note: "Search and analytics" },
 ];
 
 export const adapterCount = adapters.length;

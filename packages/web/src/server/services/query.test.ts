@@ -90,6 +90,18 @@ describe("testConnectionConfig", () => {
     expect(result.message).not.toContain("super-secret");
   });
 
+  it("rejects an OpenSearch URI that sets an unknown parameter without echoing the password", async () => {
+    const result = await testConnectionConfig({
+      kind: "opensearch",
+      connectionString: "https://dash:super-secret@search.example.com?debug=1",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.latencyMs).toBe(0);
+    expect(result.message).toMatch(/unsupported opensearch connection parameter/i);
+    expect(result.message).not.toContain("super-secret");
+    expect(result.message).not.toMatch(/debug/i);
+  });
+
   it("rejects a Stripe URI that names another host without echoing the key", async () => {
     const result = await testConnectionConfig({
       kind: "stripe",

@@ -46,7 +46,8 @@ type SourceKind =
   | "bigquery"
   | "databricks"
   | "redshift"
-  | "stripe";
+  | "stripe"
+  | "opensearch";
 
 const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "postgres", label: "PostgreSQL" },
@@ -58,6 +59,7 @@ const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "bigquery", label: "Google BigQuery" },
   { value: "databricks", label: "Databricks SQL" },
   { value: "stripe", label: "Stripe" },
+  { value: "opensearch", label: "Amazon OpenSearch" },
 ];
 
 const URI_PLACEHOLDER: Record<SourceKind, string> = {
@@ -71,6 +73,7 @@ const URI_PLACEHOLDER: Record<SourceKind, string> = {
   databricks:
     "databricks://token:dapi000@adb-000.0.azuredatabricks.net/sql/1.0/warehouses/abc?catalog=main&schema=default",
   stripe: "stripe://sk_test_000@api.stripe.com",
+  opensearch: "https://user:password@search-domain.us-east-1.es.amazonaws.com?region=us-east-1",
 };
 
 function sslFromDb2Uri(value: string): boolean | undefined {
@@ -193,6 +196,12 @@ const emptyForm = {
   token: "",
   catalog: "",
   apiKey: "",
+  node: "",
+  region: "",
+  osService: "es" as "es" | "aoss",
+  accessKeyId: "",
+  secretAccessKey: "",
+  sessionToken: "",
 };
 
 function DataSourcesPage() {
@@ -346,6 +355,23 @@ function DataSourcesPage() {
                             apiKey: form.apiKey,
                             apiEndpoint: form.apiEndpoint.trim() || undefined,
                           }
+                    : form.kind === "opensearch"
+                      ? form.useConnectionString
+                        ? {
+                            kind: "opensearch" as const,
+                            connectionString: form.connectionString.trim(),
+                          }
+                        : {
+                            kind: "opensearch" as const,
+                            node: form.node.trim(),
+                            username: form.user.trim() || undefined,
+                            password: form.password || undefined,
+                            region: form.region.trim() || undefined,
+                            service: form.region.trim() ? form.osService : undefined,
+                            accessKeyId: form.accessKeyId.trim() || undefined,
+                            secretAccessKey: form.secretAccessKey || undefined,
+                            sessionToken: form.sessionToken || undefined,
+                          }
                 : form.useConnectionString
                   ? {
                       kind: "postgres" as const,
@@ -421,7 +447,7 @@ function DataSourcesPage() {
       <PageBody className="space-y-6">
       <p className="max-w-3xl text-muted-foreground">
         Paste a connection URI, or enter the fields. Dash tests Postgres, MySQL, IBM Db2, Snowflake, MongoDB,
-        BigQuery, Databricks SQL, Redshift, and Stripe on save.
+        BigQuery, Databricks SQL, Redshift, Stripe, and OpenSearch on save.
         {isAdmin ? null : " Only administrators can add or remove sources."}
       </p>
 
@@ -438,7 +464,7 @@ function DataSourcesPage() {
             ) : null
           }
         >
-          Add a PostgreSQL, MySQL, IBM Db2, Snowflake, MongoDB, BigQuery, Databricks SQL, or Redshift connection to start querying.
+          Add a PostgreSQL, MySQL, IBM Db2, Snowflake, MongoDB, BigQuery, Databricks SQL, Redshift, or OpenSearch connection to start querying.
         </EmptyState>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -543,6 +569,12 @@ function DataSourcesPage() {
                     host: enteringDatabricks && form.host.trim() === "localhost" ? "" : form.host,
                     apiEndpoint: kind === form.kind ? form.apiEndpoint : "",
                     apiKey: kind === form.kind ? form.apiKey : "",
+                    node: "",
+                    region: "",
+                    osService: "es",
+                    accessKeyId: "",
+                    secretAccessKey: "",
+                    sessionToken: "",
                     authSource: form.authSource || "admin",
                     useConnectionString: true,
                   });
@@ -968,6 +1000,101 @@ function DataSourcesPage() {
                       <p className="text-[13px] text-muted-foreground">
                         Leave this empty to call https://api.stripe.com. For the local fixture, use
                         http://127.0.0.1:12119.
+                      </p>
+                    </Field>
+                  </>
+                )}
+                <ConnectionModeToggle
+                  usingUri={form.useConnectionString}
+                  onChange={(useConnectionString) => setForm({ ...form, useConnectionString })}
+                />
+              </>
+            ) : form.kind === "opensearch" ? (
+              <>
+                {form.useConnectionString ? (
+                  <ConnectionUriField
+                    kind="opensearch"
+                    value={form.connectionString}
+                    onChange={(connectionString) => setForm({ ...form, connectionString })}
+                  />
+                ) : (
+                  <>
+                    <Field label="Node URL">
+                      <TextInput
+                        value={form.node}
+                        onChange={(event) => setForm({ ...form, node: event.target.value })}
+                        placeholder="https://search-domain.us-east-1.es.amazonaws.com"
+                        required
+                        spellCheck={false}
+                        autoComplete="off"
+                      />
+                    </Field>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="Username">
+                        <TextInput
+                          value={form.user}
+                          onChange={(event) => setForm({ ...form, user: event.target.value })}
+                          autoComplete="off"
+                        />
+                      </Field>
+                      <Field label="Password">
+                        <TextInput
+                          type="password"
+                          value={form.password}
+                          onChange={(event) => setForm({ ...form, password: event.target.value })}
+                          autoComplete="off"
+                        />
+                      </Field>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="AWS region">
+                        <TextInput
+                          value={form.region}
+                          onChange={(event) => setForm({ ...form, region: event.target.value })}
+                          placeholder="us-east-1"
+                          spellCheck={false}
+                          autoComplete="off"
+                        />
+                      </Field>
+                      <Field label="AWS service">
+                        <Select
+                          value={form.osService}
+                          options={[
+                            { value: "es", label: "Amazon OpenSearch Service" },
+                            { value: "aoss", label: "OpenSearch Serverless" },
+                          ]}
+                          onValueChange={(osService) => setForm({ ...form, osService })}
+                          disabled={!form.region.trim()}
+                        />
+                      </Field>
+                    </div>
+                    <Field label="Access key ID">
+                      <TextInput
+                        value={form.accessKeyId}
+                        onChange={(event) => setForm({ ...form, accessKeyId: event.target.value })}
+                        autoComplete="off"
+                        spellCheck={false}
+                      />
+                    </Field>
+                    <Field label="Secret access key">
+                      <TextInput
+                        type="password"
+                        value={form.secretAccessKey}
+                        onChange={(event) => setForm({ ...form, secretAccessKey: event.target.value })}
+                        autoComplete="off"
+                      />
+                    </Field>
+                    <Field label="Session token">
+                      <TextInput
+                        type="password"
+                        value={form.sessionToken}
+                        onChange={(event) => setForm({ ...form, sessionToken: event.target.value })}
+                        autoComplete="off"
+                      />
+                      <p className="text-[13px] text-muted-foreground">
+                        Leave the region empty for basic auth. Set a region to sign requests with AWS SigV4.
+                        Leave the access keys empty. Dash then uses the default AWS credentials. For the local
+                        cluster, use http://127.0.0.1:9209.
                       </p>
                     </Field>
                   </>

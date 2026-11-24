@@ -6,6 +6,7 @@ import { MongoAdapter } from "@dash/adapter-mongodb";
 import { MysqlAdapter } from "@dash/adapter-mysql";
 import { PostgresAdapter } from "@dash/adapter-postgres";
 import { RedshiftAdapter } from "@dash/adapter-redshift";
+import { OpenSearchAdapter } from "@dash/adapter-opensearch";
 import { StripeAdapter } from "@dash/adapter-stripe";
 import { SnowflakeAdapter } from "@dash/adapter-snowflake";
 import { ServerClosingError, isServerClosing, onServerClose } from "../shutdown.ts";
@@ -39,6 +40,8 @@ function createAdapter(config: ConnectionConfig): DataAdapter {
       return BigQueryAdapter.fromConfig(config);
     case "databricks":
       return DatabricksAdapter.fromConfig(config);
+    case "opensearch":
+      return OpenSearchAdapter.fromConfig(config);
   }
 }
 
