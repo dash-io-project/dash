@@ -710,4 +710,56 @@ describe("data source records", () => {
     expect(malformed.summary).toEqual({ node: "", auth: "", region: "", service: "" });
     expect(JSON.stringify(malformed.summary)).not.toContain("super-secret");
   });
+
+  it("summarizes a Couchbase source without the password", async () => {
+    const admin = await createUser({
+      email: "couchbase-admin@example.com",
+      name: "Admin",
+      password: "password123",
+      role: "admin",
+    });
+    const created = await createDataSource({
+      name: "Documents",
+      description: "Couchbase",
+      config: {
+        kind: "couchbase",
+        host: "cb.example.com",
+        port: 11210,
+        user: "reader",
+        password: "super-secret",
+        bucket: "analytics",
+        scope: "app",
+      },
+      createdBy: admin.id,
+    });
+    expect(created.kind).toBe("couchbase");
+    expect(created.summary).toEqual({
+      host: "cb.example.com",
+      port: 11210,
+      bucket: "analytics",
+      scope: "app",
+      user: "reader",
+      tls: false,
+    });
+    expect(JSON.stringify(created.summary)).not.toContain("super-secret");
+
+    const malformed = await createDataSource({
+      name: "Broken documents",
+      description: "Bad URI",
+      config: {
+        kind: "couchbase",
+        connectionString: "couchbase://reader:super-secret@127.0.0.1/analytics?tls_verify=none",
+      },
+      createdBy: admin.id,
+    });
+    expect(malformed.summary).toEqual({
+      host: "",
+      port: 0,
+      bucket: "",
+      scope: "",
+      user: "",
+      tls: false,
+    });
+    expect(JSON.stringify(malformed.summary)).not.toContain("super-secret");
+  });
 });

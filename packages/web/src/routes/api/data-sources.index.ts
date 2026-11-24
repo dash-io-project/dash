@@ -151,6 +151,18 @@ const configSchema = z.discriminatedUnion("kind", [
     sessionToken: z.string().optional(),
   }),
   z.object({
+    kind: z.literal("couchbase"),
+    connectionString: z.string().optional(),
+    host: z.string().optional(),
+    port: z.number().int().optional(),
+    user: z.string().optional(),
+    password: z.string().optional(),
+    bucket: z.string().optional(),
+    scope: z.string().optional(),
+    tls: z.boolean().optional(),
+    network: z.enum(["default", "external"]).optional(),
+  }),
+  z.object({
     kind: z.literal("bigquery"),
     projectId: z.string().min(1),
     dataset: z.string().optional(),

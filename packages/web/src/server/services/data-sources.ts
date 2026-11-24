@@ -1,4 +1,5 @@
 import { bigQueryEndpoint, isGoogleApiHost } from "@dash/adapter-bigquery";
+import { couchbasePublicSummary } from "@dash/adapter-couchbase";
 import { db2PublicSummary } from "@dash/adapter-db2";
 import { databricksPublicSummary } from "@dash/adapter-databricks";
 import { cockroachPublicSummary } from "@dash/adapter-cockroachdb";
@@ -141,6 +142,9 @@ function summarize(config: ConnectionConfig): DataSourceRecord["summary"] {
   }
   if (config.kind === "documentdb") {
     return documentDbPublicSummary(config);
+  }
+  if (config.kind === "couchbase") {
+    return couchbasePublicSummary(config);
   }
   if (config.kind === "mongodb") {
     const usingUri = Boolean(config.connectionString) && !config.host;

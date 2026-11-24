@@ -7,6 +7,7 @@ import {
   Leaf,
   Plus,
   Search,
+  Server,
   Snowflake,
 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
@@ -29,6 +30,7 @@ const icons: Record<string, IconComponent> = {
   redshift: Boxes,
   stripe: CreditCard,
   opensearch: Search,
+  couchbase: Server,
 };
 
 const tileClasses = "flex items-center gap-4 bg-card p-5";

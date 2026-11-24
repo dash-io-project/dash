@@ -227,6 +227,28 @@ export interface OpenSearchConnectionConfig {
   sessionToken?: string;
 }
 
+export interface CouchbaseConnectionConfig {
+  kind: "couchbase";
+  connectionString?: string;
+  /** Bootstrap host. The SDK finds the other ports from this host. */
+  host?: string;
+  /** KV port. Plaintext uses 11210. TLS uses 11207. */
+  port?: number;
+  user?: string;
+  password?: string;
+  /** Bucket for a collection name that has no bucket. */
+  bucket?: string;
+  /** Scope for a collection name that has no scope. The default is `_default`. */
+  scope?: string;
+  /** Use TLS. The scheme is `couchbases://`. */
+  tls?: boolean;
+  /**
+   * Address set. `external` uses the alternate addresses.
+   * The local test cluster publishes those addresses.
+   */
+  network?: "default" | "external";
+}
+
 export interface BigQueryConnectionConfig {
   kind: "bigquery";
   projectId: string;
@@ -263,4 +285,5 @@ export type ConnectionConfig =
   | RedshiftConnectionConfig
   | StripeConnectionConfig
   | OpenSearchConnectionConfig
-  | CockroachConnectionConfig;
+  | CockroachConnectionConfig
+  | CouchbaseConnectionConfig;

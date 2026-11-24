@@ -16,6 +16,7 @@
   "dependencies": {
     "@dash/adapter-bigquery": "workspace:*",
     "@dash/adapter-cockroachdb": "workspace:*",
+    "@dash/adapter-couchbase": "workspace:*",
     "@dash/adapter-databricks": "workspace:*",
     "@dash/adapter-db2": "workspace:*",
     "@dash/adapter-documentdb": "workspace:*",

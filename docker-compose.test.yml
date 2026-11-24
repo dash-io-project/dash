@@ -331,6 +331,45 @@ services:
       retries: 30
       start_period: 40s
 
+  couchbase:
+    image: couchbase:community-7.6.2@sha256:4731f6fb25bbbc1f1f2a78fe18cb0a313792abd13895da25ad7cdd2605a2427c
+    container_name: dash-test-couchbase
+    # One node with the data, index, and query services. 2 GiB covers the
+    # 256 MiB service quotas plus the server process. The init script
+    # publishes alternate addresses on the host ports.
+    entrypoint: ["bash", "/opt/dash/init.sh"]
+    ports:
+      - "127.0.0.1:${DASH_TEST_COUCHBASE_PORT:-11299}:11210"
+      - "127.0.0.1:${DASH_TEST_COUCHBASE_MGMT_PORT:-18099}:8091"
+      - "127.0.0.1:${DASH_TEST_COUCHBASE_QUERY_PORT:-18093}:8093"
+    environment:
+      COUCHBASE_ADMINISTRATOR_USERNAME: dash
+      COUCHBASE_ADMINISTRATOR_PASSWORD: dashdash
+      DASH_COUCHBASE_PASSWORD: dashdash
+      DASH_COUCHBASE_ALT_HOST: ${DASH_TEST_COUCHBASE_HOST:-127.0.0.1}
+      DASH_COUCHBASE_ALT_KV: ${DASH_TEST_COUCHBASE_PORT:-11299}
+      DASH_COUCHBASE_ALT_MGMT: ${DASH_TEST_COUCHBASE_MGMT_PORT:-18099}
+      DASH_COUCHBASE_ALT_QUERY: ${DASH_TEST_COUCHBASE_QUERY_PORT:-18093}
+    volumes:
+      - dash-test-couchbase:/opt/couchbase/var
+      - ./docker/couchbase/init.sh:/opt/dash/init.sh:ro
+    ulimits:
+      nofile:
+        soft: 200000
+        hard: 200000
+    mem_limit: 2g
+    cpus: 1
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "test -f /tmp/dash-couchbase-ready && curl -sf -u dash:dashdash http://127.0.0.1:8093/query/service --data-urlencode 'statement=SELECT RAW COUNT(*) FROM dash.analytics.revenue' | tr -d '[:space:]' | grep -F -q '\"results\":[3]'",
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 40
+      start_period: 120s
+
 volumes:
   dash-test-postgres:
   dash-test-mysql:
@@ -338,3 +377,4 @@ volumes:
   dash-test-mongodb:
   dash-test-redshift:
   dash-test-documentdb:
+  dash-test-couchbase:

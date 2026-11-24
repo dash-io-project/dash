@@ -1,6 +1,7 @@
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
+import { traceCouchbase } from "./trace-couchbase.mjs";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -19,7 +20,7 @@ export default defineConfig({
   },
   // Keep native drivers out of the bundle so each one finds its own files.
   ssr: {
-    external: ["@sap/hana-client", "ibm_db"],
+    external: ["@sap/hana-client", "couchbase", "ibm_db"],
   },
   plugins: [
     tailwindcss(),
@@ -36,6 +37,11 @@ export default defineConfig({
       },
       // Copy the SAP HANA driver and its native binary into the server output.
       traceDeps: ["@sap/hana-client"],
+      hooks: {
+        async compiled(nitro) {
+          await traceCouchbase(nitro.options.output.serverDir);
+        },
+      },
     }),
   ],
 });
