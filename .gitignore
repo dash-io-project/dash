@@ -20,6 +20,10 @@ lib-cov
 
 # Coverage directory used by tools like istanbul
 coverage
+
+# CA written when the DocumentDB test cluster starts.
+docker/documentdb/runtime/*
+!docker/documentdb/runtime/.gitkeep
 *.lcov
 
 # nyc test coverage

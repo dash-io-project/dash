@@ -1,7 +1,7 @@
 /**
  * Adapter kinds Dash knows about. `postgres`, `mysql`, `mariadb`, `db2`, `snowflake`,
- * `mongodb`, `bigquery`, `databricks`, `redshift`, `stripe`, and `opensearch` ship.
- * `clickhouse` stays reserved for a later adapter.
+ * `mongodb`, `bigquery`, `databricks`, `redshift`, `stripe`, `opensearch`, and
+ * `documentdb` ship. `clickhouse` stays reserved for a later adapter.
  */
 export const DATA_SOURCE_KINDS = [
   "postgres",
@@ -15,6 +15,7 @@ export const DATA_SOURCE_KINDS = [
   "redshift",
   "stripe",
   "opensearch",
+  "documentdb",
   "clickhouse",
 ] as const;
 

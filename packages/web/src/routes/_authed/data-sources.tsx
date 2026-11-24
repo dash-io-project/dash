@@ -44,11 +44,19 @@ type SourceKind =
   | "db2"
   | "snowflake"
   | "mongodb"
+  | "documentdb"
   | "bigquery"
   | "databricks"
   | "redshift"
   | "stripe"
   | "opensearch";
+
+type ReadPreference =
+  | "primary"
+  | "primaryPreferred"
+  | "secondary"
+  | "secondaryPreferred"
+  | "nearest";
 
 const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "postgres", label: "PostgreSQL" },
@@ -58,10 +66,19 @@ const KIND_OPTIONS: SelectOption<SourceKind>[] = [
   { value: "redshift", label: "Amazon Redshift" },
   { value: "snowflake", label: "Snowflake" },
   { value: "mongodb", label: "MongoDB" },
+  { value: "documentdb", label: "Amazon DocumentDB" },
   { value: "bigquery", label: "Google BigQuery" },
   { value: "databricks", label: "Databricks SQL" },
   { value: "stripe", label: "Stripe" },
   { value: "opensearch", label: "Amazon OpenSearch" },
+];
+
+const READ_PREFERENCE_OPTIONS: SelectOption<ReadPreference>[] = [
+  { value: "primary", label: "primary" },
+  { value: "primaryPreferred", label: "primaryPreferred" },
+  { value: "secondary", label: "secondary" },
+  { value: "secondaryPreferred", label: "secondaryPreferred" },
+  { value: "nearest", label: "nearest" },
 ];
 
 const URI_PLACEHOLDER: Record<SourceKind, string> = {
@@ -72,6 +89,8 @@ const URI_PLACEHOLDER: Record<SourceKind, string> = {
   redshift: "redshift://user:password@cluster.redshift.amazonaws.com:5439/analytics?sslmode=require",
   snowflake: "snowflake://user:password@account/database/schema?warehouse=COMPUTE_WH",
   mongodb: "mongodb://user:password@host:27017/analytics?authSource=admin",
+  documentdb:
+    "mongodb://user:password@cluster.us-east-1.docdb.amazonaws.com:27017/analytics?tls=true&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false",
   bigquery: "bigquery://project/dataset?location=US&endpoint=http://127.0.0.1:9059",
   databricks:
     "databricks://token:dapi000@adb-000.0.azuredatabricks.net/sql/1.0/warehouses/abc?catalog=main&schema=default",
@@ -205,6 +224,9 @@ const emptyForm = {
   accessKeyId: "",
   secretAccessKey: "",
   sessionToken: "",
+  replicaSet: "",
+  readPreference: "secondaryPreferred" as ReadPreference,
+  caBundle: "",
 };
 
 function DataSourcesPage() {
@@ -283,7 +305,27 @@ function DataSourcesPage() {
                     authSource: form.user ? form.authSource || "admin" : undefined,
                     tls: form.tls,
                   }
-              : form.kind === "mysql" || form.kind === "mariadb"
+              : form.kind === "documentdb"
+                ? form.useConnectionString
+                  ? {
+                      kind: "documentdb" as const,
+                      connectionString: form.connectionString.trim(),
+                      database: form.database.trim() || undefined,
+                      caBundle: form.caBundle.trim() || undefined,
+                    }
+                  : {
+                      kind: "documentdb" as const,
+                      host: form.host,
+                      port: Number(form.port),
+                      database: form.database,
+                      user: form.user || undefined,
+                      password: form.password || undefined,
+                      authSource: form.user ? form.authSource || "admin" : undefined,
+                      replicaSet: form.replicaSet.trim() || undefined,
+                      readPreference: form.readPreference,
+                      caBundle: form.caBundle.trim() || undefined,
+                    }
+                : form.kind === "mysql" || form.kind === "mariadb"
                 ? form.useConnectionString
                   ? {
                       kind: form.kind,
@@ -450,7 +492,7 @@ function DataSourcesPage() {
       <PageBody className="space-y-6">
       <p className="max-w-3xl text-muted-foreground">
         Paste a connection URI, or enter the fields. Dash tests Postgres, MySQL, MariaDB, IBM Db2, Snowflake,
-        MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, and OpenSearch on save.
+        MongoDB, Amazon DocumentDB, BigQuery, Databricks SQL, Redshift, Stripe, and OpenSearch on save.
         {isAdmin ? null : " Only administrators can add or remove sources."}
       </p>
 
@@ -549,7 +591,7 @@ function DataSourcesPage() {
                     connectionString: "",
                     ssl: kind === "redshift",
                     port:
-                      kind === "mongodb"
+                      kind === "mongodb" || kind === "documentdb"
                         ? "27017"
                         : kind === "postgres"
                           ? "5432"
@@ -848,6 +890,113 @@ function DataSourcesPage() {
                   />
                   Use TLS
                 </label>
+              </>
+            ) : form.kind === "documentdb" ? (
+              <>
+                {form.useConnectionString ? (
+                  <>
+                    <ConnectionUriField
+                      kind="documentdb"
+                      value={form.connectionString}
+                      onChange={(connectionString) => setForm({ ...form, connectionString })}
+                    />
+                    <Field label="Database">
+                      <TextInput
+                        value={form.database}
+                        onChange={(event) =>
+                          setForm({ ...form, database: event.target.value })
+                        }
+                        placeholder="Required when the URI has no database"
+                      />
+                    </Field>
+                  </>
+                ) : null}
+                <ConnectionModeToggle
+                  usingUri={form.useConnectionString}
+                  onChange={(useConnectionString) => setForm({ ...form, useConnectionString })}
+                />
+                {form.useConnectionString ? null : (
+                  <>
+                    <div className="grid grid-cols-3 gap-3">
+                      <Field label="Host">
+                        <TextInput
+                          value={form.host}
+                          onChange={(event) => setForm({ ...form, host: event.target.value })}
+                          required
+                        />
+                      </Field>
+                      <Field label="Port">
+                        <TextInput
+                          value={form.port}
+                          onChange={(event) => setForm({ ...form, port: event.target.value })}
+                          required
+                        />
+                      </Field>
+                      <Field label="Database">
+                        <TextInput
+                          value={form.database}
+                          onChange={(event) =>
+                            setForm({ ...form, database: event.target.value })
+                          }
+                          required
+                        />
+                      </Field>
+                    </div>
+                    <Field label="User">
+                      <TextInput
+                        value={form.user}
+                        onChange={(event) => setForm({ ...form, user: event.target.value })}
+                        placeholder="Optional"
+                      />
+                    </Field>
+                    <Field label="Password">
+                      <TextInput
+                        type="password"
+                        value={form.password}
+                        onChange={(event) =>
+                          setForm({ ...form, password: event.target.value })
+                        }
+                      />
+                    </Field>
+                    <Field label="Auth database">
+                      <TextInput
+                        value={form.authSource}
+                        onChange={(event) =>
+                          setForm({ ...form, authSource: event.target.value })
+                        }
+                        placeholder="admin"
+                      />
+                    </Field>
+                    <Field label="Replica set">
+                      <TextInput
+                        value={form.replicaSet}
+                        onChange={(event) => setForm({ ...form, replicaSet: event.target.value })}
+                        placeholder="rs0"
+                      />
+                    </Field>
+                    <Field label="Read preference">
+                      <Select
+                        value={form.readPreference}
+                        options={READ_PREFERENCE_OPTIONS}
+                        onValueChange={(readPreference) => setForm({ ...form, readPreference })}
+                      />
+                    </Field>
+                  </>
+                )}
+                <Field label="CA bundle PEM">
+                  <TextArea
+                    value={form.caBundle}
+                    onChange={(event) => setForm({ ...form, caBundle: event.target.value })}
+                    placeholder="Optional. Leave empty for the Amazon RDS global bundle."
+                    rows={3}
+                    spellCheck={false}
+                    className="min-h-16 font-mono text-[13px]"
+                  />
+                  <p className="text-[13px] text-muted-foreground">
+                    TLS is required. Leave the CA bundle empty to use the Amazon RDS bundle. For a
+                    cluster, set the replica set to rs0.
+                  </p>
+                </Field>
               </>
             ) : form.kind === "bigquery" ? (
               <>

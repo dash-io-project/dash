@@ -341,6 +341,44 @@ describe("data source records", () => {
     expect(JSON.stringify(replica.summary)).not.toContain("super-secret");
   });
 
+  it("summarizes a DocumentDB source without the password or the CA bundle", async () => {
+    const admin = await createUser({
+      email: "docdb-admin@example.com",
+      name: "Admin",
+      password: "password123",
+      role: "admin",
+    });
+    const created = await createDataSource({
+      name: "Orders",
+      description: "DocumentDB",
+      config: {
+        kind: "documentdb",
+        host: "cluster.us-east-1.docdb.amazonaws.com",
+        port: 27017,
+        database: "orders",
+        user: "reader",
+        password: "super-secret",
+        authSource: "admin",
+        replicaSet: "rs0",
+        readPreference: "secondaryPreferred",
+        caBundle: "-----BEGIN CERTIFICATE-----\nTESTCERT\n-----END CERTIFICATE-----\n",
+      },
+      createdBy: admin.id,
+    });
+    expect(created.kind).toBe("documentdb");
+    expect(created.summary).toEqual({
+      host: "cluster.us-east-1.docdb.amazonaws.com",
+      port: 27017,
+      database: "orders",
+      user: "reader",
+      tls: true,
+      replicaSet: "rs0",
+      readPreference: "secondaryPreferred",
+    });
+    expect(JSON.stringify(created.summary)).not.toContain("super-secret");
+    expect(JSON.stringify(created.summary)).not.toContain("TESTCERT");
+  });
+
   it("summarizes a BigQuery source without the service account key", async () => {
     const admin = await createUser({
       email: "bq-admin@example.com",

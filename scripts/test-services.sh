@@ -32,6 +32,7 @@ case "$action" in
     echo "Databricks SQL test cluster is ready at http://127.0.0.1:${DASH_TEST_DATABRICKS_PORT:-14439} (warehouse ${DASH_TEST_DATABRICKS_WAREHOUSE:-dash}, catalog ${DASH_TEST_DATABRICKS_CATALOG:-dash}, schema ${DASH_TEST_DATABRICKS_SCHEMA:-analytics})"
     echo "Stripe test cluster is ready at http://127.0.0.1:${DASH_TEST_STRIPE_PORT:-12119}"
     echo "OpenSearch test cluster is ready at http://127.0.0.1:${DASH_TEST_OPENSEARCH_PORT:-9209}"
+    echo "DocumentDB test cluster is ready at mongodb://dash:dash@127.0.0.1:${DASH_TEST_DOCUMENTDB_PORT:-27099}/dash?authSource=admin (TLS, CA at docker/documentdb/runtime/ca.pem)"
     ;;
   stop)
     "${compose[@]}" down --volumes --remove-orphans

@@ -22,6 +22,12 @@ export const adapters: readonly Adapter[] = [
   },
   { id: "mongodb", name: "MongoDB", kind: "document", note: "Document database" },
   {
+    id: "documentdb",
+    name: "Amazon DocumentDB",
+    kind: "document",
+    note: "Document database",
+  },
+  {
     id: "bigquery",
     name: "Google BigQuery",
     kind: "warehouse",

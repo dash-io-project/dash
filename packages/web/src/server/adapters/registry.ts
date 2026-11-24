@@ -2,6 +2,7 @@ import { type ConnectionConfig, type DataAdapter } from "@dash/core";
 import { BigQueryAdapter } from "@dash/adapter-bigquery";
 import { DatabricksAdapter } from "@dash/adapter-databricks";
 import { Db2Adapter } from "@dash/adapter-db2";
+import { DocumentDbAdapter } from "@dash/adapter-documentdb";
 import { MongoAdapter } from "@dash/adapter-mongodb";
 import { MariadbAdapter } from "@dash/adapter-mariadb";
 import { MysqlAdapter } from "@dash/adapter-mysql";
@@ -39,6 +40,8 @@ function createAdapter(config: ConnectionConfig): DataAdapter {
       return StripeAdapter.fromConfig(config);
     case "mongodb":
       return MongoAdapter.fromConfig(config);
+    case "documentdb":
+      return DocumentDbAdapter.fromConfig(config);
     case "bigquery":
       return BigQueryAdapter.fromConfig(config);
     case "databricks":

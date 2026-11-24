@@ -21,6 +21,7 @@ const icons: Record<string, IconComponent> = {
   db2: Database,
   snowflake: Snowflake,
   mongodb: Leaf,
+  documentdb: Database,
   bigquery: Cloud,
   databricks: Layers,
   redshift: Boxes,

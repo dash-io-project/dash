@@ -4,6 +4,7 @@ import { databricksPublicSummary } from "@dash/adapter-databricks";
 import { redshiftPublicSummary } from "@dash/adapter-redshift";
 import { openSearchPublicSummary } from "@dash/adapter-opensearch";
 import { stripePublicSummary } from "@dash/adapter-stripe";
+import { documentDbPublicSummary } from "@dash/adapter-documentdb";
 import { mongoUsesTls, parseMongoConnectionString } from "@dash/adapter-mongodb";
 import { parseMariadbConnectionString } from "@dash/adapter-mariadb";
 import { parseMysqlConnectionString } from "@dash/adapter-mysql";
@@ -129,6 +130,9 @@ function summarize(config: ConnectionConfig): DataSourceRecord["summary"] {
   }
   if (config.kind === "opensearch") {
     return openSearchPublicSummary(config);
+  }
+  if (config.kind === "documentdb") {
+    return documentDbPublicSummary(config);
   }
   if (config.kind === "mongodb") {
     const usingUri = Boolean(config.connectionString) && !config.host;
