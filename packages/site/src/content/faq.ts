@@ -54,7 +54,7 @@ export const pricingFaq: readonly FaqItem[] = [
     id: "sources",
     question: "Which data sources does Dash support?",
     answer:
-      "Postgres, MySQL, MariaDB, CockroachDB, IBM Db2, SAP HANA, Oracle Database, Snowflake, MongoDB, Amazon DocumentDB, Google BigQuery, Databricks SQL, Amazon Redshift, ClickHouse, Stripe, Amazon OpenSearch, Couchbase, Neo4j, Apache Cassandra, and Amazon DynamoDB. More adapters are on the way.",
+      "Postgres, MySQL, MariaDB, CockroachDB, IBM Db2, SAP HANA, Oracle Database, Snowflake, MongoDB, Amazon DocumentDB, Google BigQuery, Databricks SQL, Amazon Redshift, ClickHouse, Stripe, Amazon OpenSearch, Couchbase, Neo4j, Apache Cassandra, Amazon DynamoDB, and Elasticsearch. More adapters are on the way.",
   },
   {
     id: "enterprise",

@@ -55,6 +55,7 @@ export const adapters: readonly Adapter[] = [
   { id: "neo4j", name: "Neo4j", kind: "graph", note: "Graph database" },
   { id: "cassandra", name: "Apache Cassandra", kind: "sql", note: "Wide-column database" },
   { id: "dynamodb", name: "DynamoDB", kind: "document", note: "Key-value database" },
+  { id: "elasticsearch", name: "Elasticsearch", kind: "document", note: "Search and analytics" },
 ];
 
 export const adapterCount = adapters.length;

@@ -54,6 +54,7 @@ export type {
   Db2ConnectionConfig,
   DocumentDbConnectionConfig,
   DocumentDbReadPreference,
+  ElasticsearchConnectionConfig,
   HanaConnectionConfig,
   MariadbConnectionConfig,
   MongoConnectionConfig,

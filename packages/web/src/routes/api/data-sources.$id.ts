@@ -186,6 +186,17 @@ const patchSchema = z.object({
         sessionToken: z.string().optional(),
       }),
       z.object({
+        kind: z.literal("elasticsearch"),
+        connectionString: z.string().optional(),
+        host: z.string().optional(),
+        port: z.number().int().optional(),
+        user: z.string().optional(),
+        password: z.string().optional(),
+        apiKey: z.string().optional(),
+        cloudId: z.string().optional(),
+        tls: z.boolean().optional(),
+      }),
+      z.object({
         kind: z.literal("couchbase"),
         connectionString: z.string().optional(),
         host: z.string().optional(),

@@ -21,7 +21,8 @@ Each warehouse adapter is its own package under `packages/` and implements
 (`@dash/adapter-neo4j`). Apache Cassandra ships as `packages/cassandra-adapter`
 (`@dash/adapter-cassandra`). Oracle Database ships as `packages/oracle-adapter`
 (`@dash/adapter-oracle`). ClickHouse ships as `packages/clickhouse-adapter`
-(`@dash/adapter-clickhouse`).
+(`@dash/adapter-clickhouse`). Elasticsearch ships as `packages/elasticsearch-adapter`
+(`@dash/adapter-elasticsearch`).
 
 ## Shipping
 
@@ -47,6 +48,7 @@ Each warehouse adapter is its own package under `packages/` and implements
 | `@dash/adapter-oracle` | `packages/oracle-adapter` | `oracle` | MVP |
 | `@dash/adapter-clickhouse` | `packages/clickhouse-adapter` | `clickhouse` | MVP |
 | `@dash/adapter-dynamodb` | `packages/dynamodb-adapter` | `dynamodb` | MVP |
+| `@dash/adapter-elasticsearch` | `packages/elasticsearch-adapter` | `elasticsearch` | MVP |
 
 The web app does not ship a built-in sample adapter. To get realistic data in
 development, seed the configured sources from **Settings** (see the README).
@@ -55,7 +57,7 @@ new writer in `packages/seed/src/writers` and add its kind to `SEEDABLE_KINDS`.
 
 ## Testing
 
-Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch, DocumentDB, CockroachDB, Couchbase, Neo4j, Cassandra, Oracle, ClickHouse, and DynamoDB adapter tests run against the local clusters in `docker-compose.test.yml`.
+Postgres, MySQL, MariaDB, MongoDB, BigQuery, Databricks SQL, Redshift, Stripe, OpenSearch, DocumentDB, CockroachDB, Couchbase, Neo4j, Cassandra, Oracle, ClickHouse, DynamoDB, and Elasticsearch adapter tests run against the local clusters in `docker-compose.test.yml`.
 
 IBM Db2 adapter tests run in process. The community image `icr.io/db2_community/db2` does not fit this CI job. The image needs about 7 GB of disk and about 4 GB of memory. The container needs privileged mode. The first start takes several minutes.
 
@@ -75,7 +77,8 @@ database `admin`). Databricks SQL listens on `http://127.0.0.1:14439` (token
 `dash`, warehouse `dash`, catalog `dash`, schema `analytics`). The Redshift
 stand-in listens on `127.0.0.1:54399`
 (`redshift://dash:dash@127.0.0.1:54399/dash`). Stripe listens on
-`http://127.0.0.1:12119`. OpenSearch listens on `http://127.0.0.1:9209`.
+`http://127.0.0.1:12119`. OpenSearch listens on `http://127.0.0.1:9209`. Elasticsearch listens on
+`http://127.0.0.1:9219` (`dash` / `dash_test`).
 The DocumentDB stand-in listens on
 `127.0.0.1:27099` (`mongodb://dash:dash@127.0.0.1:27099/dash?authSource=admin`, TLS).
 Amazon DocumentDB has no local image. The stand-in speaks the MongoDB wire protocol.

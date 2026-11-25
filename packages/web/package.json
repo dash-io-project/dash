@@ -23,6 +23,7 @@
     "@dash/adapter-db2": "workspace:*",
     "@dash/adapter-documentdb": "workspace:*",
     "@dash/adapter-dynamodb": "workspace:*",
+    "@dash/adapter-elasticsearch": "workspace:*",
     "@dash/adapter-hana": "workspace:*",
     "@dash/adapter-mariadb": "workspace:*",
     "@dash/adapter-mongodb": "workspace:*",

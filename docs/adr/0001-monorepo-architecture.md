@@ -22,6 +22,7 @@ Dash needs a single TypeScript codebase for the product UI, REST API, and MCP se
 - `packages/oracle-adapter` (`@dash/adapter-oracle`) is the Oracle Database adapter.
 - `packages/clickhouse-adapter` (`@dash/adapter-clickhouse`) is the ClickHouse adapter.
 - `packages/dynamodb-adapter` (`@dash/adapter-dynamodb`) is the DynamoDB adapter.
+- `packages/elasticsearch-adapter` (`@dash/adapter-elasticsearch`) is the Elasticsearch adapter.
 
 ## Consequences
 

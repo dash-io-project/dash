@@ -507,6 +507,34 @@ services:
       retries: 40
       start_period: 10s
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.4
+    container_name: dash-test-elasticsearch
+    entrypoint: ["/bin/tini", "--", "bash", "/opt/dash/entrypoint.sh"]
+    environment:
+      ELASTIC_PASSWORD: dash_test
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "127.0.0.1:${DASH_TEST_ELASTICSEARCH_PORT:-9219}:9200"
+    volumes:
+      - dash-test-elasticsearch:/usr/share/elasticsearch/data
+      - ./docker/elasticsearch/entrypoint.sh:/opt/dash/entrypoint.sh:ro
+      - ./docker/elasticsearch/load-fixture.sh:/opt/dash/load-fixture.sh:ro
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    mem_limit: 1g
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -fsS -u dash:$$ELASTIC_PASSWORD http://127.0.0.1:9200/revenue/_count | grep -q '\"count\":3' && curl -fsS -u dash:$$ELASTIC_PASSWORD http://127.0.0.1:9200/paid_orders/_count | grep -q '\"count\":3'",
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 40
+      start_period: 45s
 volumes:
   dash-test-postgres:
   dash-test-mysql:
@@ -518,3 +546,4 @@ volumes:
   dash-test-neo4j:
   dash-test-cassandra:
   dash-test-clickhouse:
+  dash-test-elasticsearch:
