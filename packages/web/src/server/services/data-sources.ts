@@ -166,9 +166,9 @@ function summarize(config: ConnectionConfig): DataSourceRecord["summary"] {
   }
   if (config.kind === "dynamodb") {
     return dynamoPublicSummary(config);
+  }
   if (config.kind === "elasticsearch") {
     return elasticsearchPublicSummary(config);
-  }
   }
   if (config.kind === "mongodb") {
     const usingUri = Boolean(config.connectionString) && !config.host;
